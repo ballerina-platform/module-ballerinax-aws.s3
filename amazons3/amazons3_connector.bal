@@ -30,7 +30,7 @@ function AmazonS3Connector::getBucketList() returns Bucket[]|AmazonS3Error {
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint -> get("/", message = request);
+    var httpResponse = clientEndpoint->get("/", message = request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -73,7 +73,7 @@ function AmazonS3Connector::createBucket(string bucketName) returns Status|Amazo
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint-> put("/", request);
+    var httpResponse = clientEndpoint->put("/", request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -100,7 +100,7 @@ function AmazonS3Connector::getAllObjects(string bucketName) returns S3Object[]|
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint-> get("/", message = request);
+    var httpResponse = clientEndpoint->get("/", message = request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -144,7 +144,7 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint-> get(requestURI, message = request);
+    var httpResponse = clientEndpoint->get(requestURI, message = request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -187,7 +187,7 @@ function AmazonS3Connector::createObject(string bucketName, string objectName, s
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     request.setTextPayload(payload);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
-    var httpResponse = clientEndpoint-> put(requestURI, request);
+    var httpResponse = clientEndpoint->put(requestURI, request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -215,7 +215,7 @@ function AmazonS3Connector::deleteObject(string bucketName, string objectName) r
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint-> delete(requestURI, request);
+    var httpResponse = clientEndpoint->delete(requestURI, request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
@@ -243,7 +243,7 @@ function AmazonS3Connector::deleteBucket(string bucketName) returns Status|Amazo
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint-> delete(requestURI, request);
+    var httpResponse = clientEndpoint->delete(requestURI, request);
     match httpResponse {
         error err => {
             amazonS3Error.message = err.message;
