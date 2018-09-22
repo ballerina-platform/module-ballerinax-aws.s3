@@ -19,7 +19,7 @@ The `wso2/amazons3` package contains operations that create an object, delete an
 ## Compatibility
 |                    |    Version     |  
 |:------------------:|:--------------:|
-| Ballerina Language |   0.981.0      |
+| Ballerina Language |   0.982.0      |
 | Amazon S3 API        |   2006-03-01     |
 
 
