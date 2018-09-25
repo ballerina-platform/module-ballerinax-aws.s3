@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/wso2-ballerina/package-amazons3.svg?branch=master)](https://travis-ci.org/wso2-ballerina/package-amazons3)
+
 # Ballerina Amazon S3 Connector
 
 The Amazon S3 connector allows you to access the Amazon S3 REST API through ballerina. The following section provide you the details on connector operations.
