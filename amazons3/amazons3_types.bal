@@ -18,7 +18,7 @@
 
 import ballerina/http;
 
-# Define the Amazon S3 connector.
+# Define the Amazon S3 Connector.
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region
@@ -63,24 +63,24 @@ public type AmazonS3Connector object {
 };
 
 # AmazonS3 Client object.
-# + amazonS3Config - AmazonS3 connector configurations
+# + amazonS3Config - AmazonS3 Connector configurations
 # + amazonS3Connector - AmazonS3 Connector object
 public type Client object {
 
     public AmazonS3Configuration amazonS3Config = {};
     public AmazonS3Connector amazonS3Connector = new;
 
-    # AmazonS3 connector endpoint initialization function.
-    # + config - AmazonS3 connector configuration
+    # AmazonS3 Connector endpoint initialization function.
+    # + config - AmazonS3 Connector Configuration
     public function init(AmazonS3Configuration config);
 
-    # Return the AmazonS3 connector client.
-    # + return - AmazonS3 connector client
+    # Return the AmazonS3 Connector Client.
+    # + return - AmazonS3 Connector Client
     public function getCallerActions() returns AmazonS3Connector;
 
 };
 
-# AmazonS3 connector configurations can be setup here.
+# AmazonS3 Connector configurations can be setup here.
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region
@@ -121,7 +121,6 @@ public type S3Object record {
 # Define the status type.
 # + success - The status of the AmazonS3 operation
 # + statusCode - The status code of the response
-# + return - the sum of them
 public type Status record {
     boolean success;
     int statusCode;
