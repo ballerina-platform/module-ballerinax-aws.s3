@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/wso2-ballerina/package-amazons3.svg?branch=master)](https://travis-ci.org/wso2-ballerina/package-amazons3)
+[![Build Status](https://travis-ci.org/wso2-ballerina/module-amazons3.svg?branch=master)](https://travis-ci.org/wso2-ballerina/module-amazons3)
 
 # Ballerina Amazon S3 Connector
 
@@ -7,7 +7,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | -------------------- |
-| 0.982.0                    | 2006-03-01                  |
+| 0.983.0                    | 2006-03-01                  |
 
 
 The following sections provide you with information on how to use the Ballerina Amazon S3 connector.
@@ -20,12 +20,12 @@ The following sections provide you with information on how to use the Ballerina 
 
 Clone the repository by running the following command 
 ```shell
-git clone https://github.com/wso2-ballerina/package-amazons3.git
+git clone https://github.com/wso2-ballerina/module-amazons3.git
 ```
 
 ### Working with Amazon S3 Connector 
 
-First, import the `wso2/amazons3` package into the Ballerina project.
+First, import the `wso2/amazons3` module into the Ballerina project.
 
 ```ballerina
 import wso2/amazons3;

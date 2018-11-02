@@ -1,31 +1,31 @@
 Connects to Amazon S3 from Ballerina. 
 
-# Package Overview
+# Module Overview
 
 The Amazon S3 connector allows you to access the Amazon S3 REST API through ballerina. The following section provide you the details on connector operations.
 
 
 **Buckets Operations**
 
-The `wso2/amazons3` package contains operations that work with buckets. You can list the existing buckets, create a bucket,
+The `wso2/amazons3` module contains operations that work with buckets. You can list the existing buckets, create a bucket,
 delete a bucket and list objects in a bucket.
 
 **Objects Operations**
 
-The `wso2/amazons3` package contains operations that create an object, delete an object and retrieve an object.
+The `wso2/amazons3` module contains operations that create an object, delete an object and retrieve an object.
 
 
 
 ## Compatibility
 |                    |    Version     |  
 |:------------------:|:--------------:|
-| Ballerina Language |   0.982.0      |
+| Ballerina Language |   0.983.0      |
 | Amazon S3 API        |   2006-03-01     |
 
 
 ## Sample
 
-First, import the `wso2/amazons3` package into the Ballerina project.
+First, import the `wso2/amazons3` module into the Ballerina project.
 
 ```ballerina
 import wso2/amazons3;
