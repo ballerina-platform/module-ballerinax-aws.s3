@@ -63,7 +63,7 @@ function main(string... args) {
             io:println("Bucket Status: " + status);
         }
         //Unsuccessful attempts return an AmazonS3 error.
-        amazons3:AmazonS3Error e => io:println(e);
+        amazons3:error e => io:println(e);
     }
 }
 ```
