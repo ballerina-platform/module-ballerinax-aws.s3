@@ -238,10 +238,3 @@ function getClientEndpoint(string bucketName) returns http:Client {
     clientEndpoint.init(clientConfig);
     return clientEndpoint;
 }
-
-function setResponseError(int statusCode, xml xmlResponse) returns error {
-    error err = {};
-    err.message = xmlResponse["Message"].getTextValue();
-    err.statusCode = statusCode;
-    return err;
-}
