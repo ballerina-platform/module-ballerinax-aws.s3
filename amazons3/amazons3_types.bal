@@ -28,37 +28,37 @@ public type AmazonS3Connector object {
     public string region;
 
     # Retrieve the existing buckets.
-    # + return - If success, returns BucketList object, else returns error object
+    # + return - If success, returns BucketList object, else returns error
     public function getBucketList() returns Bucket[]|error;
 
     # Create a bucket.
-    # + return - If success, returns Status object, else returns error object
+    # + return - If success, returns Status object, else returns error
     public function createBucket(string bucketName) returns Status|error;
 
     # Retrieve the existing objects in a given bucket.
     # + bucketName - The name of the bucket
-    # + return - If success, returns S3Object[] object, else returns error object
+    # + return - If success, returns S3Object[] object, else returns error
     public function getAllObjects(string bucketName) returns S3Object[]|error;
 
     # Retrieves objects from Amazon S3.
     # + bucketName - The name of the bucket
     # + objectName - The name of the object
-    # + return - If success, returns S3ObjectContent object, else returns error object
+    # + return - If success, returns S3ObjectContent object, else returns error
     public function getObject(string bucketName, string objectName) returns S3Object|error;
 
     # Create an object.
     # + objectName - The name of the object
     # + payload - The file that needed to be added to the bucket
-    # + return - If success, returns Status object, else returns error object
+    # + return - If success, returns Status object, else returns error
     public function createObject(string bucketName, string objectName, string payload) returns Status|error;
 
     # Delete an object.
     # + objectName - The name of the object
-    # + return - If success, returns Status object, else returns error object
+    # + return - If success, returns Status object, else returns error
     public function deleteObject(string bucketName, string objectName) returns Status|error;
 
     # Delete a bucket.
-    # + return - If success, returns Status object, else returns error object
+    # + return - If success, returns Status object, else returns error
     public function deleteBucket(string bucketName) returns Status|error;
 };
 

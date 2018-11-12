@@ -118,7 +118,6 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    error err = {};
     http:Request request = new;
     string requestURI = "/" + objectName;
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -129,14 +128,14 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
 
     var httpResponse = clientEndpoint->get(requestURI, message = request);
     match httpResponse {
-        err => {
+        error err => {
             return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
             var amazonResponse = response.getPayloadAsString();
             match amazonResponse {
-                err => {
+                error err => {
                     return err;
                 }
                 string stringResponse => {
@@ -144,6 +143,7 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
                         return getS3Object(stringResponse);
                     }
                     else{
+                        error err = {};
                         err.statusCode = statusCode;
                         return err;
                     }
