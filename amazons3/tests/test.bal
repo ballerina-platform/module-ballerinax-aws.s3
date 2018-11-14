@@ -41,7 +41,7 @@ function testGetBucketList() {
             string bucketName = buckets[0].name;
             test:assertTrue(bucketName.length() > 0, msg = "Failed to call getBucketList()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -58,7 +58,7 @@ function testCreateBucket() {
             boolean bucketStatus = status.success;
             test:assertTrue(bucketStatus, msg = "Failed createBucket()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -75,7 +75,7 @@ function testCreateObject() {
             boolean objectStatus = staus.success;
             test:assertTrue(objectStatus, msg = "Failed createObject()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -93,7 +93,7 @@ function testGetObject() {
             test:assertTrue(content.length() > 0, msg = "Failed to call getObject()");
 
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -109,7 +109,7 @@ function testGetAllObjects() {
         S3Object[] s3Object => {
             test:assertTrue(lengthof s3Object > 0, msg = "Failed to call getAllObjects()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -126,7 +126,7 @@ function testDeleteObject() {
             boolean objectStatus = staus.success;
             test:assertTrue(objectStatus, msg = "Failed deleteObject()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }
@@ -143,7 +143,7 @@ function testDeleteBucket() {
             boolean bucketStatus = staus.success;
             test:assertTrue(bucketStatus, msg = "Failed deleteBucket()");
         }
-        AmazonS3Error err => {
+        error err => {
             test:assertFail(msg = err.message);
         }
     }

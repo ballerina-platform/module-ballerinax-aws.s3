@@ -53,7 +53,7 @@ endpoint amazons3:Client amazonS3Client {
 ```
 
 The `createBucket` function creates a bucket.   
-If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `AmazonS3Error`. The `match` operation can be used to handle the response if an error occurs.
+If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`. The `match` operation can be used to handle the response if an error occurs.
 
 ```ballerina
 var createBucketResponse = amazonS3Client -> createBucket(bucketName);
@@ -64,11 +64,11 @@ match createBucketResponse {
         io:println("Bucket Status: " + status);
     }
     //Unsuccessful attempts return an AmazonS3 error.
-    amazons3:AmazonS3Error e => io:println(e);
+    error e => io:println(e);
 }
 ```
 
-The `getBucketList` function retrives the existing buckets. It returns a `Bucket[]` object if successful or `AmazonS3Error` if unsuccessful.
+The `getBucketList` function retrives the existing buckets. It returns a `Bucket[]` object if successful or `error` if unsuccessful.
 
 ```ballerina
 var getBucketListResponse = amazonS3ClientForGetBucketList -> getBucketList();
@@ -76,7 +76,7 @@ match getBucketListResponse {
     amazons3:Bucket[] buckets => {
         io:println("Name of the first bucket: " + buckets[0].name);
     }
-    amazons3:AmazonS3Error e => io:println(e);
+    error e => io:println(e);
 }
 ```
 ## Example
@@ -99,7 +99,7 @@ function main(string... args) {
             boolean status = bucketStatus.success;
             io:println("Create bucket status: " + status);
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 
     io:println("-----------------Calling getBucketList() ------------------");
@@ -111,7 +111,7 @@ function main(string... args) {
                 io:println("Bucket Name: " + bucket.name);
             }
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 
     io:println("-----------------Calling createObject() ------------------");
@@ -121,7 +121,7 @@ function main(string... args) {
             boolean status = objectStatus.success;
             io:println("Create object status: " + status);
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 
    io:println("-----------------Calling getObject() ------------------");
@@ -132,7 +132,7 @@ function main(string... args) {
            string content = s3Object.content;
            io:println("Object content: " + content);
        }
-       amazons3:AmazonS3Error e => io:println(e);
+       error e => io:println(e);
    }
 
     io:println("-----------------Calling getAllObjects() ------------------");
@@ -146,7 +146,7 @@ function main(string... args) {
                 io:println("Object Size: " + s3Object.objectSize);
             }
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 
     io:println("-----------------Calling deleteObject() ------------------");
@@ -156,7 +156,7 @@ function main(string... args) {
             boolean status = objectStatus.success;
             io:println("Delete object status: " + status);
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 
     io:println("-----------------Calling deleteBucket() ------------------");
@@ -166,7 +166,7 @@ function main(string... args) {
             boolean status = bucketStatus.success;
             io:println("Delete bucket status: " + status);
         }
-        amazons3:AmazonS3Error e => io:println(e);
+        error e => io:println(e);
     }
 }
 ```

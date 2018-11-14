@@ -17,11 +17,10 @@
 import ballerina/io;
 import ballerina/http;
 
-function AmazonS3Connector::getBucketList() returns Bucket[]|AmazonS3Error {
+function AmazonS3Connector::getBucketList() returns Bucket[]|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint("");
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/";
     string host = AMAZON_AWS_HOST;
@@ -33,26 +32,20 @@ function AmazonS3Connector::getBucketList() returns Bucket[]|AmazonS3Error {
     var httpResponse = clientEndpoint->get("/", message = request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
             var amazonResponse = response.getXmlPayload();
             match amazonResponse {
                 error err => {
-                    amazonS3Error.message = err.message;
-                    amazonS3Error.cause = err.cause;
-                    return amazonS3Error;
+                    return err;
                 }
                 xml xmlResponse => {
                     if (statusCode == 200) {
                         return getBucketsList(xmlResponse);
                     } else {
-                        amazonS3Error.message = xmlResponse["Message"].getTextValue();
-                        amazonS3Error.statusCode = statusCode;
-                        return amazonS3Error;
+                        return setResponseError(statusCode, xmlResponse);
                     }
                 }
             }
@@ -60,11 +53,10 @@ function AmazonS3Connector::getBucketList() returns Bucket[]|AmazonS3Error {
     }
 }
 
-function AmazonS3Connector::createBucket(string bucketName) returns Status|AmazonS3Error {
+function AmazonS3Connector::createBucket(string bucketName) returns Status|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/";
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -76,9 +68,7 @@ function AmazonS3Connector::createBucket(string bucketName) returns Status|Amazo
     var httpResponse = clientEndpoint->put("/", request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
@@ -87,11 +77,10 @@ function AmazonS3Connector::createBucket(string bucketName) returns Status|Amazo
     }
 }
 
-function AmazonS3Connector::getAllObjects(string bucketName) returns S3Object[]|AmazonS3Error {
+function AmazonS3Connector::getAllObjects(string bucketName) returns S3Object[]|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/";
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -103,27 +92,21 @@ function AmazonS3Connector::getAllObjects(string bucketName) returns S3Object[]|
     var httpResponse = clientEndpoint->get("/", message = request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
             var amazonResponse = response.getXmlPayload();
             match amazonResponse {
                 error err => {
-                    amazonS3Error.message = err.message;
-                    amazonS3Error.cause = err.cause;
-                    return amazonS3Error;
+                    return err;
                 }
                 xml xmlResponse => {
                     if (statusCode == 200) {
                         return getS3ObjectsList(xmlResponse);
                     }
                     else{
-                        amazonS3Error.message = xmlResponse["Message"].getTextValue();
-                        amazonS3Error.statusCode = statusCode;
-                        return amazonS3Error;
+                        return setResponseError(statusCode, xmlResponse);
                     }
                 }
             }
@@ -131,11 +114,10 @@ function AmazonS3Connector::getAllObjects(string bucketName) returns S3Object[]|
     }
 }
 
-function AmazonS3Connector::getObject(string bucketName, string objectName) returns S3Object|AmazonS3Error {
+function AmazonS3Connector::getObject(string bucketName, string objectName) returns S3Object|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/" + objectName;
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -147,26 +129,23 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
     var httpResponse = clientEndpoint->get(requestURI, message = request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
             var amazonResponse = response.getPayloadAsString();
             match amazonResponse {
                 error err => {
-                    amazonS3Error.message = err.message;
-                    amazonS3Error.cause = err.cause;
-                    return amazonS3Error;
+                    return err;
                 }
                 string stringResponse => {
                     if (statusCode == 200) {
                         return getS3Object(stringResponse);
                     }
                     else{
-                        amazonS3Error.statusCode = statusCode;
-                        return amazonS3Error;
+                        error err = {};
+                        err.statusCode = statusCode;
+                        return err;
                     }
                 }
             }
@@ -174,11 +153,10 @@ function AmazonS3Connector::getObject(string bucketName, string objectName) retu
     }
 }
 
-function AmazonS3Connector::createObject(string bucketName, string objectName, string payload) returns Status|AmazonS3Error {
+function AmazonS3Connector::createObject(string bucketName, string objectName, string payload) returns Status|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/" + objectName;
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -190,9 +168,7 @@ function AmazonS3Connector::createObject(string bucketName, string objectName, s
     var httpResponse = clientEndpoint->put(requestURI, request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
@@ -201,11 +177,10 @@ function AmazonS3Connector::createObject(string bucketName, string objectName, s
     }
 }
 
-function AmazonS3Connector::deleteObject(string bucketName, string objectName) returns Status|AmazonS3Error {
+function AmazonS3Connector::deleteObject(string bucketName, string objectName) returns Status|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/" + objectName;
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -218,9 +193,7 @@ function AmazonS3Connector::deleteObject(string bucketName, string objectName) r
     var httpResponse = clientEndpoint->delete(requestURI, request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            amazonS3Error.cause = err.cause;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
@@ -229,11 +202,10 @@ function AmazonS3Connector::deleteObject(string bucketName, string objectName) r
     }
 }
 
-function AmazonS3Connector::deleteBucket(string bucketName) returns Status|AmazonS3Error {
+function AmazonS3Connector::deleteBucket(string bucketName) returns Status|error {
 
     endpoint http:Client clientEndpoint = getClientEndpoint(bucketName);
 
-    AmazonS3Error amazonS3Error = {};
     http:Request request = new;
     string requestURI = "/";
     string host = bucketName + "."+ AMAZON_AWS_HOST;
@@ -246,8 +218,7 @@ function AmazonS3Connector::deleteBucket(string bucketName) returns Status|Amazo
     var httpResponse = clientEndpoint->delete(requestURI, request);
     match httpResponse {
         error err => {
-            amazonS3Error.message = err.message;
-            return amazonS3Error;
+            return err;
         }
         http:Response response => {
             int statusCode = response.statusCode;
