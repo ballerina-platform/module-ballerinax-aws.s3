@@ -17,7 +17,7 @@
 import ballerina/io;
 
 function getBucketsList(xml response) returns Bucket[] {
-    Bucket[] buckets;
+    Bucket[] buckets = [];
     xml bucketsDetails = response["Buckets"];
     foreach i, b in bucketsDetails.*.elements(){
         xml bucketDetails = b.elements();
@@ -31,7 +31,7 @@ function getBucketsList(xml response) returns Bucket[] {
 }
 
 function getS3ObjectsList(xml response) returns S3Object[] {
-    S3Object[] s3Objects;
+    S3Object[] s3Objects = [];
     xml contents = response["Contents"];
 
     foreach i, c in contents {

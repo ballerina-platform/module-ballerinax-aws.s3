@@ -7,7 +7,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | -------------------- |
-| 0.983.0                    | 2006-03-01                  |
+| 0.985.0                    | 2006-03-01                  |
 
 
 The following sections provide you with information on how to use the Ballerina Amazon S3 connector.
@@ -34,7 +34,7 @@ import wso2/amazons3;
 In order for you to use the Amazon S3 Connector, first you need to create an AmazonS3 Client endpoint.
 
 ```ballerina
-endpoint amazons3:Client amazonS3Client {
+amazons3:Client amazonS3Client {
     accessKeyId:"",
     secretAccessKey:"",
     region:""
@@ -48,7 +48,7 @@ import ballerina/io;
 import wso2/amazons3;
 
 function main(string... args) {
-    endpoint amazons3:Client amazonS3Client {
+    amazons3:Client amazonS3Client {
         accessKeyId:"",
         secretAccessKey:"",
         region:""
@@ -56,14 +56,13 @@ function main(string... args) {
 
     string bucketName = "testBallerina";
     var createBucketResponse = amazonS3Client -> createBucket(bucketName);
-    match createBucketResponse {
-        amazons3:Status bucketStatus => {
-            //If successful, returns the status value as true.
-            boolean status = <string> bucketStatus.success;
-            io:println("Bucket Status: " + status);
-        }
+    if (createBucketResponse is amazons3:Status) {
+        //If successful, returns the status value as true.
+        boolean status = string.create(createBucketResponse.success);
+        io:println("Bucket Status: " + status);
+    } else {
         //Unsuccessful attempts return an AmazonS3 error.
-        error e => io:println(e);
+        io:println(createBucketResponse);
     }
 }
 ```
