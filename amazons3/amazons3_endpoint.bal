@@ -26,7 +26,7 @@ public type Client client object {
     public AmazonS3Connector amazonS3Connector;
 
     public function __init(AmazonS3Configuration amazonS3Config) {
-        self.amazonS3Connector = new(url, amazonS3Config);
+        self.amazonS3Connector = new(amazonS3Config);
     }
 
     # Retrieve the existing buckets.
@@ -82,8 +82,12 @@ public type Client client object {
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region
+# + amazonHost - The AWS host
+# + clientConfig - HTTP client config
 public type AmazonS3Configuration record {
     string accessKeyId = "";
     string secretAccessKey = "";
     string region = "";
+    string amazonHost = "";
+    http:ClientEndpointConfig clientConfig = {};
 };

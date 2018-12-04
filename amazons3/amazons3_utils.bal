@@ -109,7 +109,6 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     }
 
     canonicalRequest = canonicalRequest + requestPayload;
-
     //Start creating the string to sign
     stringToSign = stringToSign + AWS4_HMAC_SHA256;
     stringToSign = stringToSign + "\n";

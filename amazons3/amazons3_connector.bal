@@ -21,19 +21,25 @@ import ballerina/http;
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region
+# + amazonHost - The AWS Host
 # + amazonS3Client - HTTP Client endpoint
+# + baseURL - Base url
 public type AmazonS3Connector client object {
 
     public string accessKeyId;
     public string secretAccessKey;
     public string region;
+    public string amazonHost;
+    public string baseURL = "";
     public http:Client amazonS3Client;
-    public function __init(string url, AmazonS3Configuration amazonS3Config) {
-        self.amazonS3Client = new(url, config = amazonS3Config.clientConfig);
+    public function __init(AmazonS3Configuration amazonS3Config) {
+        self.amazonHost = amazonS3Config.amazonHost;
+        string baseURL = HTTPS + amazonS3Config.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
         self.region = amazonS3Config.region;
-    }
+        self.amazonS3Client = new(baseURL, config = amazonS3Config.clientConfig);
+}
 
     # Retrieve the existing buckets.
     # + return - If success, returns BucketList object, else returns error
@@ -74,9 +80,8 @@ remote function AmazonS3Connector.getBucketList() returns Bucket[]|error {
 
     http:Request request = new;
     string requestURI = "/";
-    string host = AMAZON_AWS_HOST;
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
@@ -104,14 +109,13 @@ remote function AmazonS3Connector.getBucketList() returns Bucket[]|error {
 remote function AmazonS3Connector.createBucket(string bucketName) returns Status|error {
 
     http:Request request = new;
-    string requestURI = "/";
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName + "/";
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->put("/", request);
+    var httpResponse = self.amazonS3Client->put(requestURI, request);
     if (httpResponse is http:Response) {
         int statusCode = httpResponse.statusCode;
         return getStatus(statusCode);
@@ -124,14 +128,13 @@ remote function AmazonS3Connector.createBucket(string bucketName) returns Status
 remote function AmazonS3Connector.getAllObjects(string bucketName) returns S3Object[]|error {
 
     http:Request request = new;
-    string requestURI = "/";
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName + "/";
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->get("/", message = request);
+    var httpResponse = self.amazonS3Client->get(requestURI, message = request);
     if (httpResponse is http:Response) {
         int statusCode = httpResponse.statusCode;
         var amazonResponse = httpResponse.getXmlPayload();
@@ -156,10 +159,9 @@ remote function AmazonS3Connector.getAllObjects(string bucketName) returns S3Obj
 remote function AmazonS3Connector.getObject(string bucketName, string objectName) returns S3Object|error {
 
     http:Request request = new;
-    string requestURI = "/" + objectName;
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName + "/" + objectName;
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
 
@@ -189,10 +191,9 @@ remote function AmazonS3Connector.getObject(string bucketName, string objectName
 remote function AmazonS3Connector.createObject(string bucketName, string objectName, string payload) returns Status|error {
 
     http:Request request = new;
-    string requestURI = "/" + objectName;
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName + "/" + objectName;
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     request.setTextPayload(payload);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
@@ -209,10 +210,9 @@ remote function AmazonS3Connector.createObject(string bucketName, string objectN
 remote function AmazonS3Connector.deleteObject(string bucketName, string objectName) returns Status|error {
 
     http:Request request = new;
-    string requestURI = "/" + objectName;
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName + "/" + objectName;
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
@@ -229,20 +229,15 @@ remote function AmazonS3Connector.deleteObject(string bucketName, string objectN
 
 remote function AmazonS3Connector.deleteBucket(string bucketName) returns Status|error {
 
-    http:Client clientEndpoint = self.amazonS3Client;
-    http:ClientEndpointConfig url = getClientEndpoint(bucketName);
-    clientEndpoint.init(clientConfig);
-
     http:Request request = new;
-    string requestURI = "/";
-    string host = bucketName + "."+ AMAZON_AWS_HOST;
+    string requestURI = "/" + bucketName;
 
-    request.setHeader(HOST, host);
+    request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
 
-    var httpResponse = clientEndpoint->delete(requestURI, request);
+    var httpResponse = self.amazonS3Client->delete(requestURI, request);
     if (httpResponse is http:Response) {
         int statusCode = httpResponse.statusCode;
         return getStatus(statusCode);
@@ -250,14 +245,4 @@ remote function AmazonS3Connector.deleteBucket(string bucketName) returns Status
         error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
         return err;
     }
-}
-
-function getClientEndpoint(string bucketName) returns http:ClientEndpointConfig{
-    http:ClientEndpointConfig clientConfig = {};
-    if (bucketName != "" ){
-        clientConfig.url = HTTPS + bucketName + "." + AMAZON_AWS_HOST;
-    } else {
-        clientConfig.url = HTTPS + AMAZON_AWS_HOST;
-    }
-    return clientConfig;
 }
