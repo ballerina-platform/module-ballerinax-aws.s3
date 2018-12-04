@@ -7,7 +7,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | -------------------- |
-| 0.985.0                    | 2006-03-01                  |
+| 0.990.0                    | 2006-03-01                  |
 
 
 The following sections provide you with information on how to use the Ballerina Amazon S3 connector.
@@ -47,12 +47,15 @@ amazons3:Client amazonS3Client {
 import ballerina/io;
 import wso2/amazons3;
 
-function main(string... args) {
-    amazons3:Client amazonS3Client {
+amazons3:AmazonS3Configuration amazonS3Config = {
         accessKeyId:"",
         secretAccessKey:"",
         region:""
-    };
+};
+
+amazons3:Client amazonS3Client = new(amazonS3Config);
+
+function main(string... args) {
 
     string bucketName = "testBallerina";
     var createBucketResponse = amazonS3Client -> createBucket(bucketName);
