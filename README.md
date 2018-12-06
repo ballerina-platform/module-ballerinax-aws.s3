@@ -50,10 +50,10 @@ import wso2/amazons3;
 
 public function main() {
     AmazonS3Configuration amazonS3Config = {
-    accessKeyId: testAccessKeyId,
-    secretAccessKey: testSecretAccessKey,
-    region: testRegion,
-    amazonHost: amazonHost
+        accessKeyId: testAccessKeyId,
+        secretAccessKey: testSecretAccessKey,
+        region: testRegion,
+        amazonHost: amazonHost
     };
     
     amazons3:Client amazonS3Client = new(amazonS3Config);

@@ -50,7 +50,7 @@ AmazonS3Configuration amazonS3Config = {
     secretAccessKey: testSecretAccessKey,
     region: testRegion,
     amazonHost: amazonHost
-    };
+};
 amazons3:Client amazonS3Client = new(amazonS3Config);
 ```
 
@@ -87,10 +87,10 @@ import wso2/amazons3;
 
 public function main() {
     AmazonS3Configuration amazonS3Config = {
-    accessKeyId: "<your_access_key_id>",
-    secretAccessKey: "<your_secret_access_key>",
-    region: "<your_region>",
-    amazonHost: "<your_host_name>"
+        accessKeyId: "<your_access_key_id>",
+        secretAccessKey: "<your_secret_access_key>",
+        region: "<your_region>",
+        amazonHost: "<your_host_name>"
     };
     amazons3:Client amazonS3Client = new(amazonS3Config);
 
@@ -109,7 +109,7 @@ public function main() {
     var getBucketListResponse = amazonS3Client -> getBucketList();
     if (getBucketListResponse is amazons3:Bucket[]) {
         io:println("Listing all buckets: ");
-        foreach bucket in getBucketListResponse {
+        foreach var bucket in getBucketListResponse {
            io:println("Bucket Name: " + bucket.name);
         }
     } else {
@@ -139,7 +139,7 @@ public function main() {
     var getAllObjectsResponse = amazonS3Client -> getAllObjects(bucketName);
     if (getAllObjectsResponse is amazons3:S3Object[]) {
         io:println("Listing all object: ");
-        foreach s3Object in getAllObjectsResponse {
+        foreach var s3Object in getAllObjectsResponse {
             io:println("---------------------------------");
             io:println("Object Name: " + s3Object.objectName);
             io:println("Object Size: " + s3Object.objectSize);

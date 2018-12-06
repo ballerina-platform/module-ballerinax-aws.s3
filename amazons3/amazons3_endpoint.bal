@@ -80,7 +80,6 @@ public type Client client object {
     remote function deleteBucket(string bucketName) returns Status|error;
 };
 
-
 remote function Client.getBucketList() returns Bucket[]|error {
 
     http:Request request = new;
@@ -146,8 +145,7 @@ remote function Client.getAllObjects(string bucketName) returns S3Object[]|error
         if (amazonResponse is xml) {
             if (statusCode == 200) {
                 return getS3ObjectsList(amazonResponse);
-            }
-            else{
+            } else{
                 return setResponseError(statusCode, amazonResponse);
             }
         } else {
@@ -177,15 +175,14 @@ remote function Client.getObject(string bucketName, string objectName) returns S
         if (amazonResponse is string) {
             if (statusCode == 200) {
                 return getS3Object(amazonResponse);
-            }
-            else{
+            } else{
                 error err = error(<string>statusCode, { message : "Error occurred while getting the amazonS3 object." });
                 return err;
             }
         } else {
-        error err = error(AMAZONS3_ERROR_CODE, { message : "Error occurred while accessing the string payload
-                        of the response." });
-        return err;
+            error err = error(AMAZONS3_ERROR_CODE, { message : "Error occurred while accessing the string payload
+                            of the response." });
+            return err;
         }
     } else {
         error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
