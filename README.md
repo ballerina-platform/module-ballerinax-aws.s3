@@ -55,8 +55,8 @@ public function main() {
     region: testRegion,
     amazonHost: amazonHost
     };
-
-    Client amazonS3Client = new(amazonS3Config);
+    
+    amazons3:Client amazonS3Client = new(amazonS3Config);
 
     string bucketName = "testBallerina";
     var createBucketResponse = amazonS3Client->createBucket(bucketName);

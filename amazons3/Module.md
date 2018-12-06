@@ -51,8 +51,7 @@ AmazonS3Configuration amazonS3Config = {
     region: testRegion,
     amazonHost: amazonHost
     };
-
-    Client amazonS3Client = new(amazonS3Config);
+amazons3:Client amazonS3Client = new(amazonS3Config);
 ```
 
 The `createBucket` function creates a bucket.   
@@ -87,19 +86,13 @@ import ballerina/io;
 import wso2/amazons3;
 
 public function main() {
-    amazons3:Client amazonS3Client {
-        accessKeyId:"<your_access_key_id>",
-        secretAccessKey:"<your_secret_access_key>",
-        region:"<your_region>"
-    };
     AmazonS3Configuration amazonS3Config = {
     accessKeyId: "<your_access_key_id>",
     secretAccessKey: "<your_secret_access_key>",
     region: "<your_region>",
     amazonHost: "<your_host_name>"
     };
-
-    Client amazonS3Client = new(amazonS3Config);
+    amazons3:Client amazonS3Client = new(amazonS3Config);
 
     string bucketName = "testBallerina";
     io:println("-----------------Calling createBucket() ------------------");
