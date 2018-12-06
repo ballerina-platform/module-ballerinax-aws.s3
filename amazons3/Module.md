@@ -20,7 +20,7 @@ The `wso2/amazons3` module contains operations that create an object, delete an 
 |                    |    Version     |  
 |:------------------:|:--------------:|
 | Ballerina Language |   0.990.0      |
-| Amazon S3 API        |   2006-03-01     |
+| Amazon S3 API      |   2006-03-01   |
 
 
 ## Sample
@@ -45,13 +45,13 @@ and bucketName in the Amazon S3 client config.
 
 You can now enter the credentials in the Amazon S3 client config:
 ```ballerina
-amazons3:AmazonS3Configuration amazonS3Config = {
-        accessKeyId:"",
-        secretAccessKey:"",
-        region:""
-};
+AmazonS3Configuration amazonS3Config = {
+    accessKeyId: testAccessKeyId,
+    secretAccessKey: testSecretAccessKey,
+    region: testRegion,
+    amazonHost: amazonHost
+    };
 amazons3:Client amazonS3Client = new(amazonS3Config);
-
 ```
 
 The `createBucket` function creates a bucket.   
@@ -85,15 +85,14 @@ if (getBucketListResponse is amazons3:Bucket[]) {
 import ballerina/io;
 import wso2/amazons3;
 
-amazons3:AmazonS3Configuration amazonS3Config = {
-        accessKeyId:"<your_access_key_id>",
-        secretAccessKey:"<your_secret_access_key>",
-        region:"<your_region>"
-};
-
-amazons3:Client amazonS3Client = new(amazonS3Config);
-
-function main(string... args) {
+public function main() {
+    AmazonS3Configuration amazonS3Config = {
+    accessKeyId: "<your_access_key_id>",
+    secretAccessKey: "<your_secret_access_key>",
+    region: "<your_region>",
+    amazonHost: "<your_host_name>"
+    };
+    amazons3:Client amazonS3Client = new(amazonS3Config);
 
     string bucketName = "testBallerina";
     io:println("-----------------Calling createBucket() ------------------");
