@@ -25,21 +25,21 @@ import ballerina/system;
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload) {
 
-    string canonicalRequest;
-    string canonicalQueryString;
-    string stringToSign;
-    string payloadBuilder;
-    string authHeader;
-    string amzDate;
-    string shortDate;
-    string signedHeader;
-    string canonicalHeaders;
-    string signedHeaders;
-    string requestPayload;
-    string signingKey;
-    string encodedrequestURIValue;
-    string signValue;
-    string encodedSignValue;
+    string canonicalRequest = "";
+    string canonicalQueryString = "";
+    string stringToSign = "";
+    string payloadBuilder = "";
+    string authHeader = "";
+    string amzDate = "";
+    string shortDate = "";
+    string signedHeader = "";
+    string canonicalHeaders = "";
+    string signedHeaders = "";
+    string requestPayload = "";
+    string signingKey = "";
+    string encodedrequestURIValue = "";
+    string signValue = "";
+    string encodedSignValue = "";
 
     time:Time time = time:currentTime().toTimezone("GMT");
     amzDate = time.format(ISO8601_BASIC_DATE_FORMAT);
@@ -47,7 +47,13 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     request.setHeader(X_AMZ_DATE, amzDate);
     canonicalRequest = httpVerb;
     canonicalRequest = canonicalRequest + "\n";
-    encodedrequestURIValue = check http:encode(requestURI, UTF_8);
+    var value = http:encode(requestURI, UTF_8);
+    if (value is string) {
+        encodedrequestURIValue = value;
+    } else {
+        error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
+        panic err;
+    }
     canonicalRequest = canonicalRequest + encodedrequestURIValue.replace("%2F", "/");
     canonicalRequest = canonicalRequest + "\n";
     canonicalQueryString = "";
@@ -103,7 +109,6 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     }
 
     canonicalRequest = canonicalRequest + requestPayload;
-
     //Start creating the string to sign
     stringToSign = stringToSign + AWS4_HMAC_SHA256;
     stringToSign = stringToSign + "\n";
@@ -120,7 +125,13 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     stringToSign = stringToSign + crypto:hash(canonicalRequest, crypto:SHA256).toLower();
 
     signValue = (AWS4 + secretAccessKey);
-    encodedSignValue = check signValue.base64Encode();
+    var result = signValue.base64Encode();
+    if (result is string) {
+        encodedSignValue = result;
+    } else {
+        error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
+        panic err;
+    }
     signingKey = crypto:hmac(TERMINATION_STRING, crypto:hmac(SERVICE_NAME, crypto:hmac(region, crypto:hmac(shortDate,
                     encodedSignValue, keyEncoding = "BASE64", crypto:SHA256).base16ToBase64Encode(),
                 keyEncoding = "BASE64", crypto:SHA256).base16ToBase64Encode(), keyEncoding = "BASE64",
@@ -152,8 +163,6 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 }
 
 function setResponseError(int statusCode, xml xmlResponse) returns error {
-    error err = {};
-    err.message = xmlResponse["Message"].getTextValue();
-    err.statusCode = statusCode;
+    error err = error(AMAZONS3_ERROR_CODE, {message : xmlResponse["Message"].getTextValue() });
     return err;
 }

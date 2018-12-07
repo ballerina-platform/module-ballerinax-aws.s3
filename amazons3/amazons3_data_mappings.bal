@@ -17,34 +17,40 @@
 import ballerina/io;
 
 function getBucketsList(xml response) returns Bucket[] {
-    Bucket[] buckets;
+    Bucket[] buckets = [];
     xml bucketsDetails = response["Buckets"];
-    foreach i, b in bucketsDetails.*.elements(){
-        xml bucketDetails = b.elements();
-        Bucket bucket = {};
-        bucket.name = bucketDetails["Name"].getTextValue();
-        bucket.creationDate = bucketDetails["CreationDate"].getTextValue();
-        buckets[i]= bucket;
-
+    int i = 0;
+    foreach var b in bucketsDetails.*.elements() {
+        if (b is xml) {
+            xml bucketDetails = b.elements();
+            Bucket bucket = {};
+            bucket.name = bucketDetails["Name"].getTextValue();
+            bucket.creationDate = bucketDetails["CreationDate"].getTextValue();
+            buckets[i]= bucket;
+        }
+        i = i + 1;
     }
     return buckets;
 }
 
 function getS3ObjectsList(xml response) returns S3Object[] {
-    S3Object[] s3Objects;
+    S3Object[] s3Objects = [];
     xml contents = response["Contents"];
-
-    foreach i, c in contents {
-        xml content = c.elements();
-        S3Object s3Object = {};
-        s3Object.objectName = content["Key"].getTextValue();
-        s3Object.lastModified = content["LastModified"].getTextValue();
-        s3Object.eTag = content["ETag"].getTextValue();
-        s3Object.objectSize = content["Size"].getTextValue();
-        s3Object.ownerId = content["Owner"]["ID"].getTextValue();
-        s3Object.ownerDisplayName = content["Owner"]["DisplayName"].getTextValue();
-        s3Object.storageClass = content["StorageClass"].getTextValue();
-        s3Objects[i] = s3Object;
+    int i = 0;
+    foreach var c in contents {
+        if (c is xml) {
+            xml content = c.elements();
+            S3Object s3Object = {};
+            s3Object.objectName = content["Key"].getTextValue();
+            s3Object.lastModified = content["LastModified"].getTextValue();
+            s3Object.eTag = content["ETag"].getTextValue();
+            s3Object.objectSize = content["Size"].getTextValue();
+            s3Object.ownerId = content["Owner"]["ID"].getTextValue();
+            s3Object.ownerDisplayName = content["Owner"]["DisplayName"].getTextValue();
+            s3Object.storageClass = content["StorageClass"].getTextValue();
+            s3Objects[i] = s3Object;
+        }
+        i = i + 1;
     }
     return s3Objects;
 }

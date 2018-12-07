@@ -19,8 +19,8 @@ The `wso2/amazons3` module contains operations that create an object, delete an 
 ## Compatibility
 |                    |    Version     |  
 |:------------------:|:--------------:|
-| Ballerina Language |   0.983.0      |
-| Amazon S3 API        |   2006-03-01     |
+| Ballerina Language |   0.990.0      |
+| Amazon S3 API      |   2006-03-01   |
 
 
 ## Sample
@@ -45,38 +45,39 @@ and bucketName in the Amazon S3 client config.
 
 You can now enter the credentials in the Amazon S3 client config:
 ```ballerina
-endpoint amazons3:Client amazonS3Client {
-    accessKeyId:"<your_access_key_id>",
-    secretAccessKey:"<your_secret_access_key>",
-    region:"<your_region>"
+AmazonS3Configuration amazonS3Config = {
+    accessKeyId: testAccessKeyId,
+    secretAccessKey: testSecretAccessKey,
+    region: testRegion,
+    amazonHost: amazonHost
 };
+amazons3:Client amazonS3Client = new(amazonS3Config);
 ```
 
 The `createBucket` function creates a bucket.   
-If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`. The `match` operation can be used to handle the response if an error occurs.
+If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`. 
 
 ```ballerina
 var createBucketResponse = amazonS3Client -> createBucket(bucketName);
-match createBucketResponse {
-    amazons3:Status bucketStatus => {
-        //If successful, returns the status value as true.
-        boolean status = <string> bucketStatus.success;
-        io:println("Bucket Status: " + status);
-    }
+if (createBucketResponse is amazons3:Status) {
+    //If successful, returns the status value as true.
+    boolean status = string.create(createBucketResponse.success);
+    io:println("Bucket Status: " + status);
+} else {
     //Unsuccessful attempts return an AmazonS3 error.
-    error e => io:println(e);
+    io:println(createBucketResponse);
 }
+
 ```
 
 The `getBucketList` function retrives the existing buckets. It returns a `Bucket[]` object if successful or `error` if unsuccessful.
 
 ```ballerina
 var getBucketListResponse = amazonS3ClientForGetBucketList -> getBucketList();
-match getBucketListResponse {
-    amazons3:Bucket[] buckets => {
-        io:println("Name of the first bucket: " + buckets[0].name);
-    }
-    error e => io:println(e);
+if (getBucketListResponse is amazons3:Bucket[]) {
+    io:println("Name of the first bucket: " + getBucketListResponse[0].name);
+} else {
+    io:println(getBucketListResponse);
 }
 ```
 ## Example
@@ -84,89 +85,85 @@ match getBucketListResponse {
 import ballerina/io;
 import wso2/amazons3;
 
-function main(string... args) {
-    endpoint amazons3:Client amazonS3Client {
-        accessKeyId:"<your_access_key_id>",
-        secretAccessKey:"<your_secret_access_key>",
-        region:"<your_region>"
+public function main() {
+    AmazonS3Configuration amazonS3Config = {
+        accessKeyId: "<your_access_key_id>",
+        secretAccessKey: "<your_secret_access_key>",
+        region: "<your_region>",
+        amazonHost: "<your_host_name>"
     };
+    amazons3:Client amazonS3Client = new(amazonS3Config);
 
     string bucketName = "testBallerina";
     io:println("-----------------Calling createBucket() ------------------");
-    var createBucketResponse = amazonS3Client -> createBucket(bucketName);
-    match createBucketResponse {
-        amazons3:Status bucketStatus => {
-            boolean status = bucketStatus.success;
-            io:println("Create bucket status: " + status);
-        }
-        error e => io:println(e);
+    if (createBucketResponse is amazons3:Status) {
+        //If successful, returns the status value as true.
+        boolean status = string.create(createBucketResponse.success);
+        io:println("Bucket Status: " + status);
+    } else {
+        //Unsuccessful attempts return an AmazonS3 error.
+        io:println(createBucketResponse);
     }
 
     io:println("-----------------Calling getBucketList() ------------------");
     var getBucketListResponse = amazonS3Client -> getBucketList();
-    match getBucketListResponse {
-        amazons3:Bucket[] buckets => {
-            io:println("Listing all buckets: ");
-            foreach bucket in buckets {
-                io:println("Bucket Name: " + bucket.name);
-            }
+    if (getBucketListResponse is amazons3:Bucket[]) {
+        io:println("Listing all buckets: ");
+        foreach var bucket in getBucketListResponse {
+           io:println("Bucket Name: " + bucket.name);
         }
-        error e => io:println(e);
+    } else {
+        io:println(getBucketListResponse);
     }
 
     io:println("-----------------Calling createObject() ------------------");
     var createObjectResponse = amazonS3Client -> createObject(bucketName, "test.txt","Sample content");
-    match createObjectResponse {
-        amazons3:Status objectStatus => {
-            boolean status = objectStatus.success;
-            io:println("Create object status: " + status);
-        }
-        error e => io:println(e);
+    if (createObjectResponse is amazons3:Status) {
+        boolean status = createObjectResponse.success;
+        io:println("Create object status: " + status);
+    } else {
+        io:println(createObjectResponse);
     }
 
    io:println("-----------------Calling getObject() ------------------");
    var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
-   match getObjectResponse {
-       amazons3:S3Object s3Object => {
-           io:println(s3Object);
-           string content = s3Object.content;
-           io:println("Object content: " + content);
-       }
-       error e => io:println(e);
+   if (getObjectResponse is amazons3:S3Object) {
+       io:println(getObjectResponse);
+       string content = getObjectResponse.content;
+       io:println("Object content: " + content);
+   } else {
+       io:println(getObjectResponse);
    }
 
     io:println("-----------------Calling getAllObjects() ------------------");
     var getAllObjectsResponse = amazonS3Client -> getAllObjects(bucketName);
-    match getAllObjectsResponse {
-        amazons3:S3Object[] s3Objects => {
-            io:println("Listing all object: ");
-            foreach s3Object in s3Objects {
-                io:println("---------------------------------");
-                io:println("Object Name: " + s3Object.objectName);
-                io:println("Object Size: " + s3Object.objectSize);
-            }
+    if (getAllObjectsResponse is amazons3:S3Object[]) {
+        io:println("Listing all object: ");
+        foreach var s3Object in getAllObjectsResponse {
+            io:println("---------------------------------");
+            io:println("Object Name: " + s3Object.objectName);
+            io:println("Object Size: " + s3Object.objectSize);
         }
-        error e => io:println(e);
+    } else {
+        io:println(getAllObjectsResponse);
     }
 
     io:println("-----------------Calling deleteObject() ------------------");
     var deleteObjectResponse = amazonS3Client -> deleteObject(bucketName, "test.txt");
-    match deleteObjectResponse {
-        amazons3:Status objectStatus => {
-            boolean status = objectStatus.success;
-            io:println("Delete object status: " + status);
-        }
-        error e => io:println(e);
+    if (deleteObjectResponse is amazons3:Status) {
+        boolean status = deleteObjectResponse.success;
+        io:println("Delete object status: " + status);
+    } else {
+        io:println(deleteObjectResponse);
     }
 
     io:println("-----------------Calling deleteBucket() ------------------");
     var deleteBucketResponse = amazonS3Client -> deleteBucket(bucketName);
-    match deleteBucketResponse {
-        amazons3:Status bucketStatus => {
-            boolean status = bucketStatus.success;
-            io:println("Delete bucket status: " + status);
-        }
-        error e => io:println(e);
+    if (deleteBucketResponse is amazons3:Status) {
+        boolean status = deleteBucketResponse.success;
+        io:println("Delete bucket status: " + status);
+    } else {
+        io:println(deleteBucketResponse);
     }
 }
 ```
