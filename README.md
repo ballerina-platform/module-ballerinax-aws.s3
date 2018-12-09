@@ -34,7 +34,7 @@ import wso2/amazons3;
 In order for you to use the Amazon S3 Connector, first you need to create an AmazonS3 Client endpoint.
 
 ```ballerina
-AmazonS3Configuration amazonS3Config = {
+amazons3:AmazonS3Configuration amazonS3Config = {
     accessKeyId: testAccessKeyId,
     secretAccessKey: testSecretAccessKey,
     region: testRegion,
@@ -49,7 +49,7 @@ import ballerina/io;
 import wso2/amazons3;
 
 public function main() {
-    AmazonS3Configuration amazonS3Config = {
+    amazons3:AmazonS3Configuration amazonS3Config = {
         accessKeyId: testAccessKeyId,
         secretAccessKey: testSecretAccessKey,
         region: testRegion,

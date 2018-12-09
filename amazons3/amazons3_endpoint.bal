@@ -47,37 +47,37 @@ public type Client client object {
 
     # Retrieve the existing buckets.
     # + return - If success, returns BucketList object, else returns error
-    remote function getBucketList() returns Bucket[]|error;
+    public remote function getBucketList() returns Bucket[]|error;
 
     # Create a bucket.
     # + return - If success, returns Status object, else returns error
-    remote function createBucket(string bucketName) returns Status|error;
+    public remote function createBucket(string bucketName) returns Status|error;
 
     # Retrieve the existing objects in a given bucket.
     # + bucketName - The name of the bucket
     # + return - If success, returns S3Object[] object, else returns error
-    remote function getAllObjects(string bucketName) returns S3Object[]|error;
+    public remote function getAllObjects(string bucketName) returns S3Object[]|error;
 
     # Retrieves objects from Amazon S3.
     # + bucketName - The name of the bucket
     # + objectName - The name of the object
     # + return - If success, returns S3ObjectContent object, else returns error
-    remote function getObject(string bucketName, string objectName) returns S3Object|error;
+    public remote function getObject(string bucketName, string objectName) returns S3Object|error;
 
     # Create an object.
     # + objectName - The name of the object
     # + payload - The file that needed to be added to the bucket
     # + return - If success, returns Status object, else returns error
-    remote function createObject(string bucketName, string objectName, string payload) returns Status|error;
+    public remote function createObject(string bucketName, string objectName, string payload) returns Status|error;
 
     # Delete an object.
     # + objectName - The name of the object
     # + return - If success, returns Status object, else returns error
-    remote function deleteObject(string bucketName, string objectName) returns Status|error;
+    public remote function deleteObject(string bucketName, string objectName) returns Status|error;
 
     # Delete a bucket.
     # + return - If success, returns Status object, else returns error
-    remote function deleteBucket(string bucketName) returns Status|error;
+    public remote function deleteBucket(string bucketName) returns Status|error;
 };
 
 remote function Client.getBucketList() returns Bucket[]|error {
