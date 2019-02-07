@@ -80,7 +80,7 @@ public type Client client object {
     public remote function deleteBucket(string bucketName) returns Status|error;
 };
 
-remote function Client.getBucketList() returns Bucket[]|error {
+public remote function Client.getBucketList() returns Bucket[]|error {
 
     http:Request request = new;
     string requestURI = "/";
@@ -110,7 +110,7 @@ remote function Client.getBucketList() returns Bucket[]|error {
     }
 }
 
-remote function Client.createBucket(string bucketName) returns Status|error {
+public remote function Client.createBucket(string bucketName) returns Status|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName + "/";
@@ -129,7 +129,7 @@ remote function Client.createBucket(string bucketName) returns Status|error {
     }
 }
 
-remote function Client.getAllObjects(string bucketName) returns S3Object[]|error {
+public remote function Client.getAllObjects(string bucketName) returns S3Object[]|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName + "/";
@@ -159,7 +159,7 @@ remote function Client.getAllObjects(string bucketName) returns S3Object[]|error
     }
 }
 
-remote function Client.getObject(string bucketName, string objectName) returns S3Object|error {
+public remote function Client.getObject(string bucketName, string objectName) returns S3Object|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName + "/" + objectName;
@@ -190,7 +190,7 @@ remote function Client.getObject(string bucketName, string objectName) returns S
     }
 }
 
-remote function Client.createObject(string bucketName, string objectName, string payload) returns Status|error {
+public remote function Client.createObject(string bucketName, string objectName, string payload) returns Status|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName + "/" + objectName;
@@ -209,7 +209,7 @@ remote function Client.createObject(string bucketName, string objectName, string
     }
 }
 
-remote function Client.deleteObject(string bucketName, string objectName) returns Status|error {
+public remote function Client.deleteObject(string bucketName, string objectName) returns Status|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName + "/" + objectName;
@@ -229,7 +229,7 @@ remote function Client.deleteObject(string bucketName, string objectName) return
     }
 }
 
-remote function Client.deleteBucket(string bucketName) returns Status|error {
+public remote function Client.deleteBucket(string bucketName) returns Status|error {
 
     http:Request request = new;
     string requestURI = "/" + bucketName;
