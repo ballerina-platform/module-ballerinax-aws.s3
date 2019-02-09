@@ -60,12 +60,12 @@ If the creation was successful, the response from the `createBucket` function is
 ```ballerina
 var createBucketResponse = amazonS3Client->createBucket(bucketName);
 if (createBucketResponse is amazons3:Status) {
-    //If successful, returns the status value as true.
+    // If successful, prints the status value as true.
     boolean status = string.create(createBucketResponse.success);
     io:println("Bucket Status: " + status);
 } else {
-    //Unsuccessful attempts return an AmazonS3 error.
-    io:println(createBucketResponse);
+    // If unsuccessful, print the error returned.
+    io:println("Error: ", createBucketResponse);
 }
 
 ```
@@ -77,7 +77,7 @@ var getBucketListResponse = amazonS3ClientForGetBucketList->getBucketList();
 if (getBucketListResponse is amazons3:Bucket[]) {
     io:println("Name of the first bucket: " + getBucketListResponse[0].name);
 } else {
-    io:println(getBucketListResponse);
+    io:println("Error: ", getBucketListResponse);
 }
 ```
 ## Example
@@ -85,24 +85,26 @@ if (getBucketListResponse is amazons3:Bucket[]) {
 import ballerina/io;
 import wso2/amazons3;
 
-public function main() {
-    amazons3:AmazonS3Configuration amazonS3Config = {
-        accessKeyId: "<your_access_key_id>",
-        secretAccessKey: "<your_secret_access_key>",
-        region: "<your_region>",
-        amazonHost: "<your_host_name>"
-    };
-    amazons3:Client amazonS3Client = new(amazonS3Config);
+amazons3:AmazonS3Configuration amazonS3Config = {
+    accessKeyId: "<your_access_key_id>",
+    secretAccessKey: "<your_secret_access_key>",
+    region: "<your_region>",
+    amazonHost: "<your_host_name>"
+};
 
+amazons3:Client amazonS3Client = new(amazonS3Config);
+
+public function main(string... args) {
     string bucketName = "testBallerina";
     io:println("-----------------Calling createBucket() ------------------");
+    var createBucketResponse = amazonS3Client->createBucket(bucketName);
     if (createBucketResponse is amazons3:Status) {
-        //If successful, returns the status value as true.
-        boolean status = string.create(createBucketResponse.success);
+        // If successful, prints the status value as true.
+        boolean status = createBucketResponse.success;
         io:println("Bucket Status: " + status);
     } else {
-        //Unsuccessful attempts return an AmazonS3 error.
-        io:println(createBucketResponse);
+        // If unsuccessful, print the error returned.
+        io:println("Error: ", createBucketResponse);
     }
 
     io:println("-----------------Calling getBucketList() ------------------");
@@ -110,42 +112,42 @@ public function main() {
     if (getBucketListResponse is amazons3:Bucket[]) {
         io:println("Listing all buckets: ");
         foreach var bucket in getBucketListResponse {
-           io:println("Bucket Name: " + bucket.name);
+            io:println("Bucket Name: " + bucket.name);
         }
     } else {
-        io:println(getBucketListResponse);
+        io:println("Error: ", getBucketListResponse);
     }
 
     io:println("-----------------Calling createObject() ------------------");
-    var createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt","Sample content");
+    var createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
     if (createObjectResponse is amazons3:Status) {
         boolean status = createObjectResponse.success;
         io:println("Create object status: " + status);
     } else {
-        io:println(createObjectResponse);
+        io:println("Error: ", createObjectResponse);
     }
 
-   io:println("-----------------Calling getObject() ------------------");
-   var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
-   if (getObjectResponse is amazons3:S3Object) {
-       io:println(getObjectResponse);
-       string content = getObjectResponse.content;
-       io:println("Object content: " + content);
-   } else {
-       io:println(getObjectResponse);
-   }
+    io:println("-----------------Calling getObject() ------------------");
+    var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
+    if (getObjectResponse is amazons3:S3Object) {
+        io:println(getObjectResponse);
+        string content = getObjectResponse.content;
+        io:println("Object content: " + content);
+    } else {
+        io:println("Error: ", getObjectResponse);
+    }
 
     io:println("-----------------Calling getAllObjects() ------------------");
     var getAllObjectsResponse = amazonS3Client->getAllObjects(bucketName);
     if (getAllObjectsResponse is amazons3:S3Object[]) {
         io:println("Listing all object: ");
         foreach var s3Object in getAllObjectsResponse {
-            io:println("---------------------------------");
-            io:println("Object Name: " + s3Object.objectName);
-            io:println("Object Size: " + s3Object.objectSize);
+        io:println("---------------------------------");
+        io:println("Object Name: " + s3Object.objectName);
+        io:println("Object Size: " + s3Object.objectSize);
         }
     } else {
-        io:println(getAllObjectsResponse);
+        io:println("Error: ", getAllObjectsResponse);
     }
 
     io:println("-----------------Calling deleteObject() ------------------");
@@ -154,7 +156,7 @@ public function main() {
         boolean status = deleteObjectResponse.success;
         io:println("Delete object status: " + status);
     } else {
-        io:println(deleteObjectResponse);
+        io:println("Error: ", deleteObjectResponse);
     }
 
     io:println("-----------------Calling deleteBucket() ------------------");
@@ -163,7 +165,7 @@ public function main() {
         boolean status = deleteBucketResponse.success;
         io:println("Delete bucket status: " + status);
     } else {
-        io:println(deleteBucketResponse);
+        io:println("Error: ", deleteBucketResponse);
     }
 }
 ```
