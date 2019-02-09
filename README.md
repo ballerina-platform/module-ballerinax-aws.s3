@@ -64,7 +64,7 @@ public function main(string... args) {
     string bucketName = "testBallerina";
     var createBucketResponse = amazonS3Client->createBucket(bucketName);
     if (createBucketResponse is amazons3:Status) {
-        // If successful, prints the status value as true.
+        // If successful, prints the status of the operation.
         boolean status = createBucketResponse.success;
         io:println("Bucket Status: " + status);
     } else {

@@ -54,13 +54,13 @@ amazons3:AmazonS3Configuration amazonS3Config = {
 amazons3:Client amazonS3Client = new(amazonS3Config);
 ```
 
-The `createBucket` function creates a bucket.   
-If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`. 
+The `createBucket` remote function creates a bucket.
+If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`.
 
 ```ballerina
 var createBucketResponse = amazonS3Client->createBucket(bucketName);
 if (createBucketResponse is amazons3:Status) {
-    // If successful, prints the status value as true.
+    // If successful, prints the status of the operation.
     boolean status = string.create(createBucketResponse.success);
     io:println("Bucket Status: " + status);
 } else {
@@ -70,7 +70,7 @@ if (createBucketResponse is amazons3:Status) {
 
 ```
 
-The `getBucketList` function retrives the existing buckets. It returns a `Bucket[]` object if successful or `error` if unsuccessful.
+The `getBucketList` remote function retrives the existing buckets. It returns a `Bucket[]` object if successful or `error` if unsuccessful.
 
 ```ballerina
 var getBucketListResponse = amazonS3ClientForGetBucketList->getBucketList();
