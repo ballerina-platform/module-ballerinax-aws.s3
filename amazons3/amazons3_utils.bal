@@ -16,12 +16,12 @@
 // under the License.
 //
 
-import ballerina/io;
-import ballerina/time;
-import ballerina/http;
 import ballerina/crypto;
-import ballerina/system;
 import ballerina/encoding;
+import ballerina/http;
+import ballerina/io;
+import ballerina/system;
+import ballerina/time;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload) {
@@ -105,7 +105,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     if (payloadBuilder == UNSIGNED_PAYLOAD) {
         requestPayload = payloadBuilder;
     } else {
-        requestPayload = encoding:byteArrayToString(crypto:hashSha256(payloadBuilder.toByteArray(UTF_8))).toLower();
+        requestPayload = encoding:encodeHex(crypto:hashSha256(payloadBuilder.toByteArray(UTF_8))).toLower();
     }
 
     canonicalRequest = canonicalRequest + requestPayload;

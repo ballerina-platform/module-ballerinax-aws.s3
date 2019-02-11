@@ -112,7 +112,7 @@ public function main(string... args) {
     if (getBucketListResponse is amazons3:Bucket[]) {
         io:println("Listing all buckets: ");
         foreach var bucket in getBucketListResponse {
-            io:println("Bucket Name: " + bucket.name);
+            io:println("Bucket Name: ", bucket.name);
         }
     } else {
         io:println("Error: ", getBucketListResponse);
@@ -132,7 +132,7 @@ public function main(string... args) {
     if (getObjectResponse is amazons3:S3Object) {
         io:println(getObjectResponse);
         string content = getObjectResponse.content;
-        io:println("Object content: " + content);
+        io:println("Object content: ", content);
     } else {
         io:println("Error: ", getObjectResponse);
     }
@@ -143,8 +143,8 @@ public function main(string... args) {
         io:println("Listing all object: ");
         foreach var s3Object in getAllObjectsResponse {
         io:println("---------------------------------");
-        io:println("Object Name: " + s3Object.objectName);
-        io:println("Object Size: " + s3Object.objectSize);
+        io:println("Object Name: ", s3Object.objectName);
+        io:println("Object Size: ", s3Object.objectSize);
         }
     } else {
         io:println("Error: ", getAllObjectsResponse);
