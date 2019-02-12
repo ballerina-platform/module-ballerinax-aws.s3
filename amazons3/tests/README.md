@@ -5,7 +5,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
 ## Compatibility
 | Ballerina Version | Amazon S3 API Version |
 |-------------------|---------------------- |
-| 0.990.0           | 2006-03-01           |
+| 0.990.3           | 2006-03-01           |
 
 ###### Running tests
 
@@ -16,6 +16,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
     SECRET_ACCESS_KEY=""
     REGION=""
     BUCKET_NAME=""
+    AMAZON_HOST=""
     ```
 2. Navigate to the folder module-amazons3
 

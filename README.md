@@ -7,7 +7,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | -------------------- |
-| 0.990.0                    | 2006-03-01                  |
+| 0.990.3                    | 2006-03-01                  |
 
 
 The following sections provide you with information on how to use the Ballerina Amazon S3 connector.
@@ -40,6 +40,8 @@ amazons3:AmazonS3Configuration amazonS3Config = {
     region: testRegion,
     amazonHost: amazonHost
 };
+
+amazons3:Client amazonS3Client = new(amazonS3Config);
 ```
 
 ##### Sample
@@ -48,25 +50,26 @@ amazons3:AmazonS3Configuration amazonS3Config = {
 import ballerina/io;
 import wso2/amazons3;
 
-public function main() {
-    amazons3:AmazonS3Configuration amazonS3Config = {
-        accessKeyId: testAccessKeyId,
-        secretAccessKey: testSecretAccessKey,
-        region: testRegion,
-        amazonHost: amazonHost
-    };
-    
-    amazons3:Client amazonS3Client = new(amazonS3Config);
+amazons3:AmazonS3Configuration amazonS3Config = {
+    accessKeyId: "<your_access_key_id>",
+    secretAccessKey: "<your_secret_access_key>",
+    region: "<your_region>",
+    amazonHost: "<your_host_name>"
+};
+
+amazons3:Client amazonS3Client = new(amazonS3Config);
+
+public function main(string... args) {
 
     string bucketName = "testBallerina";
     var createBucketResponse = amazonS3Client->createBucket(bucketName);
     if (createBucketResponse is amazons3:Status) {
-        //If successful, returns the status value as true.
-        boolean status = string.create(createBucketResponse.success);
-        io:println("Bucket Status: " + status);
+        // If successful, print the status of the operation.
+        boolean status = createBucketResponse.success;
+        io:println("Bucket Status: ", status);
     } else {
-        //Unsuccessful attempts return an AmazonS3 error.
-        io:println(createBucketResponse);
+        // If unsuccessful, print the error returned.
+        io:println("Error: ", createBucketResponse);
     }
 }
 ```
