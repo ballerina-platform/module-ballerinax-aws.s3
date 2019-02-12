@@ -60,9 +60,9 @@ If the creation was successful, the response from the `createBucket` function is
 ```ballerina
 var createBucketResponse = amazonS3Client->createBucket(bucketName);
 if (createBucketResponse is amazons3:Status) {
-    // If successful, prints the status of the operation.
+    // If successful, print the status of the operation.
     boolean status = string.create(createBucketResponse.success);
-    io:println("Bucket Status: " + status);
+    io:println("Bucket Status: ", status);
 } else {
     // If unsuccessful, print the error returned.
     io:println("Error: ", createBucketResponse);
@@ -75,7 +75,7 @@ The `getBucketList` remote function retrives the existing buckets. It returns a 
 ```ballerina
 var getBucketListResponse = amazonS3ClientForGetBucketList->getBucketList();
 if (getBucketListResponse is amazons3:Bucket[]) {
-    io:println("Name of the first bucket: " + getBucketListResponse[0].name);
+    io:println("Name of the first bucket: ", getBucketListResponse[0].name);
 } else {
     io:println("Error: ", getBucketListResponse);
 }
@@ -99,9 +99,9 @@ public function main(string... args) {
     io:println("-----------------Calling createBucket() ------------------");
     var createBucketResponse = amazonS3Client->createBucket(bucketName);
     if (createBucketResponse is amazons3:Status) {
-        // If successful, prints the status value as true.
+        // If successful, print the status of the operation.
         boolean status = createBucketResponse.success;
-        io:println("Bucket Status: " + status);
+        io:println("Bucket Status: ", status);
     } else {
         // If unsuccessful, print the error returned.
         io:println("Error: ", createBucketResponse);
@@ -122,7 +122,7 @@ public function main(string... args) {
     var createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
     if (createObjectResponse is amazons3:Status) {
         boolean status = createObjectResponse.success;
-        io:println("Create object status: " + status);
+        io:println("Create object status: ", status);
     } else {
         io:println("Error: ", createObjectResponse);
     }
@@ -154,7 +154,7 @@ public function main(string... args) {
     var deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
     if (deleteObjectResponse is amazons3:Status) {
         boolean status = deleteObjectResponse.success;
-        io:println("Delete object status: " + status);
+        io:println("Delete object status: ", status);
     } else {
         io:println("Error: ", deleteObjectResponse);
     }
@@ -163,7 +163,7 @@ public function main(string... args) {
     var deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
     if (deleteBucketResponse is amazons3:Status) {
         boolean status = deleteBucketResponse.success;
-        io:println("Delete bucket status: " + status);
+        io:println("Delete bucket status: ", status);
     } else {
         io:println("Error: ", deleteBucketResponse);
     }
