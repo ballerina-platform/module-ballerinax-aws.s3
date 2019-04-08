@@ -17,7 +17,6 @@
 //
 
 import ballerina/http;
-import ballerina/io;
 
 # Amazons3 Client object.
 #
@@ -87,26 +86,33 @@ public remote function Client.getBucketList() returns Bucket[]|error {
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+        UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->get("/", message = request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        var amazonResponse = httpResponse.getXmlPayload();
-        if (amazonResponse is xml) {
-            if (statusCode == 200) {
-                return getBucketsList(amazonResponse);
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
+        return err;
+    } else {
+        var httpResponse = self.amazonS3Client->get("/", message = request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            var amazonResponse = httpResponse.getXmlPayload();
+            if (amazonResponse is xml) {
+                if (statusCode == 200) {
+                    return getBucketsList(amazonResponse);
+                } else {
+                    return setResponseError(statusCode, amazonResponse);
+                }
             } else {
-                return setResponseError(statusCode, amazonResponse);
+                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the xml payload
+                            of the response." });
+                return err;
             }
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while accessing the xml payload
-                            of the response." });
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
             return err;
         }
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
-        return err;
     }
 }
 
@@ -117,15 +123,22 @@ public remote function Client.createBucket(string bucketName) returns Status|err
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
+        UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->put(requestURI, request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        return getStatus(statusCode);
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
         return err;
+    } else {
+        var httpResponse = self.amazonS3Client->put(requestURI, request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            return getStatus(statusCode);
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
+            return err;
+        }
     }
 }
 
@@ -136,26 +149,33 @@ public remote function Client.getAllObjects(string bucketName) returns S3Object[
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+        UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->get(requestURI, message = request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        var amazonResponse = httpResponse.getXmlPayload();
-        if (amazonResponse is xml) {
-            if (statusCode == 200) {
-                return getS3ObjectsList(amazonResponse);
-            } else{
-                return setResponseError(statusCode, amazonResponse);
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
+        return err;
+    } else {
+        var httpResponse = self.amazonS3Client->get(requestURI, message = request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            var amazonResponse = httpResponse.getXmlPayload();
+            if (amazonResponse is xml) {
+                if (statusCode == 200) {
+                    return getS3ObjectsList(amazonResponse);
+                } else {
+                    return setResponseError(statusCode, amazonResponse);
+                }
+            } else {
+                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the xml payload
+                of the response." });
+                return err;
             }
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while accessing the xml payload
-                of the response." });
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
             return err;
         }
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
-        return err;
     }
 }
 
@@ -166,27 +186,35 @@ public remote function Client.getObject(string bucketName, string objectName) re
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+        UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->get(requestURI, message = request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        var amazonResponse = httpResponse.getPayloadAsString();
-        if (amazonResponse is string) {
-            if (statusCode == 200) {
-                return getS3Object(amazonResponse);
-            } else{
-                error err = error(<string>statusCode, { message : "Error occurred while getting the amazonS3 object." });
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
+        return err;
+    } else {
+        var httpResponse = self.amazonS3Client->get(requestURI, message = request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            string|error amazonResponse = httpResponse.getTextPayload();
+            if (amazonResponse is string) {
+                if (statusCode == 200) {
+                    return getS3Object(amazonResponse);
+                } else {
+                    error err = error(string.convert(statusCode), { message:
+                    "Error occurred while getting the amazonS3 object." });
+                    return err;
+                }
+            } else {
+                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the string payload
+                            of the response." });
                 return err;
             }
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message : "Error occurred while accessing the string payload
-                            of the response." });
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
             return err;
         }
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
-        return err;
     }
 }
 
@@ -198,14 +226,21 @@ public remote function Client.createObject(string bucketName, string objectName,
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     request.setTextPayload(payload);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD);
-    var httpResponse = self.amazonS3Client->put(requestURI, request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        return getStatus(statusCode);
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
+        UNSIGNED_PAYLOAD);
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
         return err;
+    } else {
+        var httpResponse = self.amazonS3Client->put(requestURI, request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            return getStatus(statusCode);
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
+            return err;
+        }
     }
 }
 
@@ -216,16 +251,22 @@ public remote function Client.deleteObject(string bucketName, string objectName)
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->delete(requestURI, request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        return getStatus(statusCode);
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
         return err;
+    } else {
+        var httpResponse = self.amazonS3Client->delete(requestURI, request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            return getStatus(statusCode);
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
+            return err;
+        }
     }
 }
 
@@ -236,16 +277,22 @@ public remote function Client.deleteBucket(string bucketName) returns Status|err
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
         UNSIGNED_PAYLOAD);
 
-    var httpResponse = self.amazonS3Client->delete(requestURI, request);
-    if (httpResponse is http:Response) {
-        int statusCode = httpResponse.statusCode;
-        return getStatus(statusCode);
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, {message : "Error occurred while invoking the AmazonS3 API" });
+    if (signature is error) {
+        error err = error(AMAZONS3_ERROR_CODE, { ^"error": signature.detail(),
+            message: "Error occurred while generating the amazon signature header" });
         return err;
+    } else {
+        var httpResponse = self.amazonS3Client->delete(requestURI, request);
+        if (httpResponse is http:Response) {
+            int statusCode = httpResponse.statusCode;
+            return getStatus(statusCode);
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
+            return err;
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 [project]
 org-name = "wso2"
-version = "0.9.13"
+version = "0.9.14"
 authors = ["WSO2"]
 keywords = ["amazons3", "amazon"]
 repository = "https://github.com/wso2-ballerina/module-amazons3"
