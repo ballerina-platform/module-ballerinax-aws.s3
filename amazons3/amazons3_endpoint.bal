@@ -104,8 +104,8 @@ public remote function Client.getBucketList() returns Bucket[]|error {
                 }
                 return setResponseError(statusCode, amazonResponse);
             } else {
-                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the xml payload
-                            of the response." });
+                error err = error(AMAZONS3_ERROR_CODE,
+                { message: "Error occurred while accessing the xml payload of the response." });
                 return err;
             }
         } else {
@@ -199,8 +199,8 @@ public remote function Client.getObject(string bucketName, string objectName) re
                 if (statusCode == 200) {
                     return getS3Object(amazonResponse);
                 } else {
-                    error err = error(string.convert(statusCode), { message:
-                    "Error occurred while getting the amazonS3 object." });
+                    error err = error(AMAZONS3_ERROR_CODE,
+                    { message: "Error occurred while getting the amazonS3 object." });
                     return err;
                 }
             } else {
