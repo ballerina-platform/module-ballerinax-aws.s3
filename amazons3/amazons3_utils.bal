@@ -19,20 +19,19 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
-import ballerina/io;
 import ballerina/system;
 import ballerina/time;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
-                           string httpVerb, string requestURI, string payload) {
+                           string httpVerb, string requestURI, string payload) returns error? {
 
     string canonicalRequest = "";
     string canonicalQueryString = "";
     string stringToSign = "";
     string payloadBuilder = "";
     string authHeader = "";
-    string amzDate = "";
-    string shortDate = "";
+    string amzDateStr = "";
+    string shortDateStr = "";
     string signedHeader = "";
     string canonicalHeaders = "";
     string signedHeaders = "";
@@ -40,11 +39,25 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     string encodedrequestURIValue = "";
     string signValue = "";
 
-    time:Time time = time:toTimeZone(time:currentTime(), "GMT");
-    amzDate = time:format(time, ISO8601_BASIC_DATE_FORMAT);
-    shortDate = time:format(time, SHORT_DATE_FORMAT);
+    time:Time|error time = time:toTimeZone(time:currentTime(), "GMT");
+    if (time is time:Time) {
+        string|error amzDate = time:format(time, ISO8601_BASIC_DATE_FORMAT);
+        string|error shortDate = time:format(time, SHORT_DATE_FORMAT);
+        if (amzDate is string) {
+            amzDateStr = amzDate;
+        } else {
+            return amzDate;
+        }
+        if (shortDate is string) {
+            shortDateStr = shortDate;
+        } else {
+            return shortDate;
+        }
+    } else {
+        return time;
+    }
 
-    request.setHeader(X_AMZ_DATE, amzDate);
+    request.setHeader(X_AMZ_DATE, amzDateStr);
     canonicalRequest = httpVerb;
     canonicalRequest = canonicalRequest + "\n";
     var value = http:encode(requestURI, UTF_8);
@@ -112,9 +125,9 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     //Start creating the string to sign
     stringToSign = stringToSign + AWS4_HMAC_SHA256;
     stringToSign = stringToSign + "\n";
-    stringToSign = stringToSign + amzDate;
+    stringToSign = stringToSign + amzDateStr;
     stringToSign = stringToSign + "\n";
-    stringToSign = stringToSign + shortDate;
+    stringToSign = stringToSign + shortDateStr;
     stringToSign = stringToSign + "/";
     stringToSign = stringToSign + region;
     stringToSign = stringToSign + "/";
@@ -127,7 +140,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 
     signValue = (AWS4 + secretAccessKey);
 
-    byte[] dateKey = crypto:hmacSha256(shortDate.toByteArray(UTF_8), signValue.toByteArray(UTF_8));
+    byte[] dateKey = crypto:hmacSha256(shortDateStr.toByteArray(UTF_8), signValue.toByteArray(UTF_8));
     byte[] regionKey = crypto:hmacSha256(region.toByteArray(UTF_8), dateKey);
     byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toByteArray(UTF_8), regionKey);
     byte[] signingKey = crypto:hmacSha256(TERMINATION_STRING.toByteArray(UTF_8), serviceKey);
@@ -138,7 +151,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     authHeader = authHeader + ("=");
     authHeader = authHeader + (accessKeyId);
     authHeader = authHeader + ("/");
-    authHeader = authHeader + (shortDate);
+    authHeader = authHeader + (shortDateStr);
     authHeader = authHeader + ("/");
     authHeader = authHeader + (region);
     authHeader = authHeader + ("/");
