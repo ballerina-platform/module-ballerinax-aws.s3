@@ -14,6 +14,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API through ball
     ```.conf
     ACCESS_KEY_ID=""
     SECRET_ACCESS_KEY=""
+    SECURITY_TOKEN="<security_token>"
     REGION=""
     BUCKET_NAME=""
     AMAZON_HOST=""

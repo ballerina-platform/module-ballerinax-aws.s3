@@ -22,8 +22,8 @@ import ballerina/http;
 import ballerina/system;
 import ballerina/time;
 
-function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
-                           string httpVerb, string requestURI, string payload) returns error? {
+function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string securityToken,
+                           string region, string httpVerb, string requestURI, string payload) returns error? {
 
     string canonicalRequest = "";
     string canonicalQueryString = "";
@@ -58,6 +58,9 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     }
 
     request.setHeader(X_AMZ_DATE, amzDateStr);
+    if (securityToken != "") {
+        request.setHeader(X_AMZ_SECURITY_TOKEN, securityToken);
+    }
     canonicalRequest = httpVerb;
     canonicalRequest = canonicalRequest + "\n";
     var value = http:encode(requestURI, UTF_8);
@@ -102,7 +105,18 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     canonicalHeaders = canonicalHeaders + ":";
     canonicalHeaders = canonicalHeaders + request.getHeader(X_AMZ_DATE.toLower());
     canonicalHeaders = canonicalHeaders + "\n";
+
+    if (securityToken != "") {
+        canonicalHeaders = canonicalHeaders + X_AMZ_SECURITY_TOKEN.toLower();
+        canonicalHeaders = canonicalHeaders + ":";
+        canonicalHeaders = canonicalHeaders + request.getHeader(X_AMZ_SECURITY_TOKEN.toLower());
+        canonicalHeaders = canonicalHeaders + "\n";
+    }
+
     signedHeader = signedHeader + X_AMZ_DATE.toLower();
+    if (securityToken != "") {
+        signedHeader = ";" + signedHeader + X_AMZ_SECURITY_TOKEN.toLower();
+    }
     signedHeader = signedHeader;
 
     canonicalRequest = canonicalRequest + canonicalHeaders;

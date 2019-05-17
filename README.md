@@ -37,6 +37,7 @@ In order for you to use the Amazon S3 Connector, first you need to create an Ama
 amazons3:AmazonS3Configuration amazonS3Config = {
     accessKeyId: testAccessKeyId,
     secretAccessKey: testSecretAccessKey,
+    securityToken: testSecurityToken,
     region: testRegion,
     amazonHost: amazonHost
 };
@@ -53,6 +54,7 @@ import wso2/amazons3;
 amazons3:AmazonS3Configuration amazonS3Config = {
     accessKeyId: "<your_access_key_id>",
     secretAccessKey: "<your_secret_access_key>",
+    securityToken: "<your_security_token>",
     region: "<your_region>",
     amazonHost: "<your_host_name>"
 };
