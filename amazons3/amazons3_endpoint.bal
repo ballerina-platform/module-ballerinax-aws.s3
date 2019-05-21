@@ -24,7 +24,7 @@ import ballerina/io;
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + securityToken - When you are using temporary security credentials (i.e., the accessKeyId and secretAccessKey),
-#                   the API request must include a session token, which is returned along with those temporary
+#                   the API request must include this session token, which is returned along with those temporary
 #                   credentials. AWS uses the session token to validate the temporary security credentials.
 # + region - The AWS Region
 # + amazonHost - The AWS Host
@@ -300,7 +300,7 @@ public remote function Client.deleteBucket(string bucketName) returns Status|err
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + securityToken - When you are using temporary security credentials (i.e., the accessKeyId and secretAccessKey),
-#                   the API request must include a session token, which is returned along with those temporary
+#                   the API request must include this session token, which is returned along with those temporary
 #                   credentials. AWS uses the session token to validate the temporary security credentials.
 # + region - The AWS Region
 # + amazonHost - The AWS host

@@ -40,22 +40,22 @@ and bucketName in the Amazon S3 client config.
 
 1. Navigate to [Amazon] (#https://aws.amazon.com/), and then click **Create an AWS Account**.
 
-   **Note:** If you previously signed in to the AWS Management Console using the root user credentials of the AWS account, click **Sign in** to use a different account. If you previously signed in to the console using the IAM credentials, sign-in using the credentials of the root account.
+   **Note:** If you previously signed in to the AWS Management Console using the root user credentials of the AWS account, click **Sign in** to use a different account. If you previously signed in to the console using the IAM credentials, sign in using the credentials of the root account.
 2. Then, click **Create a new AWS account** and follow the given instructions.
 
 Follow either of the methods explained below to obtain AWS credentials.
 
 ### Obtaining user credentials
 
-You can access the Amazon S3 service using the root user credentials. However, these credentials allow full access to all resources in the account as you cannot restrict permission for root user credentials.
+You can access the Amazon S3 service using the root user credentials. However, these credentials allow full access to all the resources in the account as you cannot restrict permission for root user credentials.
 If you want to restrict certain resources and allow controlled access to AWS services, then you can create IAM (Identity and Access Management) users in your AWS account. Follow the steps below to do this.
 
 ###### Follow the steps below to get an AWS Access Key for your AWS root account:
 
 1. Log in to the AWS Management Console.
-2. Hover over your company name in the right top menu and click "My Security Credentials".
-3. Scroll down to the "Access Keys" section.
-4. Click "Create New Access Key".
+2. Hover over your company name in the right top menu and click **My Security Credentials**.
+3. Scroll down to the **Access Keys** section.
+4. Click **Create New Access Key**.
 5. Copy both the Access Key ID (YOUR_AMAZON_S3_KEY) and Secret Access Key (YOUR_AMAZON_S3_SECRET).
 
 ###### Follow the steps below to get an AWS Access Key for an IAM user account:
@@ -67,8 +67,7 @@ If you want to restrict certain resources and allow controlled access to AWS ser
 5. Click **Create Access Key**.
 6. Click **Show User Security Credentials**.
 7. Copy and paste the Access Key ID and Secret Access Key values or click **Download Credentials** to download the credentials as a CSV (file).
-
-**Obtain the following parameters:**
+8. Obtain the following parameters:
 
 * Access key ID
 * Secret access key
