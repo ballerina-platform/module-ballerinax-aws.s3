@@ -41,7 +41,7 @@ and bucketName in the Amazon S3 client config.
 1. Navigate to [Amazon] (#https://aws.amazon.com/), and then click **Create an AWS Account**.
 
    **Note:** If you previously signed in to the AWS Management Console using the root user credentials of the AWS account, click **Sign in** to use a different account. If you previously signed in to the console using the IAM credentials, sign-in using the credentials of the root account.
-2. Then, click **Create a new AWS account** and follow the given instructions (>**Info:** Part of the sign-up procedure involves receiving a phone call and entering a verification code using the phone keypad. AWS will notify you by email when your account is active and available for you to use.
+2. Then, click **Create a new AWS account** and follow the given instructions.
 
 Follow either of the methods explained below to obtain AWS credentials.
 
