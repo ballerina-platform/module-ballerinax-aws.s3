@@ -31,7 +31,7 @@ First, import the `wso2/amazons3` module into the Ballerina project.
 import wso2/amazons3;
 ```
     
-The Amazon S3 connector can be instantiated using the accessKeyId, secretAccessKey, securityToken, and region
+The Amazon S3 connector can be instantiated using the accessKeyId, secretAccessKey, securityToken, region
 and bucketName in the Amazon S3 client config.
 
 **Obtaining AWS credentials to Run the Sample**
