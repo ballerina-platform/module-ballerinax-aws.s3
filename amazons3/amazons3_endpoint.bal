@@ -17,7 +17,6 @@
 //
 
 import ballerina/http;
-import ballerina/io;
 
 # Amazons3 Client object.
 #
@@ -34,7 +33,7 @@ public type Client client object {
 
     public string accessKeyId;
     public string secretAccessKey;
-    public string securityToken;
+    public string? securityToken = ();
     public string region;
     public string amazonHost;
     public string baseURL = "";
@@ -45,7 +44,10 @@ public type Client client object {
         string baseURL = HTTPS + amazonS3Config.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
-        self.securityToken = amazonS3Config.securityToken;
+        var token = amazonS3Config.securityToken;
+        if ((token is string) && token != "") {
+            self.securityToken = token;
+        }
         self.region = amazonS3Config.region;
         self.amazonS3Client = new(baseURL, config = amazonS3Config.clientConfig);
     }
@@ -308,7 +310,7 @@ public remote function Client.deleteBucket(string bucketName) returns Status|err
 public type AmazonS3Configuration record {
     string accessKeyId = "";
     string secretAccessKey = "";
-    string securityToken = "";
+    string? securityToken = ();
     string region = "";
     string amazonHost = "";
     http:ClientEndpointConfig clientConfig = {};
