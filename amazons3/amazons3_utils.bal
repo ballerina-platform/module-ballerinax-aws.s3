@@ -1,4 +1,3 @@
-//
 // Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
 //
 // WSO2 Inc. licenses this file to you under the Apache License,
@@ -21,158 +20,208 @@ import ballerina/encoding;
 import ballerina/http;
 import ballerina/system;
 import ballerina/time;
+import ballerina/io;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
-                           string httpVerb, string requestURI, string payload) returns error? {
+                           string httpVerb, string requestURI, string payload, map<anydata> headers, 
+                           map<anydata>? queryParams = ()) returns error? {
 
-    string canonicalRequest = "";
+    string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
-    string stringToSign = "";
-    string payloadBuilder = "";
-    string authHeader = "";
-    string amzDateStr = "";
-    string shortDateStr = "";
-    string signedHeader = "";
-    string canonicalHeaders = "";
-    string signedHeaders = "";
     string requestPayload = "";
-    string encodedrequestURIValue = "";
-    string signValue = "";
+    map<anydata> requestHeaders = headers;
 
+    // Generate date strings and put it in the headers map to generate the signature.
+    (string, string)(amzDateStr, shortDateStr) = generateDateString();
+    requestHeaders[X_AMZ_DATE] = amzDateStr;
+
+    // Get canonical URI.
+    string canonicalURI = getCanonicalURI(requestURI);
+
+        // Generate canonical query string.
+    if (queryParams is map<anydata> && queryParams.length() > 0) {
+        canonicalQueryString = generateCanonicalQueryString(queryParams);
+    }
+
+    // Encode request payload.
+    if (payload == UNSIGNED_PAYLOAD) {
+        requestPayload = payload;
+    } else {
+        requestPayload = encoding:encodeHex(crypto:hashSha256(payload.toByteArray(UTF_8))).toLower();
+        requestHeaders[CONTENT_TYPE] = request.getHeader(CONTENT_TYPE.toLower());
+    }
+
+    // Generete canonical and signed headers.
+    (string, string) (canonicalHeaders,signedHeaders) = generateCanonicalHeaders(headers, request);
+
+    // Generate canonical request.
+    canonicalRequest = string `${canonicalRequest}\n${canonicalURI}\n${canonicalQueryString}\n`;
+    canonicalRequest = string `${canonicalRequest}${canonicalHeaders}\n${signedHeaders}\n${requestPayload}`;
+
+    // Generate string to sign.
+    string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
+    
+    // Construct authorization signature string.
+    string authHeader = constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders, 
+                            stringToSign);
+    // Set authorization header.
+    request.setHeader(AUTHORIZATION, authHeader);
+}
+
+function setResponseError(int statusCode, xml xmlResponse) returns error {
+    error err = error(AMAZONS3_ERROR_CODE, { message : xmlResponse["Message"].getTextValue() });
+    return err;
+}
+
+# Funtion to generate the date strings.
+# 
+# + return - amzDate string and short date string.
+function generateDateString() returns (string, string) {
     time:Time|error time = time:toTimeZone(time:currentTime(), "GMT");
+    string amzDateStr;
+    string shortDateStr;
     if (time is time:Time) {
         string|error amzDate = time:format(time, ISO8601_BASIC_DATE_FORMAT);
         string|error shortDate = time:format(time, SHORT_DATE_FORMAT);
         if (amzDate is string) {
             amzDateStr = amzDate;
+
         } else {
-            return amzDate;
+            panic amzDate;
         }
         if (shortDate is string) {
             shortDateStr = shortDate;
         } else {
-            return shortDate;
+            panic shortDate;
         }
     } else {
-        return time;
+        panic time;
     }
+    return (amzDateStr, shortDateStr);
+}
 
-    request.setHeader(X_AMZ_DATE, amzDateStr);
-    canonicalRequest = httpVerb;
-    canonicalRequest = canonicalRequest + "\n";
+# Function to generate string to sign.
+# 
+# + amzDateStr - amzDate string.
+# + shortDateStr - Short date string.
+# + region - Endpoint region.
+# + canonicalRequest - Generated canonical request.
+# 
+# + return - String to sign.
+function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest) 
+                            returns string{
+    //Start creating the string to sign
+    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}`;
+    stringToSign = string `${stringToSign}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n`;
+    stringToSign = stringToSign + encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower();
+    return stringToSign;
+
+}
+
+# Function to get canonical URI.
+#
+# + requestURI - Request URI. 
+# 
+# + return - Return encoded request URI.
+function getCanonicalURI(string requestURI) returns string {
+    string encodedrequestURIValue;
     var value = http:encode(requestURI, UTF_8);
     if (value is string) {
-        encodedrequestURIValue = value;
+        encodedrequestURIValue = value.replace("%2F", "/");
     } else {
         error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
         panic err;
     }
-    canonicalRequest = canonicalRequest + encodedrequestURIValue.replace("%2F", "/");
-    canonicalRequest = canonicalRequest + "\n";
-    canonicalQueryString = "";
-    canonicalRequest = canonicalRequest + canonicalQueryString;
-    canonicalRequest = canonicalRequest + "\n";
+    return encodedrequestURIValue;
+}
 
-    if (payload != "" && payload != UNSIGNED_PAYLOAD){
-        canonicalHeaders = canonicalHeaders + CONTENT_TYPE.toLower();
-        canonicalHeaders = canonicalHeaders + ":";
-        canonicalHeaders = canonicalHeaders + request.getHeader(CONTENT_TYPE.toLower());
-        canonicalHeaders = canonicalHeaders + "\n";
-        signedHeader = signedHeader + CONTENT_TYPE.toLower();
-        signedHeader = signedHeader + ";";
+# Function to generate canonical query string.
+#
+# + queryParams - Query params map. 
+# 
+# + return - Return canonical and signed headers.
+function generateCanonicalQueryString(map<anydata> queryParams) returns string {
+    string canonicalQueryString = "";
+    string key;
+    string value;
+    string encodedKeyValue;
+    string encodedValue;
+    string[] queryParamsKeys = queryParams.keys();
+    string[] sortedKeys = sort(queryParamsKeys);
+    int index = 0;
+    while (index < sortedKeys.length()) {
+        key = sortedKeys[index];
+        var encodedKey = http:encode(key, UTF_8);
+        if (encodedKey is string) {
+            encodedKeyValue = encodedKey.replace("%2F", "/");
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
+            panic err;
+        }
+        value = <string>queryParams[key];
+        var encodedVal = http:encode(value, UTF_8);
+        if (encodedVal is string) {
+            encodedValue = encodedVal.replace("%2F", "/");
+        } else {
+            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
+            panic err;
+        }
+        canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
+        index = index + 1;
     }
+    canonicalQueryString = canonicalQueryString.substring(0,canonicalQueryString.lastIndexOf("&"));
 
-    canonicalHeaders = canonicalHeaders + HOST.toLower();
-    canonicalHeaders = canonicalHeaders + ":";
-    canonicalHeaders = canonicalHeaders + request.getHeader(HOST.toLower());
-    canonicalHeaders = canonicalHeaders + "\n";
-    signedHeader = signedHeader + HOST.toLower();
-    signedHeader = signedHeader + ";";
+    return canonicalQueryString;
+}
 
-    if (payload == UNSIGNED_PAYLOAD){
-        canonicalHeaders = canonicalHeaders + X_AMZ_CONTENT_SHA256.toLower();
-        canonicalHeaders = canonicalHeaders + ":";
-        canonicalHeaders = canonicalHeaders + request.getHeader(X_AMZ_CONTENT_SHA256.toLower());
-        canonicalHeaders = canonicalHeaders + "\n";
-        signedHeader = signedHeader + X_AMZ_CONTENT_SHA256.toLower();
-        signedHeader = signedHeader + ";";
+# Function to generate canonical headers and signed headers and populate request headers.
+#
+# + headers - Headers map. 
+# + request - HTTP request.
+# 
+# + return - Return canonical and signed headers.
+function generateCanonicalHeaders(map<anydata> headers, http:Request request) returns (string, string) {
+    string canonicalHeaders = "";
+    string signedHeaders = "";
+    string key;
+    string value;
+    string[] headerKeys = headers.keys();
+    string[] sortedHeaderKeys = sort(headerKeys);
+    int index = 0;
+    while (index < sortedHeaderKeys.length()) {
+        key = sortedHeaderKeys[index];
+        value = <string>headers[key];
+        request.setHeader(key, value);
+        canonicalHeaders = string `${canonicalHeaders}${key.toLower()}:${value}\n`;
+        signedHeaders = string `${signedHeaders}${key.toLower()};`;
+        index = index + 1;
     }
+    signedHeaders = signedHeaders.substring(0,signedHeaders.lastIndexOf(";"));
+    return (canonicalHeaders, signedHeaders);
+}
 
-    canonicalHeaders = canonicalHeaders + X_AMZ_DATE.toLower();
-    canonicalHeaders = canonicalHeaders + ":";
-    canonicalHeaders = canonicalHeaders + request.getHeader(X_AMZ_DATE.toLower());
-    canonicalHeaders = canonicalHeaders + "\n";
-    signedHeader = signedHeader + X_AMZ_DATE.toLower();
-    signedHeader = signedHeader;
-
-    canonicalRequest = canonicalRequest + canonicalHeaders;
-    canonicalRequest = canonicalRequest + "\n";
-    signedHeaders = "";
-    signedHeaders = signedHeader;
-    canonicalRequest = canonicalRequest + signedHeaders;
-    canonicalRequest = canonicalRequest + "\n";
-    payloadBuilder = payload;
-    requestPayload = "";
-    requestPayload = payloadBuilder;
-
-    if (payloadBuilder == UNSIGNED_PAYLOAD) {
-        requestPayload = payloadBuilder;
-    } else {
-        requestPayload = encoding:encodeHex(crypto:hashSha256(payloadBuilder.toByteArray(UTF_8))).toLower();
-    }
-
-    canonicalRequest = canonicalRequest + requestPayload;
-    //Start creating the string to sign
-    stringToSign = stringToSign + AWS4_HMAC_SHA256;
-    stringToSign = stringToSign + "\n";
-    stringToSign = stringToSign + amzDateStr;
-    stringToSign = stringToSign + "\n";
-    stringToSign = stringToSign + shortDateStr;
-    stringToSign = stringToSign + "/";
-    stringToSign = stringToSign + region;
-    stringToSign = stringToSign + "/";
-    stringToSign = stringToSign + SERVICE_NAME;
-    stringToSign = stringToSign + "/";
-    stringToSign = stringToSign + TERMINATION_STRING;
-    stringToSign = stringToSign + "\n";
-
-    stringToSign = stringToSign + encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower();
-
-    signValue = (AWS4 + secretAccessKey);
-
+# Funtion to construct authorization header string.
+#
+# + accessKeyId - Value of the access key.  
+# + secretAccessKey - Value of the secret key. 
+# + shortDateStr - shortDateStr Parameter Description 
+# + region - Endpoint region.
+# + signedHeaders - Signed headers.
+# + stringToSign - stringToSign Parameter Description 
+# 
+# + return - Authorization header string value.
+function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region, 
+                                string signedHeaders, string stringToSign) returns string{
+    string signValue = (AWS4 + secretAccessKey);
     byte[] dateKey = crypto:hmacSha256(shortDateStr.toByteArray(UTF_8), signValue.toByteArray(UTF_8));
     byte[] regionKey = crypto:hmacSha256(region.toByteArray(UTF_8), dateKey);
     byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toByteArray(UTF_8), regionKey);
     byte[] signingKey = crypto:hmacSha256(TERMINATION_STRING.toByteArray(UTF_8), serviceKey);
 
-    authHeader = authHeader + (AWS4_HMAC_SHA256);
-    authHeader = authHeader + (" ");
-    authHeader = authHeader + (CREDENTIAL);
-    authHeader = authHeader + ("=");
-    authHeader = authHeader + (accessKeyId);
-    authHeader = authHeader + ("/");
-    authHeader = authHeader + (shortDateStr);
-    authHeader = authHeader + ("/");
-    authHeader = authHeader + (region);
-    authHeader = authHeader + ("/");
-    authHeader = authHeader + (SERVICE_NAME);
-    authHeader = authHeader + ("/");
-    authHeader = authHeader + (TERMINATION_STRING);
-    authHeader = authHeader + (",");
-    authHeader = authHeader + (SIGNED_HEADER);
-    authHeader = authHeader + ("=");
-    authHeader = authHeader + (signedHeaders);
-    authHeader = authHeader + (",");
-    authHeader = authHeader + (SIGNATURE);
-    authHeader = authHeader + ("=");
-
     string encodedStr = encoding:encodeHex(crypto:hmacSha256(stringToSign.toByteArray(UTF_8), signingKey));
-    authHeader = authHeader + encodedStr.toLower();
+    string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;     
+    string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
+    authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLower()}`;
 
-    request.setHeader(AUTHORIZATION, authHeader);
-}
-
-function setResponseError(int statusCode, xml xmlResponse) returns error {
-    error err = error(AMAZONS3_ERROR_CODE, {message : xmlResponse["Message"].getTextValue() });
-    return err;
+    return authHeader;
 }

@@ -8,14 +8,13 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API using baller
 The createBucket function creates a new bucket.
  
 ##### Function signature
- public remote function createBucket(string bucketName, string region = "us-east-1", CannedACL cannedACL = ACL_PRIVATE) returns Status|error;
+ public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns Status|error;
 
 ##### Parameters
 
 |     Name               |    Type     |  Description   |
 |:------------------:|:--------------:|:--------------:|
 | bucketName        |   string         |    Unique name for the bucket to create.   |
-|region  | string    | Region to create this bucket. |
 |cannedACL | CannedACL | The access control list of the new bucket. |
 
 ##### Returns
@@ -40,7 +39,7 @@ The listBuckets function retrieves a list of all Amazon S3 buckets that the auth
 The listObjects function retrieves a list of all objects in a bucket.
 
 ##### Function signature
- public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), string continuationToken = ())
+ public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), string? continuationToken = ()) returns S3Object[]|error;
 
  ##### Parameters
  |     Name               |    Type     |  Description   |
@@ -62,7 +61,7 @@ The listObjects function retrieves a list of all objects in a bucket.
 The createObject fuction uploads an object to S3.
 
 ##### Function signature
-    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ACL_PRIVATE, CreateObjectHeaders? CreateObjectHeaders = ()) returns Status|error;
+    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), CreateObjectHeaders? createObjectHeaders = ()) returns Status|error;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
