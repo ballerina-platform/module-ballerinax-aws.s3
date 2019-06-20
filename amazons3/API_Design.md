@@ -8,7 +8,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API using baller
 The createBucket function creates a new bucket.
  
 ##### Function signature
- public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;
+ `public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;`
 
 ##### Parameters
 
