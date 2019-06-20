@@ -1,5 +1,5 @@
 ## Overview
-The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called "AmazonS3Cient" which exposes the commonly used functios such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(AmazonS3BucketClient and AmazonS3ObjectClient) for each other caegoriztion.
+The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called `AmazonS3Cient` which exposes the commonly used functions such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(`AmazonS3BucketClient` and `AmazonS3ObjectClient`) for each other categorization.
 
 ## API design for AmazonS3Client functions
 ### Functions
