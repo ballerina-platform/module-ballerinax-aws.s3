@@ -23,7 +23,7 @@ The createBucket function creates a new bucket.
         
 #### List buckets
 
-The listBuckets function retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns. 
+The `listBuckets()` function retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns. 
 
 ##### Function signature
  public remote function listBuckets() returns Bucket[]|error;
