@@ -68,8 +68,8 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     request.setHeader(AUTHORIZATION, authHeader);
 }
 
-function setResponseError(int statusCode, xml xmlResponse) returns error {
-    error err = error(AMAZONS3_ERROR_CODE, { message : xmlResponse["Message"].getTextValue() });
+function setResponseError(string errorMessage) returns error {
+    error err = error(AMAZONS3_ERROR_CODE, { message : errorMessage });
     return err;
 }
 
@@ -224,4 +224,128 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLower()}`;
 
     return authHeader;
+}
+
+# Function to populate createObject optional headers.
+# 
+# + requestHeaders - Request headers map.
+# + createObjectHeaders - Optional headers for createObject function.
+function populateCreateObjectHeaders(map<anydata> requestHeaders, CreateObjectHeaders? createObjectHeaders) {
+    if(createObjectHeaders != ()) {
+        if (createObjectHeaders.cacheControl != ()) {
+            requestHeaders[CACHE_CONTROL] = <string>createObjectHeaders.cacheControl;
+        }
+        if (createObjectHeaders.contentDisposition != ()) {
+            requestHeaders[CONTENT_DISPOSITION] = <string>createObjectHeaders.contentDisposition;
+        }
+        if (createObjectHeaders.contentEncoding != ()) {
+            requestHeaders[CONTENT_ENCODING] = <string>createObjectHeaders.contentEncoding;
+        }
+        if (createObjectHeaders.contentLength != ()) {
+            requestHeaders[CONTENT_LENGTH] = <string>createObjectHeaders.contentLength;
+        }
+        if (createObjectHeaders.contentMD5 != ()) {
+            requestHeaders[CONTENT_MD5] = <string>createObjectHeaders.contentMD5;
+        }
+        if (createObjectHeaders.expect != ()) {
+            requestHeaders[EXPECT] = <string>createObjectHeaders.expect;
+        }
+        if (createObjectHeaders.expires != ()) {
+            requestHeaders[EXPIRES] = <string>createObjectHeaders.expires;
+        }
+    }
+}
+
+# Function to populate getObject optional headers.
+# 
+# + requestHeaders - Request headers map.
+# + getObjectHeaders - Optional headers for getObject function.
+function populateGetObjectHeaders(map<anydata> requestHeaders, GetObjectHeaders? getObjectHeaders) {
+    if(getObjectHeaders != ()) {
+        if (getObjectHeaders.modifiedSince != ()) {
+            requestHeaders[IF_MODIFIED_SINCE] = <string>getObjectHeaders.modifiedSince;
+        }
+        if (getObjectHeaders.unModifiedSince != ()) {
+            requestHeaders[IF_UNMODIFIED_SINCE] = <string>getObjectHeaders.unModifiedSince;
+        }
+        if (getObjectHeaders.ifMatch != ()) {
+            requestHeaders[IF_MATCH] = <string>getObjectHeaders.ifMatch;
+        }
+        if (getObjectHeaders.ifNoneMatch != ()) {
+            requestHeaders[IF_NONE_MATCH] = <string>getObjectHeaders.ifNoneMatch;
+        }
+        if (getObjectHeaders.range != ()) {
+            requestHeaders[RANGE] = <string>getObjectHeaders.range;
+        }
+    }
+}
+
+function populateOptionalParameters(string? delimiter = (), string? encodingType = (), int? maxKeys = (), 
+                    string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
+                    string? continuationToken = (), map<anydata> queryParamsMap) returns string {
+    string queryParamsStr = "";
+    // Append query parameter(delimiter).
+    var delimiterStr = delimiter;
+    if (delimiterStr is string) {
+        queryParamsStr = string `${queryParamsStr}&delimiter=${delimiterStr}`;
+        queryParamsMap["delimiter"] = delimiterStr;
+    } 
+
+    // Append query parameter(encoding-type).
+    var encodingTypeStr = encodingType;
+    if (encodingTypeStr is string) {
+        queryParamsStr = string `${queryParamsStr}&encoding-type=${encodingTypeStr}`;
+        queryParamsMap["encoding-type"] = encodingTypeStr;
+    } 
+
+    // Append query parameter(max-keys).
+    var maxKeysVal = maxKeys;
+    if (maxKeysVal is int) {
+        queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeysVal}`;
+        //Check string.convert()
+        queryParamsMap["max-keys"] = io:sprintf("%s", maxKeysVal);
+    } 
+
+    // Append query parameter(prefix).
+    var prefixStr = prefix;
+    if (prefixStr is string) {
+        queryParamsStr = string `${queryParamsStr}&prefix=${prefixStr}`;
+        queryParamsMap["prefix"] = prefixStr;
+    }  
+
+    // Append query parameter(startAfter).
+    var startAfterStr = startAfter;
+    if (startAfterStr is string) {
+        queryParamsStr = string `${queryParamsStr}start-after=${startAfterStr}`;
+        queryParamsMap["start-after"] = prefixStr;
+    }  
+
+    // Append query parameter(fetch-owner).
+    var fetchOwnerBool = fetchOwner;
+    if (fetchOwnerBool is boolean) {
+        queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwnerBool}`;
+        queryParamsMap["fetch-owner"] = io:sprintf("%s", fetchOwnerBool);
+    }  
+
+    // Append query parameter(continuation-token).
+    var continuationTokenStr = continuationToken;
+    if (continuationTokenStr is string) {
+        queryParamsStr = string `${queryParamsStr}&continuation-token=${continuationTokenStr}`;
+        queryParamsMap["continuation-token"] = continuationTokenStr;
+    } 
+    return queryParamsStr;
+}
+
+function handleResponse(http:Response httpResponse) returns boolean|error {
+    int statusCode = httpResponse.statusCode;
+    if (statusCode == 200 || statusCode == 204) {
+        return true;
+    } else {
+        var amazonResponse = httpResponse.getXmlPayload();
+        if (amazonResponse is xml) {
+            return setResponseError(amazonResponse["Message"].getTextValue());
+        } else {
+            return setResponseError(XML_EXTRACTION_ERROR_MSG);
+        }
+    }
 }

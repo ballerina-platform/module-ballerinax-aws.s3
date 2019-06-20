@@ -34,10 +34,10 @@ AmazonS3Configuration amazonS3Config = {
 
 @test:Config
 function testListBuckets() {
-    log:printInfo("amazonS3ClientForGetBucketList -> listBuckets()");
+    log:printInfo("amazonS3ClientForGetBucketList->listBuckets()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
-        var response = amazonS3Client -> listBuckets();
+        var response = amazonS3Client->listBuckets();
         if (response is error) {
             test:assertFail(msg = <string>response.detail().message);
         } else {
@@ -46,22 +46,21 @@ function testListBuckets() {
         }
     } else {
         test:assertFail(msg = <string>amazonS3Client.detail().message);
-    }
-    
+    }  
 }
 
 @test:Config {
     dependsOn: ["testListBuckets"]
 }
 function testCreateBucket() {
-    log:printInfo("amazonS3Client -> createBucket()");
+    log:printInfo("amazonS3Client->createBucket()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         CannedACL cannedACL = ACL_PRIVATE;
-        var response = amazonS3Client -> createBucket(testBucketName, cannedACL = cannedACL);
-        if (response is Status) {
-            boolean bucketStatus = response.success;
-            test:assertTrue(bucketStatus, msg = "Failed createBucket()");
+        var response = amazonS3Client->createBucket(testBucketName, cannedACL = cannedACL);
+        if (response is boolean) {
+            // boolean bucketStatus = response;
+            test:assertTrue(response, msg = "Failed createBucket()");
         } else {
             test:assertFail(msg = <string>response.detail().message);
         }
@@ -74,13 +73,13 @@ function testCreateBucket() {
     dependsOn: ["testCreateBucket"]
 }
 function testCreateObject() {
-    log:printInfo("amazonS3Client -> createObject()");
+    log:printInfo("amazonS3Client->createObject()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
-        var response = amazonS3Client -> createObject(testBucketName, "test.txt","Sample content");
-        if (response is Status) {
-            boolean objectStatus = response.success;
-            test:assertTrue(objectStatus, msg = "Failed createObject()");
+        var response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
+        if (response is boolean) {
+            // boolean objectStatus = response;
+            test:assertTrue(response, msg = "Failed createObject()");
         } else {
             test:assertFail(msg = <string>response.detail().message);
         }
@@ -93,7 +92,7 @@ function testCreateObject() {
     dependsOn: ["testCreateObject"]
 }
 function testGetObject() {
-    log:printInfo("amazonS3Client -> getObject()");
+    log:printInfo("amazonS3Client->getObject()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->getObject(testBucketName, "test.txt");
@@ -112,7 +111,7 @@ function testGetObject() {
     dependsOn: ["testGetObject"]
 }
 function testListObjects() {
-    log:printInfo("amazonS3Client -> listObjects()");
+    log:printInfo("amazonS3Client->listObjects()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
@@ -134,9 +133,9 @@ function testDeleteObject() {
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
-        if (response is Status) {
-            boolean objectStatus = response.success;
-            test:assertTrue(objectStatus, msg = "Failed deleteObject()");
+        if (response is boolean) {
+            // boolean objectStatus = response.success;
+            test:assertTrue(response, msg = "Failed deleteObject()");
         } else {
             test:assertFail(msg = <string>response.detail().message);
         }
@@ -153,9 +152,9 @@ function testDeleteBucket() {
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> deleteBucket(testBucketName);
-        if (response is Status) {
-            boolean bucketStatus = response.success;
-            test:assertTrue(bucketStatus, msg = "Failed deleteBucket()");
+        if (response is boolean) {
+            // boolean bucketStatus = response.success;
+            test:assertTrue(response, msg = "Failed deleteBucket()");
         } else {
             test:assertFail(msg = <string>response.detail().message);
         }

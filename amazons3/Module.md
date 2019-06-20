@@ -7,8 +7,7 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through balleri
 
 **Buckets Operations**
 
-The `wso2/amazons3` module contains operations that work with buckets. You can list the existing buckets, create a bucket,
-delete a bucket and list objects in a bucket.
+The `wso2/amazons3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, delete a bucket and list objects in a bucket.
 
 **Objects Operations**
 
@@ -82,10 +81,10 @@ Now you can create a new bucket in Amzon S3 by invoking the `createBucket` remot
 ```ballerina
 string bucketName = "testBucket";
 // Invoke createBucket remote function using base/parent Amazon S3 client.
-amazons3:Status|error createBucketResponse = amazonS3Client->createBucket(bucketName);
+boolean|error createBucketResponse = amazonS3Client->createBucket(bucketName);
 ```
 
-If the creation was successful, the response from the `createBucket` function is a `Status` object with the success value. If the creation was unsuccessful, the response is an `error`.
+If the creation was successful, the response from the `createBucket` function is a boolean value(true). If the creation was unsuccessful, the response is an `error`.
 
 The complete source code look similar to the following:
 ```ballerina
@@ -107,11 +106,10 @@ public function main() {
         string bucketName = "testBucket";
         amazons3:CannedACL cannedACL = amazons3:ACL_PRIVATE;
         // Invoke createBucket remote function using base/parent Amazon S3 client.
-        amazons3:Status|error createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL = cannedACL);
-        if (createBucketResponse is amazons3:Status) {
+        var createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL = cannedACL);
+        if (createBucketResponse is boolean) {
             // If successful, print the status of the operation.
-            boolean status = string.create(createBucketResponse.success);
-            io:println("Bucket Creation Status: ", status);
+            io:println("Bucket Creation Status: ", createBucketResponse);
         } else {
             // If unsuccessful, print the error returned.
             io:println("Error: ", createBucketResponse);
@@ -142,10 +140,9 @@ public function main(string... args) {
         io:println("-----------------Calling createBucket() ------------------");
         CannedACL cannedACL = ACL_PRIVATE;
         var createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL = cannedACL);
-        if (createBucketResponse is amazons3:Status) {
+        if (createBucketResponse is boolean) {
             // If successful, print the status of the operation.
-            boolean status = createBucketResponse.success;
-            io:println("Bucket Status: ", status);
+            io:println("Bucket Status: ", createBucketResponse);
         } else {
             // If unsuccessful, print the error returned.
             io:println("Error: ", createBucketResponse);
@@ -164,9 +161,8 @@ public function main(string... args) {
 
         io:println("-----------------Calling createObject() ------------------");
         var createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
-        if (createObjectResponse is amazons3:Status) {
-            boolean status = createObjectResponse.success;
-            io:println("Create object status: ", status);
+        if (createObjectResponse is boolean) {
+            io:println("Create object status: ", createObjectResponse);
         } else {
             io:println("Error: ", createObjectResponse);
         }
@@ -196,18 +192,16 @@ public function main(string... args) {
 
         io:println("-----------------Calling deleteObject() ------------------");
         var deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
-        if (deleteObjectResponse is amazons3:Status) {
-            boolean status = deleteObjectResponse.success;
-            io:println("Delete object status: ", status);
+        if (deleteObjectResponse is boolean) {
+            io:println("Delete object status: ", deleteObjectResponse);
         } else {
             io:println("Error: ", deleteObjectResponse);
         }
 
         io:println("-----------------Calling deleteBucket() ------------------");
         var deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
-        if (deleteBucketResponse is amazons3:Status) {
-            boolean status = deleteBucketResponse.success;
-            io:println("Delete bucket status: ", status);
+        if (deleteBucketResponse is boolean) {
+            io:println("Delete bucket status: ", deleteBucketResponse);
         } else {
             io:println("Error: ", deleteBucketResponse);
         }

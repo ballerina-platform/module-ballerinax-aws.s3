@@ -51,7 +51,7 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If success, returns Status object, else returns error.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns Status|error;
+    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;
 
     # Retrieve the existing objects in a given bucket
     # 
@@ -94,7 +94,7 @@ public type AmazonS3Client client object {
     # + return - If success, returns Status object, else returns error
     public remote function createObject(string bucketName, string objectName, string payload, 
                         CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
-                        returns Status|error;
+                        returns boolean|error;
 
     # Delete an object.
     # 
@@ -104,14 +104,14 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error
     public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns Status|error;
+                        returns boolean|error;
 
     # Delete a bucket.
     # 
     # + bucketName - The name of the bucket.
     # 
     # + return - If success, returns Status object, else returns error
-    public remote function deleteBucket(string bucketName) returns Status|error;
+    public remote function deleteBucket(string bucketName) returns boolean|error;
 };
 
 public remote function AmazonS3Client.listBuckets() returns Bucket[]|error {
@@ -125,9 +125,7 @@ public remote function AmazonS3Client.listBuckets() returns Bucket[]|error {
     var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
         UNSIGNED_PAYLOAD, requestHeaders);
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
         var httpResponse = self.amazonS3Client->get("/", message = request);
         if (httpResponse is http:Response) {
@@ -136,22 +134,20 @@ public remote function AmazonS3Client.listBuckets() returns Bucket[]|error {
             if (amazonResponse is xml) {
                 if (statusCode == 200) {
                     return getBucketsList(amazonResponse);
+                } else {
+                    return setResponseError(amazonResponse["Message"].getTextValue());
                 }
-                return setResponseError(statusCode, amazonResponse);
             } else {
-                error err = error(AMAZONS3_ERROR_CODE,
-                { message: "Error occurred while accessing the xml payload of the response." });
-                return err;
+                return setResponseError(XML_EXTRACTION_ERROR_MSG);
             }
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
 
 public remote function AmazonS3Client.createBucket(string bucketName, CannedACL? cannedACL = ())
-                            returns Status|error {
+                            returns boolean|error {
     map<anydata> requestHeaders = {};
     http:Request request = new;
     string requestURI = "/" + bucketName + "/";
@@ -171,23 +167,20 @@ public remote function AmazonS3Client.createBucket(string bucketName, CannedACL?
         UNSIGNED_PAYLOAD, requestHeaders);
 
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
         var httpResponse = self.amazonS3Client->put(requestURI, request);
         if (httpResponse is http:Response) {
-            return getStatus(httpResponse.statusCode);
+            return handleResponse(httpResponse);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
 
 public remote function AmazonS3Client.createObject(string bucketName, string objectName, string payload, 
                             CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
-                            returns Status|error {
+                            returns boolean|error {
     map<anydata> requestHeaders = {};
     http:Request request = new;
     string requestURI = "/" + bucketName + "/" + objectName;
@@ -197,42 +190,18 @@ public remote function AmazonS3Client.createObject(string bucketName, string obj
     request.setTextPayload(payload);
 
     // Add optional headers.
-    if (createObjectHeaders != ()) {
-        if (createObjectHeaders.cacheControl != ()) {
-            requestHeaders[CACHE_CONTROL] = <string>createObjectHeaders.cacheControl;
-        }
-        if (createObjectHeaders.contentDisposition != ()) {
-            requestHeaders[CONTENT_DISPOSITION] = <string>createObjectHeaders.contentDisposition;
-        }
-        if (createObjectHeaders.contentEncoding != ()) {
-            requestHeaders[CONTENT_ENCODING] = <string>createObjectHeaders.contentEncoding;
-        }
-        if (createObjectHeaders.contentLength != ()) {
-            requestHeaders[CONTENT_LENGTH] = <string>createObjectHeaders.contentLength;
-        }
-        if (createObjectHeaders.contentMD5 != ()) {
-            requestHeaders[CONTENT_MD5] = <string>createObjectHeaders.contentMD5;
-        }
-        if (createObjectHeaders.expect != ()) {
-            requestHeaders[EXPECT] = <string>createObjectHeaders.expect;
-        }
-        if (createObjectHeaders.expires != ()) {
-            requestHeaders[EXPIRES] = <string>createObjectHeaders.expires;
-        }
-    }
+    populateCreateObjectHeaders(requestHeaders, createObjectHeaders);
+
     var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
         UNSIGNED_PAYLOAD, requestHeaders);
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
         var httpResponse = self.amazonS3Client->put(requestURI, request);
         if (httpResponse is http:Response) {
-            return getStatus(httpResponse.statusCode);
+            return handleResponse(httpResponse);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
@@ -246,51 +215,34 @@ public remote function AmazonS3Client.getObject(string bucketName, string object
     requestHeaders[HOST] = self.amazonHost;
     requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
     // Add optional headers.
-    if (getObjectHeaders != ()) {
-        if (getObjectHeaders.modifiedSince != ()) {
-            requestHeaders[IF_MODIFIED_SINCE] = <string>getObjectHeaders.modifiedSince;
-        }
-        if (getObjectHeaders.unModifiedSince != ()) {
-            requestHeaders[IF_UNMODIFIED_SINCE] = <string>getObjectHeaders.unModifiedSince;
-        }
-        if (getObjectHeaders.ifMatch != ()) {
-            requestHeaders[IF_MATCH] = <string>getObjectHeaders.ifMatch;
-        }
-        if (getObjectHeaders.ifNoneMatch != ()) {
-            requestHeaders[IF_NONE_MATCH] = <string>getObjectHeaders.ifNoneMatch;
-        }
-        if (getObjectHeaders.range != ()) {
-            requestHeaders[RANGE] = <string>getObjectHeaders.range;
-        }
-    }
+    populateGetObjectHeaders(requestHeaders, getObjectHeaders);
+    
     var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
         UNSIGNED_PAYLOAD, requestHeaders);
 
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
         var httpResponse = self.amazonS3Client->get(requestURI, message = request);
         if (httpResponse is http:Response) {
             int statusCode = httpResponse.statusCode;
-            string|error amazonResponse = httpResponse.getTextPayload();
-            if (amazonResponse is string) {
-                if (statusCode == 200) {
+            if (statusCode == 200) {
+                string|error amazonResponse = httpResponse.getTextPayload();
+                if (amazonResponse is string) {
                     return getS3Object(amazonResponse);
                 } else {
-                    error err = error(AMAZONS3_ERROR_CODE,
-                    { message: "Error occurred while getting the amazonS3 object." });
-                    return err;
+                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
                 }
             } else {
-                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the string payload
-                            of the response." });
-                return err;
-            }
+                var amazonResponse = httpResponse.getXmlPayload();
+                if (amazonResponse is xml) {
+                    return setResponseError(amazonResponse["Message"].getTextValue());
+                } else {
+                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                }    
+            }     
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
@@ -305,64 +257,17 @@ public remote function AmazonS3Client.listObjects(string bucketName, string? del
     string queryParamsStr = "?list-type=2";
     queryParamsMap["list-type"] = "2";
 
-    // Append query parameter(delimiter).
-    var delimiterStr = delimiter;
-    if (delimiterStr is string) {
-        queryParamsStr = string `${queryParamsStr}&delimiter=${delimiterStr}`;
-        queryParamsMap["delimiter"] = delimiterStr;
-    } 
-
-    // Append query parameter(encoding-type).
-    var encodingTypeStr = encodingType;
-    if (encodingTypeStr is string) {
-        queryParamsStr = string `${queryParamsStr}&encoding-type=${encodingTypeStr}`;
-        queryParamsMap["encoding-type"] = encodingTypeStr;
-    } 
-
-    // Append query parameter(max-keys).
-    var maxKeysVal = maxKeys;
-    if (maxKeysVal is int) {
-        queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeysVal}`;
-        queryParamsMap["max-keys"] = io:sprintf("%s", maxKeysVal);
-    } 
-
-    // Append query parameter(prefix).
-    var prefixStr = prefix;
-    if (prefixStr is string) {
-        queryParamsStr = string `${queryParamsStr}&prefix=${prefixStr}`;
-        queryParamsMap["prefix"] = prefixStr;
-    }  
-
-    // Append query parameter(startAfter).
-    var startAfterStr = startAfter;
-    if (startAfterStr is string) {
-        queryParamsStr = string `${queryParamsStr}start-after=${startAfterStr}`;
-        queryParamsMap["start-after"] = prefixStr;
-    }  
-
-    // Append query parameter(fetch-owner).
-    var fetchOwnerBool = fetchOwner;
-    if (fetchOwnerBool is boolean) {
-        queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwnerBool}`;
-        queryParamsMap["fetch-owner"] = io:sprintf("%s", fetchOwnerBool);
-    }  
-
-    // Append query parameter(continuation-token).
-    var continuationTokenStr = continuationToken;
-    if (continuationTokenStr is string) {
-        queryParamsStr = string `${queryParamsStr}&continuation-token=${continuationTokenStr}`;
-        queryParamsMap["continuation-token"] = continuationTokenStr;
-    } 
-
+    string queryParams = populateOptionalParameters(delimiter = delimiter, encodingType = encodingType, 
+                            maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
+                            continuationToken = continuationToken, queryParamsMap);
+    queryParamsStr = string `${queryParamsStr}${queryParams}`;
     requestHeaders[HOST] = self.amazonHost;
     requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
     var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
         UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3Client->get(requestURI, message = request);
@@ -372,22 +277,20 @@ public remote function AmazonS3Client.listObjects(string bucketName, string? del
             if (amazonResponse is xml) {
                 if (statusCode == 200) {
                     return getS3ObjectsList(amazonResponse);
-                }
-                return setResponseError(statusCode, amazonResponse);
+                } else {
+                    return setResponseError(amazonResponse["Message"].getTextValue());
+                } 
             } else {
-                error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while accessing the xml payload
-                of the response." });
-                return err;
+                return setResponseError(XML_EXTRACTION_ERROR_MSG);
             }
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
 
 public remote function AmazonS3Client.deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                            returns Status|error {
+                            returns boolean|error {
     map<anydata> requestHeaders = {};
     map<anydata> queryParamsMap = {};
     http:Request request = new;
@@ -407,22 +310,19 @@ public remote function AmazonS3Client.deleteObject(string bucketName, string obj
         UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {    
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3Client->delete(requestURI, request);
         if (httpResponse is http:Response) {
-            return getStatus(httpResponse.statusCode);
+            return handleResponse(httpResponse);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }              
 
-public remote function AmazonS3Client.deleteBucket(string bucketName) returns Status|error {
+public remote function AmazonS3Client.deleteBucket(string bucketName) returns boolean|error {
     map<anydata> requestHeaders = {};
     http:Request request = new;
     string requestURI = "/" + bucketName;
@@ -433,16 +333,14 @@ public remote function AmazonS3Client.deleteBucket(string bucketName) returns St
         UNSIGNED_PAYLOAD, requestHeaders);
 
     if (signature is error) {
-        error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
-            message: "Error occurred while generating the amazon signature header" });
-        return err;
+        return setResponseError(SIGNATURE_GENEREATION_ERROR);
     } else {
+        //check var or union type
         var httpResponse = self.amazonS3Client->delete(requestURI, request);
         if (httpResponse is http:Response) {
-            return getStatus(httpResponse.statusCode);
+            return handleResponse(httpResponse);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred while invoking the AmazonS3 API" });
-            return err;
+            return setResponseError(API_INVOCATION_ERROR_MSG);
         }
     }
 }
@@ -454,7 +352,6 @@ public remote function AmazonS3Client.deleteBucket(string bucketName) returns St
 # 
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
 function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
-
     if ((accessKeyId == "") || (secretAccessKey == "")) {
         error err = error(AUTH_ERROR_CODE, { message: "Empty values set for accessKeyId or secretAccessKey 
                         credential" });

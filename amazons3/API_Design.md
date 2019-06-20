@@ -1,14 +1,14 @@
 ## Overview
 The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called "AmazonS3Cient" which exposes the commonly used functios such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(AmazonS3BucketClient and AmazonS3ObjectClient) for each other caegoriztion.
 
-## API design for AmazonS3Cient functions
+## API design for AmazonS3Client functions
 ### Functions
 
 #### Create bucket
 The createBucket function creates a new bucket.
  
 ##### Function signature
- public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns Status|error;
+ public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;
 
 ##### Parameters
 
@@ -18,7 +18,7 @@ The createBucket function creates a new bucket.
 |cannedACL | CannedACL | The access control list of the new bucket. |
 
 ##### Returns
-    On success: Status record.
+    On success: Boolean value(true).
     On failure: error.
         
 #### List buckets
@@ -44,8 +44,8 @@ The listObjects function retrieves a list of all objects in a bucket.
  ##### Parameters
  |     Name               |    Type     |  Description   |
 |:------------------:|:--------------:|:--------------:|
-| bucketName        |   string         |    The name of the bucket.   |
-|   delimiter | string | A delimiter is a character you use to group keys.|
+|bucketName        |   string         |    The name of the bucket.   |
+|delimiter | string | A delimiter is a character you use to group keys.|
 |encodingType  |   string  |   The encoding method to be applied on the response.|
 |maxKeys    |   int |   The maximum number of keys to include in the response. 
 |prefix |   string  | The prefix of the objects to be listed. If unspecified, all objects are listed.|
@@ -61,7 +61,7 @@ The listObjects function retrieves a list of all objects in a bucket.
 The createObject fuction uploads an object to S3.
 
 ##### Function signature
-    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), CreateObjectHeaders? createObjectHeaders = ()) returns Status|error;
+    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), CreateObjectHeaders? createObjectHeaders = ()) returns boolean|error;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
@@ -73,7 +73,7 @@ The createObject fuction uploads an object to S3.
 |createObjectHeaders | CreateObjectHeaders | Optional headers for the create object function.|
 
 ##### Returns
-    On success: Status record.
+    On success: Boolean value(true).
     On failure: error.
 
 #### Get Object
@@ -97,7 +97,7 @@ The getObject function retrieves objects from Amazon S3.
 The deleteObject function deletes a given  object.
 
 ##### Function signature
-    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) returns Status|error;
+    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) returns boolean|error;
 
 ##### Parameters
 |Name   |   Type    |   Description
@@ -107,13 +107,13 @@ The deleteObject function deletes a given  object.
 |versionId|string|The specific version of the object to delete, if versioning is enabled.|
 
 ##### Returns
-    On success: Status record.
+    On success: Boolean value(true).
     On failure: error.
 
 #### Delete bucket
 
 ##### Function signature
-    public remote function deleteBucket(string bucketName) returns Status|error;
+    public remote function deleteBucket(string bucketName) returns boolean|error;
 
 ##### Parameters
 |Name   |   Type    |   Description
@@ -121,7 +121,7 @@ The deleteObject function deletes a given  object.
 |bucketName |   string  | Name of the bucket.|
 
 ##### Returns
-    On success: Status record.
+    On success: Boolean value(true).
     On failure: error.
 
 
@@ -135,7 +135,7 @@ public const AUTHENTICATED_READ = "aws-exec-read";
 public const LOG_DELIVERY_WRITE = "authenticated-read";
 public const BUCKET_OWNER_READ = "bucket-owner-read";
 public const BUCKET_OWNER_FULL_CONTROL = "bucket-owner-full-control";
-public type CannedACL "ACL_PRIVATE"|"ACL_PUBLIC_READ"|"PUBLIC_READ_WRITE"|"AUTHENTICATED_READ"|"LOG_DELIVERY_WRITE"|"BUCKET_OWNER_READ"|"BUCKET_OWNER_FULL_CONTROL";
+public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|PUBLIC_READ_WRITE|AUTHENTICATED_READ|LOG_DELIVERY_WRITE|BUCKET_OWNER_READ|BUCKET_OWNER_FULL_CONTROL;
 
 # Represents the optional headers specific to  getObject function.
 #
@@ -200,14 +200,4 @@ public type S3Object record {
     string storageClass = "";
     string content = "";
 };
-
-# Define the status type.
-# + success - The status of the AmazonS3 operation
-# + statusCode - The status code of the response
-public type Status record {
-    boolean success = false;
-    int statusCode = 0;
-};
-
 ```
-
