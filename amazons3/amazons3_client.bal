@@ -44,7 +44,7 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns a list of Bucket record, else returns error
     public remote function listBuckets() returns Bucket[]|error {
-        map<anydata> requestHeaders = {};
+        map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = "/";
 
@@ -82,14 +82,14 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error.
     public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error {
-        map<anydata> requestHeaders = {};
+        map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = "/" + bucketName + "/";
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         if (cannedACL != ()) {
-            requestHeaders[X_AMZ_ACL] = cannedACL;
+            requestHeaders[X_AMZ_ACL] = io:sprintf("%s",cannedACL);
         }
         if(self.region != DEFAULT_REGION) {
             xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
@@ -131,8 +131,8 @@ public type AmazonS3Client client object {
     public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
                         int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
                         string? continuationToken = ()) returns S3Object[]|error  {
-        map<anydata> requestHeaders = {};
-        map<anydata> queryParamsMap = {};  
+        map<string> requestHeaders = {};
+        map<string> queryParamsMap = {};  
         http:Request request = new;
         string requestURI = "/" + bucketName + "/";
         string queryParamsStr = "?list-type=2";
@@ -179,7 +179,7 @@ public type AmazonS3Client client object {
     # + return - If success, returns S3ObjectContent object, else returns error
     public remote function getObject(string bucketName, string objectName, GetObjectHeaders? getObjectHeaders = ()) 
                         returns S3Object|error {
-        map<anydata> requestHeaders = {};
+        map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = "/" + bucketName + "/" + objectName;
 
@@ -230,7 +230,7 @@ public type AmazonS3Client client object {
     public remote function createObject(string bucketName, string objectName, string payload, 
                         CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
                         returns boolean|error {
-        map<anydata> requestHeaders = {};
+        map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = "/" + bucketName + "/" + objectName;
 
@@ -264,8 +264,8 @@ public type AmazonS3Client client object {
     # + return - If success, returns Status object, else returns error
     public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
                         returns boolean|error {
-        map<anydata> requestHeaders = {};
-        map<anydata> queryParamsMap = {};
+        map<string> requestHeaders = {};
+        map<string> queryParamsMap = {};
         http:Request request = new;
         string queryParamsStr = "";
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -279,8 +279,8 @@ public type AmazonS3Client client object {
         
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, 
+                            requestURI, UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
         if (signature is error) {
             return setResponseError(SIGNATURE_GENEREATION_ERROR);
@@ -301,14 +301,14 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error
     public remote function deleteBucket(string bucketName) returns boolean|error {
-        map<anydata> requestHeaders = {};
+        map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = "/" + bucketName;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders);
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, 
+                            requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
         if (signature is error) {
             return setResponseError(SIGNATURE_GENEREATION_ERROR);

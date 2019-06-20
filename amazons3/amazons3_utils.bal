@@ -23,13 +23,13 @@ import ballerina/time;
 import ballerina/io;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
-                           string httpVerb, string requestURI, string payload, map<anydata> headers, 
-                           map<anydata>? queryParams = ()) returns error? {
+                           string httpVerb, string requestURI, string payload, map<string> headers, 
+                           map<string>? queryParams = ()) returns error? {
 
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
-    map<anydata> requestHeaders = headers;
+    map<string> requestHeaders = headers;
 
     // Generate date strings and put it in the headers map to generate the signature.
     (string, string)(amzDateStr, shortDateStr) = generateDateString();
@@ -39,7 +39,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     string canonicalURI = getCanonicalURI(requestURI);
 
         // Generate canonical query string.
-    if (queryParams is map<anydata> && queryParams.length() > 0) {
+    if (queryParams is map<string> && queryParams.length() > 0) {
         canonicalQueryString = generateCanonicalQueryString(queryParams);
     }
 
@@ -140,7 +140,7 @@ function getCanonicalURI(string requestURI) returns string {
 # + queryParams - Query params map. 
 # 
 # + return - Return canonical and signed headers.
-function generateCanonicalQueryString(map<anydata> queryParams) returns string {
+function generateCanonicalQueryString(map<string> queryParams) returns string {
     string canonicalQueryString = "";
     string key;
     string value;
@@ -180,7 +180,7 @@ function generateCanonicalQueryString(map<anydata> queryParams) returns string {
 # + request - HTTP request.
 # 
 # + return - Return canonical and signed headers.
-function generateCanonicalHeaders(map<anydata> headers, http:Request request) returns (string, string) {
+function generateCanonicalHeaders(map<string> headers, http:Request request) returns (string, string) {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;
@@ -230,7 +230,7 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
 # 
 # + requestHeaders - Request headers map.
 # + createObjectHeaders - Optional headers for createObject function.
-function populateCreateObjectHeaders(map<anydata> requestHeaders, CreateObjectHeaders? createObjectHeaders) {
+function populateCreateObjectHeaders(map<string> requestHeaders, CreateObjectHeaders? createObjectHeaders) {
     if(createObjectHeaders != ()) {
         if (createObjectHeaders.cacheControl != ()) {
             requestHeaders[CACHE_CONTROL] = <string>createObjectHeaders.cacheControl;
@@ -260,7 +260,7 @@ function populateCreateObjectHeaders(map<anydata> requestHeaders, CreateObjectHe
 # 
 # + requestHeaders - Request headers map.
 # + getObjectHeaders - Optional headers for getObject function.
-function populateGetObjectHeaders(map<anydata> requestHeaders, GetObjectHeaders? getObjectHeaders) {
+function populateGetObjectHeaders(map<string> requestHeaders, GetObjectHeaders? getObjectHeaders) {
     if(getObjectHeaders != ()) {
         if (getObjectHeaders.modifiedSince != ()) {
             requestHeaders[IF_MODIFIED_SINCE] = <string>getObjectHeaders.modifiedSince;
@@ -282,7 +282,7 @@ function populateGetObjectHeaders(map<anydata> requestHeaders, GetObjectHeaders?
 
 function populateOptionalParameters(string? delimiter = (), string? encodingType = (), int? maxKeys = (), 
                     string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                    string? continuationToken = (), map<anydata> queryParamsMap) returns string {
+                    string? continuationToken = (), map<string> queryParamsMap) returns string {
     string queryParamsStr = "";
     // Append query parameter(delimiter).
     var delimiterStr = delimiter;
@@ -317,7 +317,7 @@ function populateOptionalParameters(string? delimiter = (), string? encodingType
     var startAfterStr = startAfter;
     if (startAfterStr is string) {
         queryParamsStr = string `${queryParamsStr}start-after=${startAfterStr}`;
-        queryParamsMap["start-after"] = prefixStr;
+        queryParamsMap["start-after"] = startAfterStr;
     }  
 
     // Append query parameter(fetch-owner).
