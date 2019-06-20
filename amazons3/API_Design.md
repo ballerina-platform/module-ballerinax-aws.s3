@@ -1,5 +1,5 @@
 ## Overview
-The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called "AmazonS3Cient" which exposes the commonly used functios such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(AmazonS3BucketClient and AmazonS3ObjectClient) for each other caegoriztion.
+The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called `AmazonS3Cient` which exposes the commonly used functions such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(`AmazonS3BucketClient` and `AmazonS3ObjectClient`) for each other categorization.
 
 ## API design for AmazonS3Client functions
 ### Functions
@@ -8,7 +8,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API using baller
 The createBucket function creates a new bucket.
  
 ##### Function signature
- public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;
+ `public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;`
 
 ##### Parameters
 
@@ -23,7 +23,7 @@ The createBucket function creates a new bucket.
         
 #### List buckets
 
-The listBuckets function retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns. 
+The `listBuckets()` function retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns. 
 
 ##### Function signature
  public remote function listBuckets() returns Bucket[]|error;
