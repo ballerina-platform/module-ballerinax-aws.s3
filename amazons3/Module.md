@@ -31,16 +31,59 @@ First, import the `wso2/amazons3` module into the Ballerina project.
 import wso2/amazons3;
 ```
     
-The Amazon S3 connector can be instantiated using the accessKeyId, secretAccessKey, region, 
+The Amazon S3 connector can be instantiated using the accessKeyId, secretAccessKey, securityToken, region,
 and bucketName in the Amazon S3 client config.
 
-**Obtaining Access Keys to Run the Sample**
+**Obtaining AWS credentials to Run the Sample**
 
- 1. Create an amazon account by visiting <https://aws.amazon.com/s3/>
- 2. Obtain the following parameters
-   * Access key ID.
-   * Secret access key.
-   * Desired Server region.
+## Signing Up for AWS
+
+1. Navigate to [Amazon] (#https://aws.amazon.com/), and then click **Create an AWS Account**.
+
+   **Note:** If you previously signed in to the AWS Management Console using the root user credentials of the AWS account, click **Sign in** to use a different account. If you previously signed in to the console using the IAM credentials, sign in using the credentials of the root account.
+2. Then, click **Create a new AWS account** and follow the given instructions.
+
+Follow either of the methods explained below to obtain AWS credentials.
+
+### Obtaining user credentials
+
+You can access the Amazon S3 service using the root user credentials. However, these credentials allow full access to all the resources in the account as you cannot restrict permission for root user credentials.
+If you want to restrict certain resources and allow controlled access to AWS services, then you can create IAM (Identity and Access Management) users in your AWS account. Follow the steps below to do this.
+
+###### Follow the steps below to get an AWS Access Key for your AWS root account:
+
+1. Log in to the AWS Management Console.
+2. Hover over your company name in the right top menu and click **My Security Credentials**.
+3. Scroll down to the **Access Keys** section.
+4. Click **Create New Access Key**.
+5. Copy both the Access Key ID (YOUR_AMAZON_S3_KEY) and Secret Access Key (YOUR_AMAZON_S3_SECRET).
+
+###### Follow the steps below to get an AWS Access Key for an IAM user account:
+
+1. Sign in to the AWS Management Console and open the IAM Console.
+2. In the navigation pane, click **Users**.
+3. Select the name of the desired user, and then click **User Actions** from the top menu.
+4. Click **Manage Access Keys**.
+5. Click **Create Access Key**.
+6. Click **Show User Security Credentials**.
+7. Copy and paste the Access Key ID and Secret Access Key values or click **Download Credentials** to download the credentials as a CSV (file).
+8. Obtain the following parameters:
+
+* Access key ID
+* Secret access key
+* Desired server region
+
+### Obtaining temporary security credentials
+
+An AWS Account or an IAM user can request temporary security credentials and use them to send authenticated requests to Amazon S3.
+
+1. Obtain temporary security credentials and use them to authenticate your requests to Amazon S3. For instructions, go to the  [S3 documentation] (https://docs.aws.amazon.com/AmazonS3/latest/dev/AuthUsingTempSessionToken.html) to try out the provided examples on how to use the AWS SDK for Java, .NET, and PHP.
+
+2. Obtain the following parameters:
+    * Access key ID
+    * Secret access key
+    * Token
+    * Desired server region
 
 
 You can now enter the credentials in the Amazon S3 client config:
@@ -48,6 +91,7 @@ You can now enter the credentials in the Amazon S3 client config:
 amazons3:AmazonS3Configuration amazonS3Config = {
     accessKeyId: testAccessKeyId,
     secretAccessKey: testSecretAccessKey,
+    securityToken: testSecurityToken,
     region: testRegion,
     amazonHost: amazonHost
 };
@@ -88,6 +132,7 @@ import wso2/amazons3;
 amazons3:AmazonS3Configuration amazonS3Config = {
     accessKeyId: "<your_access_key_id>",
     secretAccessKey: "<your_secret_access_key>",
+    securityToken: "<your_security_token>",
     region: "<your_region>",
     amazonHost: "<your_host_name>"
 };

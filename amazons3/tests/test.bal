@@ -23,6 +23,7 @@ import ballerina/test;
 
 string testAccessKeyId = config:getAsString("ACCESS_KEY_ID");
 string testSecretAccessKey = config:getAsString("SECRET_ACCESS_KEY");
+string testSecurityToken = config:getAsString("SECURITY_TOKEN");
 string testRegion = config:getAsString("REGION");
 string testBucketName = config:getAsString("BUCKET_NAME");
 string amazonHost = config:getAsString("AMAZON_HOST");
@@ -30,6 +31,7 @@ string amazonHost = config:getAsString("AMAZON_HOST");
 AmazonS3Configuration amazonS3Config = {
     accessKeyId: testAccessKeyId,
     secretAccessKey: testSecretAccessKey,
+    securityToken: testSecurityToken,
     region: testRegion,
     amazonHost: amazonHost
 };

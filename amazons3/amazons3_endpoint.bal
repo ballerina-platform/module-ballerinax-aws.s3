@@ -22,6 +22,9 @@ import ballerina/http;
 #
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
+# + securityToken - When you are using temporary security credentials (i.e., the accessKeyId and secretAccessKey),
+#                   the API request must include this session token, which is returned along with those temporary
+#                   credentials. AWS uses the session token to validate the temporary security credentials.
 # + region - The AWS Region
 # + amazonHost - The AWS Host
 # + amazonS3Client - HTTP Client endpoint
@@ -30,6 +33,7 @@ public type Client client object {
 
     public string accessKeyId;
     public string secretAccessKey;
+    public string? securityToken = ();
     public string region;
     public string amazonHost;
     public string baseURL = "";
@@ -40,6 +44,10 @@ public type Client client object {
         string baseURL = HTTPS + amazonS3Config.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
+        var token = amazonS3Config.securityToken;
+        if ((token is string) && token != "") {
+            self.securityToken = token;
+        }
         self.region = amazonS3Config.region;
         self.amazonS3Client = new(baseURL, config = amazonS3Config.clientConfig);
     }
@@ -86,8 +94,8 @@ public remote function Client.getBucketList() returns Bucket[]|error {
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        GET, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -122,8 +130,8 @@ public remote function Client.createBucket(string bucketName) returns Status|err
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        PUT, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -147,8 +155,8 @@ public remote function Client.getAllObjects(string bucketName) returns S3Object[
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        GET, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -183,8 +191,8 @@ public remote function Client.getObject(string bucketName, string objectName) re
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        GET, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -223,8 +231,8 @@ public remote function Client.createObject(string bucketName, string objectName,
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
     request.setTextPayload(payload);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        PUT, requestURI, UNSIGNED_PAYLOAD);
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
             message: "Error occurred while generating the amazon signature header" });
@@ -247,8 +255,8 @@ public remote function Client.deleteObject(string bucketName, string objectName)
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        DELETE, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -272,8 +280,8 @@ public remote function Client.deleteBucket(string bucketName) returns Status|err
 
     request.setHeader(HOST, self.amazonHost);
     request.setHeader(X_AMZ_CONTENT_SHA256, UNSIGNED_PAYLOAD);
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-        UNSIGNED_PAYLOAD);
+    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.securityToken, self.region,
+        DELETE, requestURI, UNSIGNED_PAYLOAD);
 
     if (signature is error) {
         error err = error(AMAZONS3_ERROR_CODE, { cause: signature,
@@ -293,12 +301,16 @@ public remote function Client.deleteBucket(string bucketName) returns Status|err
 # AmazonS3 Connector configurations can be setup here.
 # + accessKeyId - The access key is of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
+# + securityToken - When you are using temporary security credentials (i.e., the accessKeyId and secretAccessKey),
+#                   the API request must include this session token, which is returned along with those temporary
+#                   credentials. AWS uses the session token to validate the temporary security credentials.
 # + region - The AWS Region
 # + amazonHost - The AWS host
 # + clientConfig - HTTP client config
 public type AmazonS3Configuration record {
     string accessKeyId = "";
     string secretAccessKey = "";
+    string? securityToken = ();
     string region = "";
     string amazonHost = "";
     http:ClientEndpointConfig clientConfig = {};
