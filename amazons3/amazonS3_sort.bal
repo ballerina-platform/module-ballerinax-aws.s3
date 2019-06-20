@@ -23,18 +23,15 @@ type SortBucket object {
     string[] items = [];
     int index = 0;
 
-
-    function sortBucket();
+    function sortBucket() {
+        map<any> buckets = bucketize(self.items, self.index);
+        addToResultArray(buckets);
+    }
 
     public function addItem(string item) {
         self.items[self.items.length()] = item;
     }
 };
-
-function SortBucket.sortBucket() {
-    map<any> buckets = bucketize(self.items, self.index);
-    addToResultArray(buckets);
-}
 
 # Returns sorted string array after performing bucket sort repeatedly.
 # By default, sorting is done on the english alphabet order.

@@ -43,7 +43,37 @@ public type AmazonS3Client client object {
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
     # + return - If success, returns a list of Bucket record, else returns error
-    public remote function listBuckets() returns Bucket[]|error;
+    public remote function listBuckets() returns Bucket[]|error {
+        map<anydata> requestHeaders = {};
+        http:Request request = new;
+        string requestURI = "/";
+
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            var httpResponse = self.amazonS3Client->get("/", message = request);
+            if (httpResponse is http:Response) {
+                int statusCode = httpResponse.statusCode;
+                var amazonResponse = httpResponse.getXmlPayload();
+                if (amazonResponse is xml) {
+                    if (statusCode == 200) {
+                        return getBucketsList(amazonResponse);
+                    } else {
+                        return setResponseError(amazonResponse["Message"].getTextValue());
+                    }
+                } else {
+                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                }
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 
     # Create a bucket.
     # 
@@ -51,7 +81,36 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If success, returns Status object, else returns error.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;
+    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error {
+        map<anydata> requestHeaders = {};
+        http:Request request = new;
+        string requestURI = "/" + bucketName + "/";
+
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        if (cannedACL != ()) {
+            requestHeaders[X_AMZ_ACL] = cannedACL;
+        }
+        if(self.region != DEFAULT_REGION) {
+            xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
+                                        <LocationConstraint>${self.region}</LocationConstraint> 
+                                </CreateBucketConfiguration>`;   
+            request.setXmlPayload(xmlPayload);
+        }
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
+
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            var httpResponse = self.amazonS3Client->put(requestURI, request);
+            if (httpResponse is http:Response) {
+                return handleResponse(httpResponse);
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 
     # Retrieve the existing objects in a given bucket
     # 
@@ -71,7 +130,45 @@ public type AmazonS3Client client object {
     # + return - If success, returns S3Object[] object, else returns error
     public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
                         int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns S3Object[]|error;
+                        string? continuationToken = ()) returns S3Object[]|error  {
+        map<anydata> requestHeaders = {};
+        map<anydata> queryParamsMap = {};  
+        http:Request request = new;
+        string requestURI = "/" + bucketName + "/";
+        string queryParamsStr = "?list-type=2";
+        queryParamsMap["list-type"] = "2";
+
+        string queryParams = populateOptionalParameters(delimiter = delimiter, encodingType = encodingType, 
+                                maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
+                                continuationToken = continuationToken, queryParamsMap);
+        queryParamsStr = string `${queryParamsStr}${queryParams}`;
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            requestURI = string `${requestURI}${queryParamsStr}`;
+            var httpResponse = self.amazonS3Client->get(requestURI, message = request);
+            if (httpResponse is http:Response) {
+                int statusCode = httpResponse.statusCode;
+                var amazonResponse = httpResponse.getXmlPayload();
+                if (amazonResponse is xml) {
+                    if (statusCode == 200) {
+                        return getS3ObjectsList(amazonResponse);
+                    } else {
+                        return setResponseError(amazonResponse["Message"].getTextValue());
+                    } 
+                } else {
+                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                }
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 
     # Retrieves objects from Amazon S3.
     # 
@@ -81,7 +178,45 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns S3ObjectContent object, else returns error
     public remote function getObject(string bucketName, string objectName, GetObjectHeaders? getObjectHeaders = ()) 
-                        returns S3Object|error;
+                        returns S3Object|error {
+        map<anydata> requestHeaders = {};
+        http:Request request = new;
+        string requestURI = "/" + bucketName + "/" + objectName;
+
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        // Add optional headers.
+        populateGetObjectHeaders(requestHeaders, getObjectHeaders);
+        
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
+
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            var httpResponse = self.amazonS3Client->get(requestURI, message = request);
+            if (httpResponse is http:Response) {
+                int statusCode = httpResponse.statusCode;
+                if (statusCode == 200) {
+                    string|error amazonResponse = httpResponse.getTextPayload();
+                    if (amazonResponse is string) {
+                        return getS3Object(amazonResponse);
+                    } else {
+                        return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                    }
+                } else {
+                    var amazonResponse = httpResponse.getXmlPayload();
+                    if (amazonResponse is xml) {
+                        return setResponseError(amazonResponse["Message"].getTextValue());
+                    } else {
+                        return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                    }    
+                }     
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 
     # Create an object.
     # 
@@ -94,7 +229,31 @@ public type AmazonS3Client client object {
     # + return - If success, returns Status object, else returns error
     public remote function createObject(string bucketName, string objectName, string payload, 
                         CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
-                        returns boolean|error;
+                        returns boolean|error {
+        map<anydata> requestHeaders = {};
+        http:Request request = new;
+        string requestURI = "/" + bucketName + "/" + objectName;
+
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        request.setTextPayload(payload);
+
+        // Add optional headers.
+        populateCreateObjectHeaders(requestHeaders, createObjectHeaders);
+
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            var httpResponse = self.amazonS3Client->put(requestURI, request);
+            if (httpResponse is http:Response) {
+                return handleResponse(httpResponse);
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 
     # Delete an object.
     # 
@@ -104,246 +263,66 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error
     public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns boolean|error;
+                        returns boolean|error {
+        map<anydata> requestHeaders = {};
+        map<anydata> queryParamsMap = {};
+        http:Request request = new;
+        string queryParamsStr = "";
+        string requestURI = string `/${bucketName}/${objectName}`;
+
+        // Append query parameter(versionId).
+        var deleteVersionId = versionId;
+        if (deleteVersionId is string) {
+            queryParamsStr = string `${queryParamsStr}?versionId=${deleteVersionId}`;
+            queryParamsMap["versionId"] = deleteVersionId;
+        } 
+        
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {    
+            requestURI = string `${requestURI}${queryParamsStr}`;
+            var httpResponse = self.amazonS3Client->delete(requestURI, request);
+            if (httpResponse is http:Response) {
+                return handleResponse(httpResponse);
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }     
 
     # Delete a bucket.
     # 
     # + bucketName - The name of the bucket.
     # 
     # + return - If success, returns Status object, else returns error
-    public remote function deleteBucket(string bucketName) returns boolean|error;
+    public remote function deleteBucket(string bucketName) returns boolean|error {
+        map<anydata> requestHeaders = {};
+        http:Request request = new;
+        string requestURI = "/" + bucketName;
+
+        requestHeaders[HOST] = self.amazonHost;
+        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
+
+        if (signature is error) {
+            return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        } else {
+            //check var or union type
+            var httpResponse = self.amazonS3Client->delete(requestURI, request);
+            if (httpResponse is http:Response) {
+                return handleResponse(httpResponse);
+            } else {
+                return setResponseError(API_INVOCATION_ERROR_MSG);
+            }
+        }
+    }
 };
-
-public remote function AmazonS3Client.listBuckets() returns Bucket[]|error {
-    map<anydata> requestHeaders = {};
-    http:Request request = new;
-    string requestURI = "/";
-
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders);
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        var httpResponse = self.amazonS3Client->get("/", message = request);
-        if (httpResponse is http:Response) {
-            int statusCode = httpResponse.statusCode;
-            var amazonResponse = httpResponse.getXmlPayload();
-            if (amazonResponse is xml) {
-                if (statusCode == 200) {
-                    return getBucketsList(amazonResponse);
-                } else {
-                    return setResponseError(amazonResponse["Message"].getTextValue());
-                }
-            } else {
-                return setResponseError(XML_EXTRACTION_ERROR_MSG);
-            }
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
-
-public remote function AmazonS3Client.createBucket(string bucketName, CannedACL? cannedACL = ())
-                            returns boolean|error {
-    map<anydata> requestHeaders = {};
-    http:Request request = new;
-    string requestURI = "/" + bucketName + "/";
-
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    if (cannedACL != ()) {
-        requestHeaders[X_AMZ_ACL] = cannedACL;
-    }
-    if(self.region != DEFAULT_REGION) {
-        xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
-                                    <LocationConstraint>${self.region}</LocationConstraint> 
-                               </CreateBucketConfiguration>`;   
-        request.setXmlPayload(xmlPayload);
-    }
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders);
-
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        var httpResponse = self.amazonS3Client->put(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleResponse(httpResponse);
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
-
-public remote function AmazonS3Client.createObject(string bucketName, string objectName, string payload, 
-                            CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
-                            returns boolean|error {
-    map<anydata> requestHeaders = {};
-    http:Request request = new;
-    string requestURI = "/" + bucketName + "/" + objectName;
-
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    request.setTextPayload(payload);
-
-    // Add optional headers.
-    populateCreateObjectHeaders(requestHeaders, createObjectHeaders);
-
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders);
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        var httpResponse = self.amazonS3Client->put(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleResponse(httpResponse);
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
-                    
-public remote function AmazonS3Client.getObject(string bucketName, string objectName,
-                            GetObjectHeaders? getObjectHeaders = ()) returns S3Object|error {
-    map<anydata> requestHeaders = {};
-    http:Request request = new;
-    string requestURI = "/" + bucketName + "/" + objectName;
-
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    // Add optional headers.
-    populateGetObjectHeaders(requestHeaders, getObjectHeaders);
-    
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders);
-
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        var httpResponse = self.amazonS3Client->get(requestURI, message = request);
-        if (httpResponse is http:Response) {
-            int statusCode = httpResponse.statusCode;
-            if (statusCode == 200) {
-                string|error amazonResponse = httpResponse.getTextPayload();
-                if (amazonResponse is string) {
-                    return getS3Object(amazonResponse);
-                } else {
-                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
-                }
-            } else {
-                var amazonResponse = httpResponse.getXmlPayload();
-                if (amazonResponse is xml) {
-                    return setResponseError(amazonResponse["Message"].getTextValue());
-                } else {
-                    return setResponseError(XML_EXTRACTION_ERROR_MSG);
-                }    
-            }     
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
-
-public remote function AmazonS3Client.listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
-                        int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns S3Object[]|error {
-    map<anydata> requestHeaders = {};
-    map<anydata> queryParamsMap = {};  
-    http:Request request = new;
-    string requestURI = "/" + bucketName + "/";
-    string queryParamsStr = "?list-type=2";
-    queryParamsMap["list-type"] = "2";
-
-    string queryParams = populateOptionalParameters(delimiter = delimiter, encodingType = encodingType, 
-                            maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
-                            continuationToken = continuationToken, queryParamsMap);
-    queryParamsStr = string `${queryParamsStr}${queryParams}`;
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
-
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3Client->get(requestURI, message = request);
-        if (httpResponse is http:Response) {
-            int statusCode = httpResponse.statusCode;
-            var amazonResponse = httpResponse.getXmlPayload();
-            if (amazonResponse is xml) {
-                if (statusCode == 200) {
-                    return getS3ObjectsList(amazonResponse);
-                } else {
-                    return setResponseError(amazonResponse["Message"].getTextValue());
-                } 
-            } else {
-                return setResponseError(XML_EXTRACTION_ERROR_MSG);
-            }
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
-
-public remote function AmazonS3Client.deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                            returns boolean|error {
-    map<anydata> requestHeaders = {};
-    map<anydata> queryParamsMap = {};
-    http:Request request = new;
-    string queryParamsStr = "";
-    string requestURI = string `/${bucketName}/${objectName}`;
-
-    // Append query parameter(versionId).
-    var deleteVersionId = versionId;
-    if (deleteVersionId is string) {
-        queryParamsStr = string `${queryParamsStr}?versionId=${deleteVersionId}`;
-        queryParamsMap["versionId"] = deleteVersionId;
-    } 
-    
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
-
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {    
-        requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3Client->delete(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleResponse(httpResponse);
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}              
-
-public remote function AmazonS3Client.deleteBucket(string bucketName) returns boolean|error {
-    map<anydata> requestHeaders = {};
-    http:Request request = new;
-    string requestURI = "/" + bucketName;
-
-    requestHeaders[HOST] = self.amazonHost;
-    requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-    var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-        UNSIGNED_PAYLOAD, requestHeaders);
-
-    if (signature is error) {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
-    } else {
-        //check var or union type
-        var httpResponse = self.amazonS3Client->delete(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleResponse(httpResponse);
-        } else {
-            return setResponseError(API_INVOCATION_ERROR_MSG);
-        }
-    }
-}
 
 # Verify the existence of credentials.
 #
