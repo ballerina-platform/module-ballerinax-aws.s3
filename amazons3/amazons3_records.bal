@@ -19,20 +19,20 @@ import ballerina/http;
 
 public const ACL_PRIVATE = "private";
 public const ACL_PUBLIC_READ = "public-read";
-public const PUBLIC_READ_WRITE = "public-read-write";
-public const AUTHENTICATED_READ = "aws-exec-read";
-public const LOG_DELIVERY_WRITE = "authenticated-read";
-public const BUCKET_OWNER_READ = "bucket-owner-read";
-public const BUCKET_OWNER_FULL_CONTROL = "bucket-owner-full-control";
-public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|PUBLIC_READ_WRITE|AUTHENTICATED_READ|LOG_DELIVERY_WRITE|
-                    BUCKET_OWNER_READ|BUCKET_OWNER_FULL_CONTROL;
+public const ACL_PUBLIC_READ_WRITE = "public-read-write";
+public const ACL_AUTHENTICATED_READ = "aws-exec-read";
+public const ACL_LOG_DELIVERY_WRITE = "authenticated-read";
+public const ACL_BUCKET_OWNER_READ = "bucket-owner-read";
+public const ACL_BUCKET_OWNER_FULL_CONTROL = "bucket-owner-full-control";
+public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|ACL_PUBLIC_READ_WRITE|ACL_AUTHENTICATED_READ|ACL_LOG_DELIVERY_WRITE|
+                    ACL_BUCKET_OWNER_READ|ACL_BUCKET_OWNER_FULL_CONTROL;
 
 # Define the bucket type.
 # + name - The name of the bucket
 # + creationDate - The creation date of the bucket
 public type Bucket record {
-    string name = "";
-    string creationDate = "";
+    string name?;
+    string creationDate?;
 };
 
 # Define the S3Object type.
@@ -45,22 +45,14 @@ public type Bucket record {
 # + storageClass - The storage class of the object
 # + content - The content of the object
 public type S3Object record {
-    string objectName = "";
-    string lastModified = "";
-    string eTag = "";
-    string objectSize = "";
-    string ownerId = "";
-    string ownerDisplayName = "";
-    string storageClass = "";
-    string content = "";
-};
-
-# Define the status type.
-# + success - The status of the AmazonS3 operation
-# + statusCode - The status code of the response
-public type Status record {
-    boolean success = false;
-    int statusCode = 0;
+    string objectName?;
+    string lastModified?;
+    string eTag?;
+    string objectSize?;
+    string ownerId?;
+    string ownerDisplayName?;
+    string storageClass?;
+    string content?;
 };
 
 # Represents the optional headers specific to  getObject function.
@@ -70,7 +62,7 @@ public type Status record {
 # + ifMatch - Return the object only if its entity tag (ETag) is the same as the one specified.
 # + ifNoneMatch - Return the object only if its entity tag (ETag) is different from the one specified.
 # + range - Downloads the specified range bytes of an object. 
-public type GetObjectHeaders record {
+public type ObjectRetrievalHeaders record {
     string modifiedSince?;
     string unModifiedSince?;
     string ifMatch?;
@@ -87,7 +79,7 @@ public type GetObjectHeaders record {
 # + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers).
 # + expect - When your application uses 100-continue, it does not send the request body until it receives an acknowledgment.The date and time at which the object is no longer able to be cached. 
 # + expires - 
-public type CreateObjectHeaders record {
+public type ObjectCreationHeaders record {
     string cacheControl?;
     string contentDisposition?;
     string contentEncoding?;

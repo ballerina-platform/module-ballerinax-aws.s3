@@ -55,18 +55,6 @@ function getS3ObjectsList(xml response) returns S3Object[] {
     return s3Objects;
 }
 
-function getStatus(int statusCode) returns Status {
-    Status s = {};
-    s.statusCode = statusCode;
-    if (statusCode == 200 || statusCode == 204){
-        s.success = true;
-    }
-    else {
-        s.success = false;
-    }
-    return s;
-}
-
 function getS3Object(string response) returns S3Object {
     S3Object s3Object = {};
     s3Object.content =  response;

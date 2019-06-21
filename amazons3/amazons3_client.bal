@@ -23,12 +23,11 @@ public type AmazonS3Client client object {
     public string secretAccessKey;
     public string region;
     public string amazonHost;
-    public string baseURL = "";
     public http:Client amazonS3Client;
 
-    public function __init(AmazonS3Configuration amazonS3Config) returns error? {
+    public function __init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
-        if(self.region != DEFAULT_REGION) {
+        if (self.region != DEFAULT_REGION) {
             self.amazonHost = AMAZON_AWS_HOST.replaceFirst(SERVICE_NAME, SERVICE_NAME + "." + self.region);
         } else {
             self.amazonHost = AMAZON_AWS_HOST;
@@ -46,17 +45,16 @@ public type AmazonS3Client client object {
     public remote function listBuckets() returns Bucket[]|error {
         map<string> requestHeaders = {};
         http:Request request = new;
-        string requestURI = "/";
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH,
             UNSIGNED_PAYLOAD, requestHeaders);
         if (signature is error) {
             return setResponseError(SIGNATURE_GENEREATION_ERROR);
         } else {
-            var httpResponse = self.amazonS3Client->get("/", message = request);
+            var httpResponse = self.amazonS3Client->get(SLASH, message = request);
             if (httpResponse is http:Response) {
                 int statusCode = httpResponse.statusCode;
                 var amazonResponse = httpResponse.getXmlPayload();
@@ -84,7 +82,7 @@ public type AmazonS3Client client object {
     public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error {
         map<string> requestHeaders = {};
         http:Request request = new;
-        string requestURI = "/" + bucketName + "/";
+        string requestURI = string `/${bucketName}/`;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
@@ -134,7 +132,7 @@ public type AmazonS3Client client object {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
-        string requestURI = "/" + bucketName + "/";
+        string requestURI = string `/${bucketName}/`;
         string queryParamsStr = "?list-type=2";
         queryParamsMap["list-type"] = "2";
 
@@ -174,19 +172,19 @@ public type AmazonS3Client client object {
     # 
     # + bucketName - The name of the bucket.
     # + objectName - The name of the object.
-    # + getObjectHeaders - Optional headers for the get object function.
+    # + objectRetrievalHeaders - Optional headers for the get object function.
     # 
     # + return - If success, returns S3ObjectContent object, else returns error
-    public remote function getObject(string bucketName, string objectName, GetObjectHeaders? getObjectHeaders = ()) 
-                        returns S3Object|error {
+    public remote function getObject(string bucketName, string objectName, 
+                        ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns S3Object|error {
         map<string> requestHeaders = {};
         http:Request request = new;
-        string requestURI = "/" + bucketName + "/" + objectName;
+        string requestURI = string `/${bucketName}/${objectName}`;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         // Add optional headers.
-        populateGetObjectHeaders(requestHeaders, getObjectHeaders);
+        populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
         
         var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders);
@@ -224,22 +222,22 @@ public type AmazonS3Client client object {
     # + objectName - The name of the object. 
     # + payload - The file content that needed to be added to the bucket.
     # + cannedACL - The access control list of the new object. 
-    # + createObjectHeaders - Optional headers for the create object function.
+    # + objectCreationHeaders - Optional headers for the create object function.
     # 
     # + return - If success, returns Status object, else returns error
     public remote function createObject(string bucketName, string objectName, string payload, 
-                        CannedACL? cannedACL = (), CreateObjectHeaders? createObjectHeaders = ()) 
+                        CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ()) 
                         returns boolean|error {
         map<string> requestHeaders = {};
         http:Request request = new;
-        string requestURI = "/" + bucketName + "/" + objectName;
+        string requestURI = string `/${bucketName}/${objectName}`;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         request.setTextPayload(payload);
 
         // Add optional headers.
-        populateCreateObjectHeaders(requestHeaders, createObjectHeaders);
+        populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
 
         var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders);
@@ -303,7 +301,7 @@ public type AmazonS3Client client object {
     public remote function deleteBucket(string bucketName) returns boolean|error {
         map<string> requestHeaders = {};
         http:Request request = new;
-        string requestURI = "/" + bucketName;
+        string requestURI = string `/${bucketName}`;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
@@ -344,9 +342,9 @@ function verifyCredentials(string accessKeyId, string secretAccessKey) returns e
 # + region - The AWS Region. If you don't specify an AWS region, AmazonS3Client uses US East (N. Virginia) as 
 #            default region.
 # + clientConfig - HTTP client config
-public type AmazonS3Configuration record {
-    string accessKeyId = "";
-    string secretAccessKey = "";
+public type ClientConfiguration record {
+    string accessKeyId;
+    string secretAccessKey;
     string region = DEFAULT_REGION;
     http:ClientEndpointConfig clientConfig = {};
 };

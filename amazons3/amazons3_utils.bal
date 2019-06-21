@@ -18,9 +18,9 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
+import ballerina/io;
 import ballerina/system;
 import ballerina/time;
-import ballerina/io;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers, 
@@ -69,35 +69,17 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 }
 
 function setResponseError(string errorMessage) returns error {
-    error err = error(AMAZONS3_ERROR_CODE, { message : errorMessage });
-    return err;
+    return error(AMAZONS3_ERROR_CODE, { message : errorMessage });
 }
 
 # Funtion to generate the date strings.
 # 
 # + return - amzDate string and short date string.
 function generateDateString() returns (string, string) {
-    time:Time|error time = time:toTimeZone(time:currentTime(), "GMT");
-    string amzDateStr;
-    string shortDateStr;
-    if (time is time:Time) {
-        string|error amzDate = time:format(time, ISO8601_BASIC_DATE_FORMAT);
-        string|error shortDate = time:format(time, SHORT_DATE_FORMAT);
-        if (amzDate is string) {
-            amzDateStr = amzDate;
-
-        } else {
-            panic amzDate;
-        }
-        if (shortDate is string) {
-            shortDateStr = shortDate;
-        } else {
-            panic shortDate;
-        }
-    } else {
-        panic time;
-    }
-    return (amzDateStr, shortDateStr);
+    time:Time time = checkpanic time:toTimeZone(time:currentTime(), "GMT");
+    string amzDate = checkpanic time:format(time, ISO8601_BASIC_DATE_FORMAT);
+    string shortDate = checkpanic time:format(time, SHORT_DATE_FORMAT);
+    return (amzDate, shortDate);
 }
 
 # Function to generate string to sign.
@@ -111,9 +93,8 @@ function generateDateString() returns (string, string) {
 function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest) 
                             returns string{
     //Start creating the string to sign
-    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}`;
-    stringToSign = string `${stringToSign}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n`;
-    stringToSign = stringToSign + encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower();
+    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower()}`;
+    // stringToSign = stringToSign + encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower();
     return stringToSign;
 
 }
@@ -125,14 +106,8 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # + return - Return encoded request URI.
 function getCanonicalURI(string requestURI) returns string {
     string encodedrequestURIValue;
-    var value = http:encode(requestURI, UTF_8);
-    if (value is string) {
-        encodedrequestURIValue = value.replace("%2F", "/");
-    } else {
-        error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
-        panic err;
-    }
-    return encodedrequestURIValue;
+    string value = checkpanic http:encode(requestURI, UTF_8);
+    return value.replace(ENCODED_SLASH, SLASH);
 }
 
 # Function to generate canonical query string.
@@ -153,7 +128,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
         key = sortedKeys[index];
         var encodedKey = http:encode(key, UTF_8);
         if (encodedKey is string) {
-            encodedKeyValue = encodedKey.replace("%2F", "/");
+            encodedKeyValue = encodedKey.replace(ENCODED_SLASH, SLASH);
         } else {
             error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
             panic err;
@@ -161,7 +136,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
         value = <string>queryParams[key];
         var encodedVal = http:encode(value, UTF_8);
         if (encodedVal is string) {
-            encodedValue = encodedVal.replace("%2F", "/");
+            encodedValue = encodedVal.replace(ENCODED_SLASH, SLASH);
         } else {
             error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
             panic err;
@@ -211,8 +186,8 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
 # 
 # + return - Authorization header string value.
 function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region, 
-                                string signedHeaders, string stringToSign) returns string{
-    string signValue = (AWS4 + secretAccessKey);
+                                string signedHeaders, string stringToSign) returns string {
+    string signValue = AWS4 + secretAccessKey;
     byte[] dateKey = crypto:hmacSha256(shortDateStr.toByteArray(UTF_8), signValue.toByteArray(UTF_8));
     byte[] regionKey = crypto:hmacSha256(region.toByteArray(UTF_8), dateKey);
     byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toByteArray(UTF_8), regionKey);
@@ -229,29 +204,29 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
 # Function to populate createObject optional headers.
 # 
 # + requestHeaders - Request headers map.
-# + createObjectHeaders - Optional headers for createObject function.
-function populateCreateObjectHeaders(map<string> requestHeaders, CreateObjectHeaders? createObjectHeaders) {
-    if(createObjectHeaders != ()) {
-        if (createObjectHeaders.cacheControl != ()) {
-            requestHeaders[CACHE_CONTROL] = <string>createObjectHeaders.cacheControl;
+# + objectCreationHeaders - Optional headers for createObject function.
+function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders? objectCreationHeaders) {
+    if(objectCreationHeaders != ()) {
+        if (objectCreationHeaders.cacheControl != ()) {
+            requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders.cacheControl;
         }
-        if (createObjectHeaders.contentDisposition != ()) {
-            requestHeaders[CONTENT_DISPOSITION] = <string>createObjectHeaders.contentDisposition;
+        if (objectCreationHeaders.contentDisposition != ()) {
+            requestHeaders[CONTENT_DISPOSITION] = <string>objectCreationHeaders.contentDisposition;
         }
-        if (createObjectHeaders.contentEncoding != ()) {
-            requestHeaders[CONTENT_ENCODING] = <string>createObjectHeaders.contentEncoding;
+        if (objectCreationHeaders.contentEncoding != ()) {
+            requestHeaders[CONTENT_ENCODING] = <string>objectCreationHeaders.contentEncoding;
         }
-        if (createObjectHeaders.contentLength != ()) {
-            requestHeaders[CONTENT_LENGTH] = <string>createObjectHeaders.contentLength;
+        if (objectCreationHeaders.contentLength != ()) {
+            requestHeaders[CONTENT_LENGTH] = <string>objectCreationHeaders.contentLength;
         }
-        if (createObjectHeaders.contentMD5 != ()) {
-            requestHeaders[CONTENT_MD5] = <string>createObjectHeaders.contentMD5;
+        if (objectCreationHeaders.contentMD5 != ()) {
+            requestHeaders[CONTENT_MD5] = <string>objectCreationHeaders.contentMD5;
         }
-        if (createObjectHeaders.expect != ()) {
-            requestHeaders[EXPECT] = <string>createObjectHeaders.expect;
+        if (objectCreationHeaders.expect != ()) {
+            requestHeaders[EXPECT] = <string>objectCreationHeaders.expect;
         }
-        if (createObjectHeaders.expires != ()) {
-            requestHeaders[EXPIRES] = <string>createObjectHeaders.expires;
+        if (objectCreationHeaders.expires != ()) {
+            requestHeaders[EXPIRES] = <string>objectCreationHeaders.expires;
         }
     }
 }
@@ -259,23 +234,23 @@ function populateCreateObjectHeaders(map<string> requestHeaders, CreateObjectHea
 # Function to populate getObject optional headers.
 # 
 # + requestHeaders - Request headers map.
-# + getObjectHeaders - Optional headers for getObject function.
-function populateGetObjectHeaders(map<string> requestHeaders, GetObjectHeaders? getObjectHeaders) {
-    if(getObjectHeaders != ()) {
-        if (getObjectHeaders.modifiedSince != ()) {
-            requestHeaders[IF_MODIFIED_SINCE] = <string>getObjectHeaders.modifiedSince;
+# + objectRetrievalHeaders - Optional headers for getObject function.
+function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHeaders? objectRetrievalHeaders) {
+    if(objectRetrievalHeaders != ()) {
+        if (objectRetrievalHeaders.modifiedSince != ()) {
+            requestHeaders[IF_MODIFIED_SINCE] = <string>objectRetrievalHeaders.modifiedSince;
         }
-        if (getObjectHeaders.unModifiedSince != ()) {
-            requestHeaders[IF_UNMODIFIED_SINCE] = <string>getObjectHeaders.unModifiedSince;
+        if (objectRetrievalHeaders.unModifiedSince != ()) {
+            requestHeaders[IF_UNMODIFIED_SINCE] = <string>objectRetrievalHeaders.unModifiedSince;
         }
-        if (getObjectHeaders.ifMatch != ()) {
-            requestHeaders[IF_MATCH] = <string>getObjectHeaders.ifMatch;
+        if (objectRetrievalHeaders.ifMatch != ()) {
+            requestHeaders[IF_MATCH] = <string>objectRetrievalHeaders.ifMatch;
         }
-        if (getObjectHeaders.ifNoneMatch != ()) {
-            requestHeaders[IF_NONE_MATCH] = <string>getObjectHeaders.ifNoneMatch;
+        if (objectRetrievalHeaders.ifNoneMatch != ()) {
+            requestHeaders[IF_NONE_MATCH] = <string>objectRetrievalHeaders.ifNoneMatch;
         }
-        if (getObjectHeaders.range != ()) {
-            requestHeaders[RANGE] = <string>getObjectHeaders.range;
+        if (objectRetrievalHeaders.range != ()) {
+            requestHeaders[RANGE] = <string>objectRetrievalHeaders.range;
         }
     }
 }

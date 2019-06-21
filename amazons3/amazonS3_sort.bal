@@ -14,21 +14,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
+final string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
 "t", "u", "v", "w", "x", "y", "z"];
-string[] result = [];
+const string NON_ALPHABET = "nonAlp";
 
 type SortBucket object {
 
     string[] items = [];
     int index = 0;
+    string[] result = [];
 
     function sortBucket() {
-        map<any> buckets = bucketize(self.items, self.index);
-        addToResultArray(buckets);
+        map<any> buckets = bucketize(self.items, self.index, self.result);
+        addToResultArray(buckets, self.result);
     }
 
-    public function addItem(string item) {
+    function addItem(string item) {
         self.items[self.items.length()] = item;
     }
 };
@@ -40,24 +41,25 @@ type SortBucket object {
 # + unsortedArray - The unsorted string array.
 # + return - The sorted string array.
 public function sort(string[] unsortedArray) returns string[] {
-    result = [];
+    string[] resultArr = [];
     SortBucket initBucket = new SortBucket();
     initBucket.items = unsortedArray;
     initBucket.index = 0;
+    initBucket.result = resultArr;
     initBucket.sortBucket();
-    return result;
+    return initBucket.result;
 }
 
-function bucketize(string[] strArray, int index) returns map<any> {
+function bucketize(string[] strArray, int index, string[] result) returns map<any> {
     map<any> bucketsMap = {};
     foreach string item in strArray {
-        addToBucket(item, index, bucketsMap);
+        addToBucket(item, index, bucketsMap, result);
     }
 
     return bucketsMap;
 }
 
-function addToBucket(string item, int index, map<any> bucketsMap) {
+function addToBucket(string item, int index, map<any> bucketsMap, string[] result) {
     int nextIndex = index + 1;
     if (item.length() < nextIndex) {
         // Nothing to sort further, add to result
@@ -67,7 +69,7 @@ function addToBucket(string item, int index, map<any> bucketsMap) {
     boolean matchFound = false;
     foreach var char in alphabet {
         if (item.substring(index, nextIndex).equalsIgnoreCase(char)) {
-            populateMap(bucketsMap, char, item, index);
+            populateMap(bucketsMap, char, item, index, result);
             matchFound = true;
             break;
         }
@@ -75,40 +77,42 @@ function addToBucket(string item, int index, map<any> bucketsMap) {
 
     // Skip current character and consider next.
     if (!matchFound) {
-        populateMap(bucketsMap, "nonAlp", item, index);
+        populateMap(bucketsMap, NON_ALPHABET, item, index, result);
     }
 }
 
-function populateMap(map<any> bucketmap, string key, string item, int index) {
+function populateMap(map<any> bucketmap, string key, string item, int index, string[] result) {
     if (bucketmap.hasKey(key)) {
         SortBucket buck = <SortBucket>bucketmap[key];
         buck.addItem(item);
         buck.index = index + 1;
+        buck.result = result;
     } else {
         SortBucket newBucket = new SortBucket();
         newBucket.addItem(item);
         newBucket.index = index + 1;
+        newBucket.result = result;
         bucketmap[key] = newBucket;
     }
 }
 
-function addToResultArray(map<any> buckets) {
+function addToResultArray(map<any> buckets, string[] result) {
     int i = 0;
 
     while (i < alphabet.length()) {
         string alpChar = alphabet[i];
         if (buckets.hasKey(alpChar)) {
-            addToResultByKey(<SortBucket>buckets[alpChar]);
+            addToResultByKey(<SortBucket>buckets[alpChar], result);
         }
         i = i + 1;
     }
 
-    if (buckets.hasKey("nonAlp")) {
-        addToResultByKey(<SortBucket>buckets["nonAlp"]);
+    if (buckets.hasKey(NON_ALPHABET)) {
+        addToResultByKey(<SortBucket>buckets[NON_ALPHABET], result);
     }
 }
 
-function addToResultByKey(SortBucket thisBucket) {
+function addToResultByKey(SortBucket thisBucket, string[] result) {
     if (thisBucket.items.length() > 1) {
         thisBucket.sortBucket(); // Create buckets again
     } else {

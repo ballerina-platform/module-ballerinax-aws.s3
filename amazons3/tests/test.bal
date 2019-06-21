@@ -26,7 +26,7 @@ string testSecretAccessKey = config:getAsString("SECRET_ACCESS_KEY");
 string testRegion = config:getAsString("REGION");
 string testBucketName = config:getAsString("BUCKET_NAME");
 
-AmazonS3Configuration amazonS3Config = {
+ClientConfiguration amazonS3Config = {
     accessKeyId: testAccessKeyId,
     secretAccessKey: testSecretAccessKey,
     region: testRegion

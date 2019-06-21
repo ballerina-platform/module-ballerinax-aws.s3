@@ -27,6 +27,8 @@ const string SIGNATURE = " Signature";
 const string AWS4 = "AWS4";
 const string ISO8601_BASIC_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
 const string SHORT_DATE_FORMAT = "yyyyMMdd";
+const string ENCODED_SLASH = "%2F";
+const string SLASH = "/";
 
 // Constants to refer the headers.
 const string CONTENT_TYPE = "Content-Type";
@@ -66,6 +68,6 @@ const string AUTH_ERROR_CODE = "(wso2/amazons3)AuthError";
 const string CONVERSION_ERROR_CODE = "(wso2/amazons3)ConversionError";
 
 // Error messages.
-const string SIGNATURE_GENEREATION_ERROR = "Error occurred while generating the amazon signature header";
+const string SIGNATURE_GENEREATION_ERROR = "Error occurred while generating the Amazon signature header";
 const string XML_EXTRACTION_ERROR_MSG = "Error occurred while accessing the XML payload of the response";
 const string API_INVOCATION_ERROR_MSG = "Error occurred while invoking the AmazonS3 API";

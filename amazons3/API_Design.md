@@ -61,7 +61,7 @@ The listObjects function retrieves a list of all objects in a bucket.
 The createObject fuction uploads an object to S3.
 
 ##### Function signature
-    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), CreateObjectHeaders? createObjectHeaders = ()) returns boolean|error;
+    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), ObjectCreationHeaders? objectCreationHeaders = ()) returns boolean|error;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
@@ -80,7 +80,8 @@ The createObject fuction uploads an object to S3.
 The getObject function retrieves objects from Amazon S3.
 
 ##### Function signature
-    public remote function getObject(string bucketName, string objectName, GetObjectHeaders? getObjectHeaders = ()) returns S3Object|error;
+    public remote function getObject(string bucketName, string objectName, 
+                                    ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns S3Object|error;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
@@ -144,7 +145,7 @@ public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|PUBLIC_READ_WRITE|AUTHENTICATE
 # + ifMatch - Return the object only if its entity tag (ETag) is the same as the one specified.
 # + ifNoneMatch - Return the object only if its entity tag (ETag) is different from the one specified.
 # + range - Downloads the specified range bytes of an object. 
-public type GetObjectHeaders record {
+public type ObjectRetrievalHeaders record {
     string modifiedSince?;
     string unModifiedSince?;
     string ifMatch?;
@@ -162,7 +163,7 @@ public type GetObjectHeaders record {
 # + contentType - A standard MIME type describing the format of the contents.
 # + expect - When your application uses 100-continue, it does not send the request body until it receives an acknowledgment.The date and time at which the object is no longer able to be cached. 
 # + expires - 
-public type CreateObjectHeaders record {
+public type ObjectCreationHeaders record {
     string cacheControl?;
     string contentDisposition?;
     string contentEncoding?;

@@ -67,7 +67,7 @@ import ballerina/config;
 Add this code after the import statement to create base/parent Amazon S3 client.
 
 ```ballerina
-amazons3:AmazonS3Configuration amazonS3Config = {
+amazons3:ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("accessKey"),
     secretAccessKey: config:getAsString("secretAccessKey")
 };
@@ -93,8 +93,8 @@ import wso2/amazons3;
 import ballerina/config;
 import ballerina/io;
 
- // Create the AmazonS3Configuration that can be used to connect with the Amazon S3 service..
-amazons3:AmazonS3Configuration amazonS3Config = {
+ // Create the ClientConfiguration that can be used to connect with the Amazon S3 service..
+amazons3:ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("accessKey"),
     secretAccessKey: config:getAsString("secretAccessKey")
 };
@@ -128,7 +128,7 @@ import ballerina/io;
 
 import wso2/amazons3;
 
-amazons3:AmazonS3Configuration amazonS3Config = {
+amazons3:ClientConfiguration amazonS3Config = {
     accessKeyId: "<your_access_key_id>",
     secretAccessKey: "<your_secret_access_key>"
 };
