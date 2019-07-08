@@ -31,8 +31,8 @@ public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|ACL_PUBLIC_READ_WRITE|ACL_AUTH
 # + name - The name of the bucket
 # + creationDate - The creation date of the bucket
 public type Bucket record {
-    string name?;
-    string creationDate?;
+    string name;
+    string creationDate;
 };
 
 # Define the S3Object type.

@@ -23,9 +23,8 @@ function getBucketsList(xml response) returns Bucket[] {
     foreach var b in bucketsDetails.*.elements() {
         if (b is xml) {
             xml bucketDetails = b.elements();
-            Bucket bucket = {};
-            bucket.name = bucketDetails["Name"].getTextValue();
-            bucket.creationDate = bucketDetails["CreationDate"].getTextValue();
+            Bucket bucket = {name: bucketDetails["Name"].getTextValue(), 
+                            creationDate: bucketDetails["CreationDate"].getTextValue()};
             buckets[i]= bucket;
         }
         i = i + 1;

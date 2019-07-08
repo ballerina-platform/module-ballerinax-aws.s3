@@ -1,5 +1,5 @@
 ## Overview
-The Amazon S3 connector allows you to access the Amazon S3 REST API using ballerina. This connector has a base connector called `AmazonS3Cient` which exposes the commonly used functions such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub connectors(`AmazonS3BucketClient` and `AmazonS3ObjectClient`) for each other categorization.
+The Amazon S3 client allows you to access the Amazon S3 REST API using ballerina. This client has a base client called `AmazonS3Cient` which exposes the commonly used functions such as create, get and delete buckets and objects. And other functions related to buckets and objects will be exposed through sub clients(`AmazonS3BucketClient` and `AmazonS3ObjectClient`) for each other categorization.
 
 ## API design for AmazonS3Client functions
 ### Functions
@@ -8,7 +8,7 @@ The Amazon S3 connector allows you to access the Amazon S3 REST API using baller
 The createBucket function creates a new bucket.
  
 ##### Function signature
- `public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error;`
+ `public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns error?;`
 
 ##### Parameters
 
@@ -61,7 +61,7 @@ The listObjects function retrieves a list of all objects in a bucket.
 The createObject fuction uploads an object to S3.
 
 ##### Function signature
-    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), ObjectCreationHeaders? objectCreationHeaders = ()) returns boolean|error;
+    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), ObjectCreationHeaders? objectCreationHeaders = ()) returns error?;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
@@ -98,7 +98,7 @@ The getObject function retrieves objects from Amazon S3.
 The deleteObject function deletes a given  object.
 
 ##### Function signature
-    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) returns boolean|error;
+    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) returns error?;
 
 ##### Parameters
 |Name   |   Type    |   Description
@@ -114,7 +114,7 @@ The deleteObject function deletes a given  object.
 #### Delete bucket
 
 ##### Function signature
-    public remote function deleteBucket(string bucketName) returns boolean|error;
+    public remote function deleteBucket(string bucketName) returns error?;
 
 ##### Parameters
 |Name   |   Type    |   Description

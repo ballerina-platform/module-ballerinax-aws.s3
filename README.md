@@ -14,9 +14,9 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through balleri
 | Ballerina Language |   0.991.0      |
 | Amazon S3 API      |   2006-03-01   |
 
-## Download and Install
+## Pull and Install
 
-### Download the Module
+### Pull the Module
 You can pull the Amazon S3 client from Ballerina Central:
 ```ballerina
 $ ballerina pull wso2/amazons3
@@ -42,6 +42,7 @@ You can install module-amazons3 using:
     ```shell
     $ ballerina install amazons3
     ```
+This adds the amazons3 module into the Ballerina home repository.
 
 ## Running Tests
 
@@ -60,7 +61,7 @@ You can install module-amazons3 using:
 
     ```ballerina
     ballerina init
-    ballerina test amazons3 --config ballerina.conf
+    ballerina test amazons3
     ```
 ## How you can contribute
 

@@ -56,10 +56,9 @@ public type AmazonS3Client client object {
         } else {
             var httpResponse = self.amazonS3Client->get(SLASH, message = request);
             if (httpResponse is http:Response) {
-                int statusCode = httpResponse.statusCode;
                 var amazonResponse = httpResponse.getXmlPayload();
                 if (amazonResponse is xml) {
-                    if (statusCode == 200) {
+                    if (httpResponse.statusCode == http:OK_200) {
                         return getBucketsList(amazonResponse);
                     } else {
                         return setResponseError(amazonResponse["Message"].getTextValue());
@@ -79,7 +78,7 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If success, returns Status object, else returns error.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns boolean|error {
+    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -151,10 +150,9 @@ public type AmazonS3Client client object {
             requestURI = string `${requestURI}${queryParamsStr}`;
             var httpResponse = self.amazonS3Client->get(requestURI, message = request);
             if (httpResponse is http:Response) {
-                int statusCode = httpResponse.statusCode;
                 var amazonResponse = httpResponse.getXmlPayload();
                 if (amazonResponse is xml) {
-                    if (statusCode == 200) {
+                    if (httpResponse.statusCode == http:OK_200) {
                         return getS3ObjectsList(amazonResponse);
                     } else {
                         return setResponseError(amazonResponse["Message"].getTextValue());
@@ -194,8 +192,7 @@ public type AmazonS3Client client object {
         } else {
             var httpResponse = self.amazonS3Client->get(requestURI, message = request);
             if (httpResponse is http:Response) {
-                int statusCode = httpResponse.statusCode;
-                if (statusCode == 200) {
+                if (httpResponse.statusCode == http:OK_200) {
                     string|error amazonResponse = httpResponse.getTextPayload();
                     if (amazonResponse is string) {
                         return getS3Object(amazonResponse);
@@ -227,7 +224,7 @@ public type AmazonS3Client client object {
     # + return - If success, returns Status object, else returns error
     public remote function createObject(string bucketName, string objectName, string payload, 
                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ()) 
-                        returns boolean|error {
+                        returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -261,7 +258,7 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error
     public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns boolean|error {
+                        returns error? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
         http:Request request = new;
@@ -269,10 +266,9 @@ public type AmazonS3Client client object {
         string requestURI = string `/${bucketName}/${objectName}`;
 
         // Append query parameter(versionId).
-        var deleteVersionId = versionId;
-        if (deleteVersionId is string) {
-            queryParamsStr = string `${queryParamsStr}?versionId=${deleteVersionId}`;
-            queryParamsMap["versionId"] = deleteVersionId;
+        if (versionId is string) {
+            queryParamsStr = string `${queryParamsStr}?versionId=${versionId}`;
+            queryParamsMap["versionId"] = versionId;
         } 
         
         requestHeaders[HOST] = self.amazonHost;
@@ -298,7 +294,7 @@ public type AmazonS3Client client object {
     # + bucketName - The name of the bucket.
     # 
     # + return - If success, returns Status object, else returns error
-    public remote function deleteBucket(string bucketName) returns boolean|error {
+    public remote function deleteBucket(string bucketName) returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;

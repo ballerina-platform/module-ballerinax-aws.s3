@@ -105,7 +105,6 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # 
 # + return - Return encoded request URI.
 function getCanonicalURI(string requestURI) returns string {
-    string encodedrequestURIValue;
     string value = checkpanic http:encode(requestURI, UTF_8);
     return value.replace(ENCODED_SLASH, SLASH);
 }
@@ -130,16 +129,14 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
         if (encodedKey is string) {
             encodedKeyValue = encodedKey.replace(ENCODED_SLASH, SLASH);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
-            panic err;
+            panic error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
         }
         value = <string>queryParams[key];
         var encodedVal = http:encode(value, UTF_8);
         if (encodedVal is string) {
             encodedValue = encodedVal.replace(ENCODED_SLASH, SLASH);
         } else {
-            error err = error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
-            panic err;
+            panic error(AMAZONS3_ERROR_CODE, { message: "Error occurred when converting to string"});
         }
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
@@ -260,67 +257,58 @@ function populateOptionalParameters(string? delimiter = (), string? encodingType
                     string? continuationToken = (), map<string> queryParamsMap) returns string {
     string queryParamsStr = "";
     // Append query parameter(delimiter).
-    var delimiterStr = delimiter;
-    if (delimiterStr is string) {
-        queryParamsStr = string `${queryParamsStr}&delimiter=${delimiterStr}`;
-        queryParamsMap["delimiter"] = delimiterStr;
+        if (delimiter is string) {
+        queryParamsStr = string `${queryParamsStr}&delimiter=${delimiter}`;
+        queryParamsMap["delimiter"] = delimiter;
     } 
 
     // Append query parameter(encoding-type).
-    var encodingTypeStr = encodingType;
-    if (encodingTypeStr is string) {
-        queryParamsStr = string `${queryParamsStr}&encoding-type=${encodingTypeStr}`;
-        queryParamsMap["encoding-type"] = encodingTypeStr;
+    if (encodingType is string) {
+        queryParamsStr = string `${queryParamsStr}&encoding-type=${encodingType}`;
+        queryParamsMap["encoding-type"] = encodingType;
     } 
 
     // Append query parameter(max-keys).
-    var maxKeysVal = maxKeys;
-    if (maxKeysVal is int) {
-        queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeysVal}`;
+    if (maxKeys is int) {
+        queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeys}`;
         //Check string.convert()
-        queryParamsMap["max-keys"] = io:sprintf("%s", maxKeysVal);
+        queryParamsMap["max-keys"] = io:sprintf("%s", maxKeys);
     } 
 
     // Append query parameter(prefix).
-    var prefixStr = prefix;
-    if (prefixStr is string) {
-        queryParamsStr = string `${queryParamsStr}&prefix=${prefixStr}`;
-        queryParamsMap["prefix"] = prefixStr;
+    if (prefix is string) {
+        queryParamsStr = string `${queryParamsStr}&prefix=${prefix}`;
+        queryParamsMap["prefix"] = prefix;
     }  
 
     // Append query parameter(startAfter).
-    var startAfterStr = startAfter;
-    if (startAfterStr is string) {
-        queryParamsStr = string `${queryParamsStr}start-after=${startAfterStr}`;
-        queryParamsMap["start-after"] = startAfterStr;
+    if (startAfter is string) {
+        queryParamsStr = string `${queryParamsStr}start-after=${startAfter}`;
+        queryParamsMap["start-after"] = startAfter;
     }  
 
     // Append query parameter(fetch-owner).
-    var fetchOwnerBool = fetchOwner;
-    if (fetchOwnerBool is boolean) {
-        queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwnerBool}`;
-        queryParamsMap["fetch-owner"] = io:sprintf("%s", fetchOwnerBool);
+    if (fetchOwner is boolean) {
+        queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwner}`;
+        queryParamsMap["fetch-owner"] = io:sprintf("%s", fetchOwner);
     }  
 
     // Append query parameter(continuation-token).
-    var continuationTokenStr = continuationToken;
-    if (continuationTokenStr is string) {
-        queryParamsStr = string `${queryParamsStr}&continuation-token=${continuationTokenStr}`;
-        queryParamsMap["continuation-token"] = continuationTokenStr;
+    if (continuationToken is string) {
+        queryParamsStr = string `${queryParamsStr}&continuation-token=${continuationToken}`;
+        queryParamsMap["continuation-token"] = continuationToken;
     } 
     return queryParamsStr;
 }
 
-function handleResponse(http:Response httpResponse) returns boolean|error {
+function handleResponse(http:Response httpResponse) returns error? {
     int statusCode = httpResponse.statusCode;
-    if (statusCode == 200 || statusCode == 204) {
-        return true;
-    } else {
+    if (statusCode != http:OK_200 && statusCode != http:NO_CONTENT_204) {
         var amazonResponse = httpResponse.getXmlPayload();
         if (amazonResponse is xml) {
             return setResponseError(amazonResponse["Message"].getTextValue());
         } else {
             return setResponseError(XML_EXTRACTION_ERROR_MSG);
         }
-    }
+    }  
 }
