@@ -51,7 +51,7 @@ function testCreateBucket() {
     dependsOn: ["testCreateBucket"]
 }
 function testListBuckets() {
-    log:printInfo("amazonS3ClientForGetBucketList->listBuckets()");
+    log:printInfo("amazonS3Client->listBuckets()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->listBuckets();
@@ -91,8 +91,10 @@ function testGetObject() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->getObject(testBucketName, "test.txt");
         if (response is S3Object) {
-            string content = response.content;
-            test:assertTrue(content.length() > 0, msg = "Failed to call getObject()");
+            string|xml|json|byte[] content = response.content;
+            if(content is string) {
+                test:assertTrue(content.length() > 0, msg = "Failed to call getObject()");
+            }
         } else {
             test:assertFail(msg = <string>response.detail().message);
         }

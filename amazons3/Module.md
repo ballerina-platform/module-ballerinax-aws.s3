@@ -84,7 +84,7 @@ string bucketName = "testBucket";
 boolean|error createBucketResponse = amazonS3Client->createBucket(bucketName);
 ```
 
-If the creation was successful, the response from the `createBucket` function is a boolean value(true). If the creation was unsuccessful, the response is an `error`.
+If the creation was unsuccessful, the response from the `createBucket` function is an `error`.
 
 The complete source code look similar to the following:
 ```ballerina
@@ -107,19 +107,19 @@ public function main() {
         amazons3:CannedACL cannedACL = amazons3:ACL_PRIVATE;
         // Invoke createBucket remote function using base/parent Amazon S3 client.
         var createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL = cannedACL);
-        if (createBucketResponse is boolean) {
-            // If successful, print the status of the operation.
-            io:println("Bucket Creation Status: ", createBucketResponse);
-        } else {
+        if (createBucketResponse is error) {
             // If unsuccessful, print the error returned.
             io:println("Error: ", createBucketResponse);
+        } else {
+            // If successful, print the status of the operation.
+            io:println("Bucket Creation Status: Success");
         }
     }
 }
 ```
 Now you can run the sample using the following command:
 ```ballerina
-$ ballerina run amazons3_sample.bal --config ballerina.conf
+$ ballerina run amazons3_sample.bal
 ```
 
 ## Sample
@@ -129,8 +129,8 @@ import ballerina/io;
 import wso2/amazons3;
 
 amazons3:ClientConfiguration amazonS3Config = {
-    accessKeyId: "<your_access_key_id>",
-    secretAccessKey: "<your_secret_access_key>"
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey
 };
 
 public function main(string... args) {

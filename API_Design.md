@@ -18,7 +18,6 @@ The createBucket function creates a new bucket.
 |cannedACL | CannedACL | The access control list of the new bucket. |
 
 ##### Returns
-    On success: Boolean value(true).
     On failure: error.
         
 #### List buckets
@@ -61,7 +60,8 @@ The listObjects function retrieves a list of all objects in a bucket.
 The createObject fuction uploads an object to S3.
 
 ##### Function signature
-    public remote function createObject(string bucketName, string objectName, string payload, CannedACL? cannedACL = ()), ObjectCreationHeaders? objectCreationHeaders = ()) returns error?;
+    public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload, 
+                                    CannedACL? cannedACL = ()), ObjectCreationHeaders? objectCreationHeaders = ()) returns error?;
 
 ##### Prameters
  |     Name               |    Type     |  Description   |
@@ -73,7 +73,6 @@ The createObject fuction uploads an object to S3.
 |createObjectHeaders | CreateObjectHeaders | Optional headers for the create object function.|
 
 ##### Returns
-    On success: Boolean value(true).
     On failure: error.
 
 #### Get Object
@@ -108,7 +107,6 @@ The deleteObject function deletes a given  object.
 |versionId|string|The specific version of the object to delete, if versioning is enabled.|
 
 ##### Returns
-    On success: Boolean value(true).
     On failure: error.
 
 #### Delete bucket
@@ -122,7 +120,6 @@ The deleteObject function deletes a given  object.
 |bucketName |   string  | Name of the bucket.|
 
 ##### Returns
-    On success: Boolean value(true).
     On failure: error.
 
 
@@ -178,8 +175,8 @@ public type ObjectCreationHeaders record {
 # + name - The name of the bucket
 # + creationDate - The creation date of the bucket
 public type Bucket record {
-    string name = "";
-    string creationDate = "";
+    string name;
+    string creationDate;
 };
 
 # Define the S3Object type.
@@ -192,13 +189,13 @@ public type Bucket record {
 # + storageClass - The storage class of the object
 # + content - The content of the object
 public type S3Object record {
-    string objectName = "";
-    string lastModified = "";
-    string eTag = "";
-    string objectSize = "";
-    string ownerId = "";
-    string ownerDisplayName = "";
-    string storageClass = "";
-    string content = "";
+    string objectName?;
+    string lastModified?;
+    string eTag?;
+    string objectSize?;
+    string ownerId?;
+    string ownerDisplayName?;
+    string storageClass?;
+    string|xml|json|byte[] content?;
 };
 ```

@@ -193,11 +193,11 @@ public type AmazonS3Client client object {
             var httpResponse = self.amazonS3Client->get(requestURI, message = request);
             if (httpResponse is http:Response) {
                 if (httpResponse.statusCode == http:OK_200) {
-                    string|error amazonResponse = httpResponse.getTextPayload();
-                    if (amazonResponse is string) {
-                        return getS3Object(amazonResponse);
-                    } else {
+                    string|xml|json|byte[]|error amazonResponse = extractResponsePayload(httpResponse);
+                    if (amazonResponse is error) {
                         return setResponseError(XML_EXTRACTION_ERROR_MSG);
+                    } else {
+                        return getS3Object(amazonResponse);
                     }
                 } else {
                     var amazonResponse = httpResponse.getXmlPayload();
@@ -222,7 +222,7 @@ public type AmazonS3Client client object {
     # + objectCreationHeaders - Optional headers for the create object function.
     # 
     # + return - If success, returns Status object, else returns error
-    public remote function createObject(string bucketName, string objectName, string payload, 
+    public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload, 
                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ()) 
                         returns error? {
         map<string> requestHeaders = {};
@@ -231,7 +231,7 @@ public type AmazonS3Client client object {
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        request.setTextPayload(payload);
+        request.setPayload(payload);
 
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
