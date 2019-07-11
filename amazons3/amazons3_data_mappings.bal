@@ -54,7 +54,7 @@ function getS3ObjectsList(xml response) returns S3Object[] {
     return s3Objects;
 }
 
-function getS3Object(string|xml|json|byte[] response) returns S3Object {
+function getS3Object(byte[] response) returns S3Object {
     S3Object s3Object = {};
     s3Object.content =  response;
     return s3Object;

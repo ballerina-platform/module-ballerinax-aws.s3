@@ -52,7 +52,7 @@ public type S3Object record {
     string ownerId?;
     string ownerDisplayName?;
     string storageClass?;
-    string|xml|json|byte[] content?;
+    byte[] content?;
 };
 
 # Represents the optional headers specific to  getObject function.

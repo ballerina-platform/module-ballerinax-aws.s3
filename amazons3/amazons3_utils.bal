@@ -313,32 +313,12 @@ function handleResponse(http:Response httpResponse) returns error? {
     }  
 }
 
-function extractResponsePayload(http:Response response) returns string|xml|json|byte[]|error {
-    string contentTypeStr = response.getContentType();
-    if (contentTypeStr.equalsIgnoreCase("application/json")) {
-        var jsonObjectContent = response.getJsonPayload();
-        if (jsonObjectContent is json) {
-            return jsonObjectContent;
-        }
+function extractResponsePayload(http:Response response) returns byte[]|error {
+    var binaryObjectContent = response.getBinaryPayload();
+    if (binaryObjectContent is byte[]) {
+        return binaryObjectContent;
+    } else {
+        error err = error(AMAZONS3_ERROR_CODE, { message : "Invalid response payload" });
+        return err;
     }
-    if (contentTypeStr.equalsIgnoreCase("application/xml")) {
-        var xmlObjectContent = response.getXmlPayload();
-        if (xmlObjectContent is xml) {
-            return xmlObjectContent;
-        }
-    }
-    if (contentTypeStr.equalsIgnoreCase("text/plain")) {
-        var textObjectContent = response.getTextPayload();
-        if (textObjectContent is string) {
-            return textObjectContent;
-        }
-    }
-    if (contentTypeStr.equalsIgnoreCase("application/octet-stream")) {
-        var binaryObjectContent = response.getBinaryPayload();
-        if (binaryObjectContent is byte[]) {
-            return binaryObjectContent;
-        }
-    }
-    error err = error(AMAZONS3_ERROR_CODE, { message : "Invalid response payload" });
-    return err;
 }

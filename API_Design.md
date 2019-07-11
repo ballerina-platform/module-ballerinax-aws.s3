@@ -196,6 +196,6 @@ public type S3Object record {
     string ownerId?;
     string ownerDisplayName?;
     string storageClass?;
-    string|xml|json|byte[] content?;
+    byte[] content?;
 };
 ```

@@ -193,7 +193,7 @@ public type AmazonS3Client client object {
             var httpResponse = self.amazonS3Client->get(requestURI, message = request);
             if (httpResponse is http:Response) {
                 if (httpResponse.statusCode == http:OK_200) {
-                    string|xml|json|byte[]|error amazonResponse = extractResponsePayload(httpResponse);
+                    byte[]|error amazonResponse = extractResponsePayload(httpResponse);
                     if (amazonResponse is error) {
                         return setResponseError(XML_EXTRACTION_ERROR_MSG);
                     } else {
