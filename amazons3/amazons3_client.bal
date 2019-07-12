@@ -16,6 +16,8 @@
 //
 
 import ballerina/http;
+import ballerina/io;
+
 
 public type AmazonS3Client client object {
 
@@ -231,7 +233,12 @@ public type AmazonS3Client client object {
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        request.setPayload(payload);
+
+        if (payload is byte[]) {
+            request.setBinaryPayload(payload, contentType = "application/octet-stream");
+        } else {
+            request.setPayload(payload);
+        }
 
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
@@ -342,5 +349,5 @@ public type ClientConfiguration record {
     string accessKeyId;
     string secretAccessKey;
     string region = DEFAULT_REGION;
-    http:ClientEndpointConfig clientConfig = {};
+    http:ClientEndpointConfig clientConfig = {chunking: http:CHUNKING_NEVER};
 };

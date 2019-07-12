@@ -271,7 +271,6 @@ function populateOptionalParameters(string? delimiter = (), string? encodingType
     // Append query parameter(max-keys).
     if (maxKeys is int) {
         queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeys}`;
-        //Check string.convert()
         queryParamsMap["max-keys"] = io:sprintf("%s", maxKeys);
     } 
 
