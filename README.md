@@ -1,77 +1,69 @@
 [![Build Status](https://travis-ci.org/wso2-ballerina/module-amazons3.svg?branch=master)](https://travis-ci.org/wso2-ballerina/module-amazons3)
 
-# Ballerina Amazon S3 Connector
+# Ballerina Amazon S3 Client
 
-The Amazon S3 connector allows you to access the Amazon S3 REST API through ballerina. The following section provide you the details on connector operations.
+The Amazon S3 client allows you to access the Amazon S3 REST API through ballerina. The following section provide you the details on client operations.
 
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | -------------------- |
 | 0.991.0                    | 2006-03-01                  |
 
+|                    |    Version     |
+|:------------------:|:--------------:|
+| Ballerina Language |   0.991.0      |
+| Amazon S3 API      |   2006-03-01   |
 
-The following sections provide you with information on how to use the Ballerina Amazon S3 connector.
+## Pull and Install
 
-- [Contribute To Develop](#contribute-to-develop)
-- [Working with Amazon S3 Connector actions](#working-with-amazon-s3-endpoint-actions)
-- [Sample](#sample)
+### Pull the Module
+You can pull the Amazon S3 client from Ballerina Central:
+```ballerina
+$ ballerina pull wso2/amazons3
+```
 
-### Contribute To develop
+### Install from Source
+Alternatively, you can install AmazonS3 client from the source using the following instructions.
 
-Clone the repository by running the following command 
+**Building the source**
+1. Clone this repository using the following command:
 ```shell
-git clone https://github.com/wso2-ballerina/module-amazons3.git
-```
+    $ git clone https://github.com/wso2-ballerina/module-amazons3.git
+    ```
 
-### Working with Amazon S3 Connector 
+2. Run this command from the `module-amazons3` root directory:
 
-First, import the `wso2/amazons3` module into the Ballerina project.
+    ```shell
+    $ ballerina build amazons3
+    ```
 
-```ballerina
-import wso2/amazons3;
-```
+**Installation**
+You can install module-amazons3 using:
+    ```shell
+    $ ballerina install amazons3
+    ```
+This adds the amazons3 module into the Ballerina home repository.
 
-In order for you to use the Amazon S3 Connector, first you need to create an AmazonS3 Client endpoint.
+## Running Tests
 
-```ballerina
-amazons3:AmazonS3Configuration amazonS3Config = {
-    accessKeyId: testAccessKeyId,
-    secretAccessKey: testSecretAccessKey,
-    securityToken: testSecurityToken,
-    region: testRegion,
-    amazonHost: amazonHost
-};
+1. Create `ballerina.conf` file in `module-amazons3` with following configurations and provide appropriate value.
 
-amazons3:Client amazonS3Client = new(amazonS3Config);
-```
+    ```
+    ACCESS_KEY_ID="testAccessKeyValue"
+    SECRET_ACCESS_KEY="testSecretAccessKeyValue"
+    REGION="testRegion"
+    BUCKET_NAME="testBucketName"
+    ```
 
-##### Sample
+2. Navigate to the `module-amazons3` directory.
 
-```ballerina
-import ballerina/io;
-import wso2/amazons3;
+3. Run tests :
 
-amazons3:AmazonS3Configuration amazonS3Config = {
-    accessKeyId: "<your_access_key_id>",
-    secretAccessKey: "<your_secret_access_key>",
-    securityToken: "<your_security_token>",
-    region: "<your_region>",
-    amazonHost: "<your_host_name>"
-};
+    ```ballerina
+    ballerina init
+    ballerina test amazons3
+    ```
+## How you can contribute
 
-amazons3:Client amazonS3Client = new(amazonS3Config);
+As an open source project, we welcome contributions from the community. Check the [issue tracker](https://github.com/wso2-ballerina/module-amazons3/issues) for open issues that interest you. We look forward to receiving your contributions.
 
-public function main(string... args) {
-
-    string bucketName = "testBallerina";
-    var createBucketResponse = amazonS3Client->createBucket(bucketName);
-    if (createBucketResponse is amazons3:Status) {
-        // If successful, print the status of the operation.
-        boolean status = createBucketResponse.success;
-        io:println("Bucket Status: ", status);
-    } else {
-        // If unsuccessful, print the error returned.
-        io:println("Error: ", createBucketResponse);
-    }
-}
-```
