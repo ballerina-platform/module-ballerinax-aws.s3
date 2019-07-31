@@ -349,5 +349,5 @@ public type ClientConfiguration record {
     string accessKeyId;
     string secretAccessKey;
     string region = DEFAULT_REGION;
-    http:ClientEndpointConfig clientConfig = {chunking: http:CHUNKING_NEVER};
+    http:ClientEndpointConfig clientConfig = {http1Settings: {chunking: http:CHUNKING_NEVER}};
 };
