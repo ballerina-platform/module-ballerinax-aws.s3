@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+// Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
 //
 // WSO2 Inc. licenses this file to you under the Apache License,
 // Version 2.0 (the "License"); you may not use this file except
@@ -21,18 +21,15 @@ import ballerina/http;
 import ballerina/log;
 import ballerina/test;
 
-string testAccessKeyId = config:getAsString("ACCESS_KEY_ID");
-string testSecretAccessKey = config:getAsString("SECRET_ACCESS_KEY");
-string testRegion = config:getAsString("REGION");
-string testBucketName = config:getAsString("BUCKET_NAME");
+string testBucketName = "test-bucket-ballerina-dil";
 
 ClientConfiguration amazonS3Config = {
-    accessKeyId: testAccessKeyId,
-    secretAccessKey: testSecretAccessKey,
-    region: testRegion
+    accessKeyId: "",
+    secretAccessKey: "",
+    region: "ap-south-1"
 };
 
-@test:Config
+@test:Config{}
 function testCreateBucket() {
     log:printInfo("amazonS3Client->createBucket()");
     AmazonS3Client|error amazonS3Client = new(amazonS3Config);
@@ -40,10 +37,10 @@ function testCreateBucket() {
         CannedACL cannedACL = ACL_PRIVATE;
         var response = amazonS3Client->createBucket(testBucketName, cannedACL = cannedACL);
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
@@ -56,18 +53,18 @@ function testListBuckets() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->listBuckets();
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         } else {
             string bucketName = response[0].name;
             test:assertTrue(bucketName.length() > 0, msg = "Failed to call listBuckets()");
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
 @test:Config {
-    dependsOn: ["testCreateBucket"]
+    dependsOn: ["testListBuckets"]
 }
 function testCreateObject() {
     log:printInfo("amazonS3Client->createObject()");
@@ -75,10 +72,10 @@ function testCreateObject() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
@@ -91,15 +88,12 @@ function testGetObject() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client->getObject(testBucketName, "test.txt");
         if (response is S3Object) {
-            string|xml|json|byte[] content = response.content;
-            if(content is string) {
-                test:assertTrue(content.length() > 0, msg = "Failed to call getObject()");
-            }
+            byte[]? content = response["content"];
         } else {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
@@ -112,12 +106,12 @@ function testListObjects() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         } else {
             test:assertTrue(response.length() > 0, msg = "Failed to call listObjects()");
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
@@ -130,10 +124,10 @@ function testDeleteObject() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }
 
@@ -146,9 +140,9 @@ function testDeleteBucket() {
     if (amazonS3Client is AmazonS3Client) {
         var response = amazonS3Client -> deleteBucket(testBucketName);
         if (response is error) {
-            test:assertFail(msg = <string>response.detail().message);
+            test:assertFail(<string>response.detail()?.message);
         }
     } else {
-        test:assertFail(msg = <string>amazonS3Client.detail().message);
+        test:assertFail(<string>amazonS3Client.detail()?.message);
     }
 }

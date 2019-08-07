@@ -24,13 +24,19 @@ public type AmazonS3Client client object {
     public string accessKeyId;
     public string secretAccessKey;
     public string region;
-    public string amazonHost;
+    public string amazonHost = EMPTY_STRING;
     public http:Client amazonS3Client;
 
     public function __init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
         if (self.region != DEFAULT_REGION) {
-            self.amazonHost = AMAZON_AWS_HOST.replaceFirst(SERVICE_NAME, SERVICE_NAME + "." + self.region);
+            var amazonHostVar = replaceFirstText(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
+            if (amazonHostVar is string) {
+                self.amazonHost = amazonHostVar;
+            } else {
+                return setResponseError(XML_EXTRACTION_ERROR_MSG);
+            }
+            //self.amazonHost = AMAZON_AWS_HOST.replaceFirst(SERVICE_NAME, SERVICE_NAME + "." + self.region);
         } else {
             self.amazonHost = AMAZON_AWS_HOST;
         }
@@ -38,13 +44,13 @@ public type AmazonS3Client client object {
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
         check verifyCredentials(self.accessKeyId, self.secretAccessKey);
-        self.amazonS3Client = new(baseURL, config = amazonS3Config.clientConfig);
+        self.amazonS3Client = new(baseURL, amazonS3Config.clientConfig);
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
     # + return - If success, returns a list of Bucket record, else returns error
-    public remote function listBuckets() returns Bucket[]|error {
+    public remote function listBuckets() returns @tainted Bucket[]|error {
         map<string> requestHeaders = {};
         http:Request request = new;
 
@@ -60,7 +66,7 @@ public type AmazonS3Client client object {
             if (httpResponse is http:Response) {
                 var amazonResponse = httpResponse.getXmlPayload();
                 if (amazonResponse is xml) {
-                    if (httpResponse.statusCode == http:OK_200) {
+                    if (httpResponse.statusCode == http:STATUS_OK) {
                         return getBucketsList(amazonResponse);
                     } else {
                         return setResponseError(amazonResponse["Message"].getTextValue());
@@ -80,7 +86,7 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If success, returns Status object, else returns error.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns error? {
+    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -129,7 +135,7 @@ public type AmazonS3Client client object {
     # + return - If success, returns S3Object[] object, else returns error
     public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
                         int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns S3Object[]|error  {
+                        string? continuationToken = ()) returns @tainted S3Object[]|error  {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -137,9 +143,9 @@ public type AmazonS3Client client object {
         string queryParamsStr = "?list-type=2";
         queryParamsMap["list-type"] = "2";
 
-        string queryParams = populateOptionalParameters(delimiter = delimiter, encodingType = encodingType, 
+        string queryParams = populateOptionalParameters(queryParamsMap, delimiter = delimiter, encodingType = encodingType, 
                                 maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
-                                continuationToken = continuationToken, queryParamsMap);
+                                continuationToken = continuationToken);
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
@@ -154,7 +160,7 @@ public type AmazonS3Client client object {
             if (httpResponse is http:Response) {
                 var amazonResponse = httpResponse.getXmlPayload();
                 if (amazonResponse is xml) {
-                    if (httpResponse.statusCode == http:OK_200) {
+                    if (httpResponse.statusCode == http:STATUS_OK) {
                         return getS3ObjectsList(amazonResponse);
                     } else {
                         return setResponseError(amazonResponse["Message"].getTextValue());
@@ -176,7 +182,7 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns S3ObjectContent object, else returns error
     public remote function getObject(string bucketName, string objectName, 
-                        ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns S3Object|error {
+                        ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -194,7 +200,7 @@ public type AmazonS3Client client object {
         } else {
             var httpResponse = self.amazonS3Client->get(requestURI, message = request);
             if (httpResponse is http:Response) {
-                if (httpResponse.statusCode == http:OK_200) {
+                if (httpResponse.statusCode == http:STATUS_OK) {
                     byte[]|error amazonResponse = extractResponsePayload(httpResponse);
                     if (amazonResponse is error) {
                         return setResponseError(XML_EXTRACTION_ERROR_MSG);
@@ -226,7 +232,7 @@ public type AmazonS3Client client object {
     # + return - If success, returns Status object, else returns error
     public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload, 
                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ()) 
-                        returns error? {
+                        returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -265,7 +271,7 @@ public type AmazonS3Client client object {
     # 
     # + return - If success, returns Status object, else returns error
     public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns error? {
+                        returns @tainted error? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
         http:Request request = new;
@@ -301,7 +307,7 @@ public type AmazonS3Client client object {
     # + bucketName - The name of the bucket.
     # 
     # + return - If success, returns Status object, else returns error
-    public remote function deleteBucket(string bucketName) returns error? {
+    public remote function deleteBucket(string bucketName) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
@@ -333,8 +339,8 @@ public type AmazonS3Client client object {
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
 function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
-        error err = error(AUTH_ERROR_CODE, { message: "Empty values set for accessKeyId or secretAccessKey 
-                        credential" });
+        error err = error(message = "Empty values set for accessKeyId or secretAccessKey 
+                        credential", code = AUTH_ERROR_CODE);
         return err;
     }
 }

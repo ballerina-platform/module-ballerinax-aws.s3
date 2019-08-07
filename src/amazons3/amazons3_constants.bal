@@ -1,4 +1,4 @@
-// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+// Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
 //
 // WSO2 Inc. licenses this file to you under the Apache License,
 // Version 2.0 (the "License"); you may not use this file except
@@ -29,6 +29,7 @@ const string ISO8601_BASIC_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
 const string SHORT_DATE_FORMAT = "yyyyMMdd";
 const string ENCODED_SLASH = "%2F";
 const string SLASH = "/";
+const string EMPTY_STRING = "";
 
 // Constants to refer the headers.
 const string CONTENT_TYPE = "Content-Type";

@@ -68,7 +68,7 @@ function addToBucket(string item, int index, map<any> bucketsMap, string[] resul
 
     boolean matchFound = false;
     foreach var char in alphabet {
-        if (item.substring(index, nextIndex).equalsIgnoreCase(char)) {
+        if (equalsIgnoreCase(item.substring(index, nextIndex), char)) {
             populateMap(bucketsMap, char, item, index, result);
             matchFound = true;
             break;
