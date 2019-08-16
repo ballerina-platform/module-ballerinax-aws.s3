@@ -168,7 +168,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
 # + request - HTTP request.
 #
 # + return - Return canonical and signed headers.
-function generateCanonicalHeaders(map<string> headers, http:Request request) returns [string, string] {
+function generateCanonicalHeaders(map<string> headers, http:Request request) returns @tainted[string, string] {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;
@@ -179,7 +179,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
     while (index < sortedHeaderKeys.length()) {
         key = sortedHeaderKeys[index];
         value = <string>headers[key];
-        request.setHeader(key, value);
+        request.setHeader(<@untainted>key, value);
         canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}\n`;
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;

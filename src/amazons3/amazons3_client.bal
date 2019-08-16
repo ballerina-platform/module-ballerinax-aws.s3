@@ -18,7 +18,6 @@
 import ballerina/http;
 import ballerina/io;
 
-
 public type AmazonS3Client client object {
 
     public string accessKeyId;
