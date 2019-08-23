@@ -68,7 +68,3 @@ const string AMAZONS3_ERROR_CODE = "(wso2/amazons3)Amazons3Error";
 const string AUTH_ERROR_CODE = "(wso2/amazons3)AuthError";
 const string CONVERSION_ERROR_CODE = "(wso2/amazons3)ConversionError";
 
-// Error messages.
-const string SIGNATURE_GENEREATION_ERROR = "Error occurred while generating the Amazon signature header";
-const string XML_EXTRACTION_ERROR_MSG = "Error occurred while accessing the XML payload of the response";
-const string API_INVOCATION_ERROR_MSG = "Error occurred while invoking the AmazonS3 API";

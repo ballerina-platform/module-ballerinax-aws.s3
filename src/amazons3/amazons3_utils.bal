@@ -24,7 +24,7 @@ import ballerinax/java;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
-                           map<string>? queryParams = ()) returns error? {
+                           map<string>? queryParams = ()) returns SignatureGenerationError? {
 
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
@@ -42,6 +42,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         if (queryParams is map<string> && queryParams.length() > 0) {
             canonicalQueryString = generateCanonicalQueryString(queryParams);
         }
+        //TODO handle else part as well
 
         // Encode request payload.
         if (payload == UNSIGNED_PAYLOAD) {
@@ -68,12 +69,11 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         request.setHeader(AUTHORIZATION, authHeader);
         
     } else {
-        return setResponseError(SIGNATURE_GENEREATION_ERROR);
+        SignatureGenerationError signatureGenerationError = error(SIGNATURE_GENERATION_ERROR,
+                                      message = SIGNATURE_GENEREATION_ERROR_MSG, errorCode = SIGNATURE_GENERATION_ERROR,
+                                      cause = canonicalURI);
+        return signatureGenerationError;
     }
-    //var canonicalURI = getCanonicalURI(requestURI);
-
-
-    
 }
 
 function setResponseError(string errorMessage) returns error {
@@ -112,7 +112,7 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # + requestURI - Request URI.
 #
 # + return - Return encoded request URI.
-function getCanonicalURI(string requestURI) returns string|error {
+function getCanonicalURI(string requestURI) returns string|StringUtilError {
     string value = checkpanic http:encode(requestURI, UTF_8);
     return replaceText(value, ENCODED_SLASH, SLASH);
     //return value.replace(ENCODED_SLASH, SLASH);
@@ -316,14 +316,20 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     return queryParamsStr;
 }
 
-function handleResponse(http:Response httpResponse) returns @tainted error? {
+function handleResponse(http:Response httpResponse) returns @tainted AmazonS3ServerError?|HttpResponseHandlingFailed? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         var amazonResponse = httpResponse.getXmlPayload();
+        // TODO ask the reason for this one
         if (amazonResponse is xml) {
-            return setResponseError(amazonResponse["Message"].getTextValue());
+            string errorMessage = amazonResponse["Message"].getTextValue();
+            AmazonS3ServerError amazonS3ServerError = error(AMAZON_S3_SERVER_ERROR, message = errorMessage,
+                                                                errorCode = AMAZON_S3_SERVER_ERROR);
         } else {
-            return setResponseError(XML_EXTRACTION_ERROR_MSG);
+            HttpResponseHandlingFailed httpResponseHandlingFailed = error(HTTP_RESPONSE_HANDLING_FAILED,
+                                          message = XML_EXTRACTION_ERROR_MSG, errorCode = HTTP_RESPONSE_HANDLING_FAILED,
+                                          cause = amazonResponse);
+            return httpResponseHandlingFailed;
         }
     }
 }
@@ -346,7 +352,7 @@ function equalsIgnoreCase(string str1, string str2) returns boolean {
     }
 }
 
-function replaceText(string originalText, string textToReplace, string replacement) returns string|error {
+function replaceText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
     handle originalTextHandle = java:fromString(originalText);
     handle textToReplaceHandle = java:fromString(textToReplace);
     handle replacementHandle = java:fromString(replacement);
@@ -354,13 +360,13 @@ function replaceText(string originalText, string textToReplace, string replaceme
     if (modifiedText is string) {
         return modifiedText;
     } else {
-        string errorMessage = "Error occured whle replacing the text";
-        error err = error(errorMessage, message = errorMessage);
-        return err;
+        string errorMessage = "Error occured while replacing the text";
+        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage, errorCode = STRING_UTIL_ERROR);
+        return stringUtilError;
     }
 }
 
-function replaceFirstText(string originalText, string textToReplace, string replacement) returns string|error {
+function replaceFirstText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
     handle originalTextHandle = java:fromString(originalText);
     handle textToReplaceHandle = java:fromString(textToReplace);
     handle replacementHandle = java:fromString(replacement);
@@ -369,8 +375,8 @@ function replaceFirstText(string originalText, string textToReplace, string repl
         return modifiedText;
     } else {
         string errorMessage = "Error occured whle replacing the first text";
-        error err = error(errorMessage, message = errorMessage);
-        return err;
+        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage, errorCode = STRING_UTIL_ERROR); 
+        return stringUtilError;
     }
 }
 
