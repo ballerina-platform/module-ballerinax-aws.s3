@@ -125,7 +125,7 @@ The deleteObject function deletes a given  object.
 
 ### Records
 
-```
+```ballerina
 public const ACL_PRIVATE = "private";
 public const ACL_PUBLIC_READ = "public-read";
 public const PUBLIC_READ_WRITE = "public-read-write";
