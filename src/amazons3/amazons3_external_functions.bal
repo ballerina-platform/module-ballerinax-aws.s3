@@ -15,6 +15,8 @@
 // under the License.
 //
 
+import ballerinax/java;
+
 function lastIndexOf(handle originalText, handle str) returns int = @java:Method {
     name: "lastIndexOf",
     class: "java.lang.String",

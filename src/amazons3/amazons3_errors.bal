@@ -36,9 +36,6 @@ public type StringUtilError error<STRING_UTIL_ERROR, ErrorDetail>;
 public const SIGNATURE_GENERATION_ERROR = "{wso2/amazons3}SignatureGenerationError";
 public type SignatureGenerationError error<SIGNATURE_GENERATION_ERROR, ErrorDetail>;
 
-public const AMAZON_S3_SERVER_ERROR = "{wso2/amazons3}AmazonS3ServerError";
-public type AmazonS3ServerError error<AMAZON_S3_SERVER_ERROR, ErrorDetail>;
-
 public const BUCKET_CREATION_FAILED = "{wso2/amazons3}BucketCreationFailed";
 public type BucketCreationFailed error<BUCKET_CREATION_FAILED, ErrorDetail>;
 
@@ -63,11 +60,16 @@ public type BucketDeletionFailed error<BUCKET_DELETION_FAILED, ErrorDetail>;
 public const HTTP_RESPONSE_HANDLING_FAILED = "{wso2/amazons3}HttpResponseHandlingFailed";
 public type HttpResponseHandlingFailed error<HTTP_RESPONSE_HANDLING_FAILED, ErrorDetail>;
 
+public const SERVER_ERROR = "{wso2/amazons3}ServerError";
+public type ServerError error<SERVER_ERROR, ErrorDetail>;
+
 # Ballerina AmazonS3 Union Errors
-public type ConnectorError StringUtilError|ClientConfigInitializationFailed|SignatureGenerationError|AmazonS3ServerError|
-                           BucketCreationFailed|HttpResponseHandlingFailed|BucketListingFailed|HttpResponseHandlingFailed|
-                           ObjectListingFailed|ObjectCreationFailed|ObjectRetrievingFailed|ObjectDeletionFailed|
-                           BucketDeletionFailed;
+public type ConnectorError ServerError|ClientError;
+
+public type ClientError StringUtilError|ClientConfigInitializationFailed|SignatureGenerationError|
+                        BucketCreationFailed|HttpResponseHandlingFailed|BucketListingFailed|HttpResponseHandlingFailed|
+                        ObjectListingFailed|ObjectCreationFailed|ObjectRetrievingFailed|ObjectDeletionFailed|
+                        BucketDeletionFailed;
 
 // Error messages.
 const string CLIENT_CONFIG_INIT_FAILED_MSG = "Error occured while initializing client configurations.";
@@ -76,7 +78,7 @@ const string AMAZON_S3_SERVER_ERROR_MSG = "Amazons S3 server error occured.";
 const string BUCKET_CREATION_FAILED_MSG = "Error occured while creating s3 bucket.";
 const string OBJECT_CREATION_FAILED_MSG = "Error occured while creating object.";
 const string BUCKET_LISTING_FAILED_MSG = "Error occured while listing buckets details.";
-const string OBJECT_LISTING_FAILED_MSG = "Error occured while listing objects from bucket : .";
+const string OBJECT_LISTING_FAILED_MSG = "Error occured while listing objects from bucket.";
 const string OBJECT_RETRIEVING_FAILED_MSG = "Error occured while retrieving object from s3 bucket";
 const string OBJECT_DELETION_FAILED_MSG = "Error occured while deleting object from s3 bucket";
 const string BUCKET_DELETION_FAILED_MSG = "Error occured while deleting bucket";

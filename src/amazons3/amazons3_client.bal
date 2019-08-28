@@ -60,7 +60,7 @@ public type AmazonS3Client client object {
         
         SignatureGenerationError? signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
                                                                 self.region, GET, SLASH,
-            UNSIGNED_PAYLOAD, requestHeaders);
+                                                                UNSIGNED_PAYLOAD, requestHeaders);
         if (signature is SignatureGenerationError) {
             BucketListingFailed bucketListingFailed = error(BUCKET_LISTING_FAILED, message = BUCKET_LISTING_FAILED_MSG,
                                                             errorCode = BUCKET_LISTING_FAILED, cause = signature);
@@ -121,13 +121,13 @@ public type AmazonS3Client client object {
 
         if (signature is SignatureGenerationError) {
             BucketCreationFailed bucketCreationFailed = error(BUCKET_CREATION_FAILED,
-                            message = BUCKET_CREATION_FAILED_MSG, errorCode = BUCKET_CREATION_FAILED, cause = signature);
+                            message = BUCKET_CREATION_FAILED_MSG + bucketName, errorCode = BUCKET_CREATION_FAILED, cause = signature);
             return bucketCreationFailed;
         } else {
             var httpResponse = self.amazonS3Client->put(requestURI, request);
             if (httpResponse is http:Response) {
                 var handleResponseStatus = handleResponse(httpResponse);
-                if (handleResponseStatus is AmazonS3ServerError|HttpResponseHandlingFailed) {
+                if (handleResponseStatus is ServerError|HttpResponseHandlingFailed) {
                     BucketCreationFailed bucketCreationFailed = error(BUCKET_CREATION_FAILED,
                         message = <string>handleResponseStatus.detail()?.message, errorCode = BUCKET_CREATION_FAILED,
                         cause = handleResponseStatus);
@@ -409,7 +409,8 @@ public type AmazonS3Client client object {
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
 function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
-        error err = error(message = "Empty values set for accessKeyId or secretAccessKey 
+        error err = error("Empty values set for accessKeyId or secretAccessKey 
+                        credential", message = "Empty values set for accessKeyId or secretAccessKey 
                         credential", code = AUTH_ERROR_CODE);
         return err;
     }

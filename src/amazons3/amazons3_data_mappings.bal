@@ -14,8 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/io;
-
 function getBucketsList(xml response) returns Bucket[] {
     Bucket[] buckets = [];
     xml bucketsDetails = response["Buckets"];

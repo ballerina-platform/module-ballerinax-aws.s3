@@ -18,7 +18,7 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
-import ballerina/system;
+import ballerina/io;
 import ballerina/time;
 import ballerinax/java;
 
@@ -42,7 +42,6 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         if (queryParams is map<string> && queryParams.length() > 0) {
             canonicalQueryString = generateCanonicalQueryString(queryParams);
         }
-        //TODO handle else part as well
 
         // Encode request payload.
         if (payload == UNSIGNED_PAYLOAD) {
@@ -77,7 +76,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 }
 
 function setResponseError(string errorMessage) returns error {
-    return error(message = errorMessage, code = AMAZONS3_ERROR_CODE);
+    return error(errorMessage, message = errorMessage, code = AMAZONS3_ERROR_CODE);
 }
 
 # Funtion to generate the date strings.
@@ -141,7 +140,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
                 encodedKeyValue = encodedKeyValueVar;
             }
         } else {
-            panic error(message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
+            panic error("Error occurred when converting to string", message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
         }
         value = <string>queryParams[key];
         var encodedVal = http:encode(value, UTF_8);
@@ -152,7 +151,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
             }
             //encodedValue = encodedVal.replace(ENCODED_SLASH, SLASH);
         } else {
-            panic error(message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
+            panic error("Error occurred when converting to string", message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
         }
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
@@ -316,15 +315,14 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     return queryParamsStr;
 }
 
-function handleResponse(http:Response httpResponse) returns @tainted AmazonS3ServerError?|HttpResponseHandlingFailed? {
+function handleResponse(http:Response httpResponse) returns @tainted ServerError?|HttpResponseHandlingFailed? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         var amazonResponse = httpResponse.getXmlPayload();
-        // TODO ask the reason for this one
         if (amazonResponse is xml) {
             string errorMessage = amazonResponse["Message"].getTextValue();
-            AmazonS3ServerError amazonS3ServerError = error(AMAZON_S3_SERVER_ERROR, message = errorMessage,
-                                                                errorCode = AMAZON_S3_SERVER_ERROR);
+            ServerError serverError = error(SERVER_ERROR, message = errorMessage,
+                                                                errorCode = SERVER_ERROR);
         } else {
             HttpResponseHandlingFailed httpResponseHandlingFailed = error(HTTP_RESPONSE_HANDLING_FAILED,
                                           message = XML_EXTRACTION_ERROR_MSG, errorCode = HTTP_RESPONSE_HANDLING_FAILED,
@@ -339,7 +337,7 @@ function extractResponsePayload(http:Response response) returns @tainted byte[]|
     if (binaryObjectContent is byte[]) {
         return binaryObjectContent;
     } else {
-        error err = error(message = "Invalid response payload", code = AMAZONS3_ERROR_CODE);
+        error err = error("Invalid response payload", message = "Invalid response payload", code = AMAZONS3_ERROR_CODE);
         return err;
     }
 }

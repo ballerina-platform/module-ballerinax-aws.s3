@@ -15,8 +15,6 @@
 // under the License.
 //
 
-import ballerina/http;
-
 public const ACL_PRIVATE = "private";
 public const ACL_PUBLIC_READ = "public-read";
 public const ACL_PUBLIC_READ_WRITE = "public-read-write";
