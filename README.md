@@ -18,7 +18,7 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through balleri
 
 ### Pull the Module
 You can pull the Amazon S3 client from Ballerina Central:
-```ballerina
+```shell
 $ ballerina pull wso2/amazons3
 ```
 
