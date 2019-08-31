@@ -62,9 +62,4 @@ const string HTTPS = "https://";
 
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
-
-// Error Codes
-const string AMAZONS3_ERROR_CODE = "(wso2/amazons3)Amazons3Error";
-const string AUTH_ERROR_CODE = "(wso2/amazons3)AuthError";
-const string CONVERSION_ERROR_CODE = "(wso2/amazons3)ConversionError";
-
+const string ERROR_REASON_PREFIX = "{wso2/amazons3}";
