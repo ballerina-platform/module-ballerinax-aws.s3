@@ -18,6 +18,7 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
+import ballerina/lang.'array as arrays;
 import ballerina/time;
 import ballerinax/java;
 
@@ -63,7 +64,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         if (payload == UNSIGNED_PAYLOAD) {
             requestPayload = payload;
         } else {
-            requestPayload = encoding:encodeHex(crypto:hashSha256(payload.toBytes())).toLowerAscii();
+            requestPayload = arrays:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
             requestHeaders[CONTENT_TYPE] = request.getHeader(CONTENT_TYPE.toLowerAscii());
         }
 
@@ -112,7 +113,7 @@ function generateDateString() returns [string, string]|error {
 function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
                             returns string{
     //Start creating the string to sign
-    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${encoding:encodeHex(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
+    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${arrays:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
 
 }
@@ -123,7 +124,7 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 #
 # + return - Return encoded request URI.
 function getCanonicalURI(string requestURI) returns string|error {
-    string value = check http:encode(requestURI, UTF_8);
+    string value = check encoding:encodeUriComponent(requestURI, UTF_8);
     return replaceText(value, ENCODED_SLASH, SLASH);
 }
 
@@ -143,10 +144,10 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
     int index = 0;
     while (index < sortedKeys.length()) {
         key = sortedKeys[index];
-        string encodedKey = check http:encode(key, UTF_8);
+        string encodedKey = check encoding:encodeUriComponent(key, UTF_8);
         encodedKeyValue = check replaceText(encodedKey, ENCODED_SLASH, SLASH);
         value = <string>queryParams[key];
-        string encodedVal = check http:encode(value, UTF_8);
+        string encodedVal = check encoding:encodeUriComponent(value, UTF_8);
         encodedValue = check replaceText(encodedVal, ENCODED_SLASH, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
@@ -199,7 +200,7 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
     byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
     byte[] signingKey = crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 
-    string encodedStr = encoding:encodeHex(crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+    string encodedStr = arrays:toBase16(crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
     string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
