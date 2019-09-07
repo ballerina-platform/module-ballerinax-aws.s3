@@ -16,6 +16,7 @@
 //
 
 import ballerina/http;
+import ballerina/stringutils;
 
 public type AmazonS3Client client object {
 
@@ -28,7 +29,7 @@ public type AmazonS3Client client object {
     public function __init(ClientConfiguration amazonS3Config) returns ClientError? {
         self.region = amazonS3Config.region;
         if (self.region != DEFAULT_REGION) {
-            string|StringUtilError amazonHostVar = replaceFirstText(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
+            string|StringUtilError amazonHostVar = stringutils:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
             if (amazonHostVar is string) {
                 self.amazonHost = amazonHostVar;
             } else {
@@ -385,5 +386,5 @@ public type ClientConfiguration record {
     string accessKeyId;
     string secretAccessKey;
     string region = DEFAULT_REGION;
-    http:ClientEndpointConfig clientConfig;
+    http:ClientConfiguration clientConfig;
 };

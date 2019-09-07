@@ -1,6 +1,7 @@
 [project]
 org-name = "wso2"
-version = "0.9.31"
+version = "0.9.50"
+license= ["Apache-2.0"]
 authors = ["WSO2"]
 keywords = ["ballerina", "amazons3", "amazon", "client", "connector"]
 repository = "https://github.com/wso2-ballerina/module-amazons3"

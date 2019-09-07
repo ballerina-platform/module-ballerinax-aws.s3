@@ -20,7 +20,7 @@ import ballerina/encoding;
 import ballerina/http;
 import ballerina/lang.'array as arrays;
 import ballerina/time;
-import ballerinax/java;
+import ballerina/stringutils;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
@@ -125,7 +125,8 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # + return - Return encoded request URI.
 function getCanonicalURI(string requestURI) returns string|error {
     string value = check encoding:encodeUriComponent(requestURI, UTF_8);
-    return replaceText(value, ENCODED_SLASH, SLASH);
+    return stringutils:replace(value, ENCODED_SLASH, SLASH);
+    //replaceText(value, ENCODED_SLASH, SLASH);
 }
 
 # Function to generate canonical query string.
@@ -145,14 +146,14 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
     while (index < sortedKeys.length()) {
         key = sortedKeys[index];
         string encodedKey = check encoding:encodeUriComponent(key, UTF_8);
-        encodedKeyValue = check replaceText(encodedKey, ENCODED_SLASH, SLASH);
+        encodedKeyValue = stringutils:replace(encodedKey, ENCODED_SLASH, SLASH);
         value = <string>queryParams[key];
         string encodedVal = check encoding:encodeUriComponent(value, UTF_8);
-        encodedValue = check replaceText(encodedVal, ENCODED_SLASH, SLASH);
+        encodedValue = stringutils:replace(encodedVal, ENCODED_SLASH, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
     }
-    canonicalQueryString = canonicalQueryString.substring(0,getLastIndexOf(canonicalQueryString, "&"));
+    canonicalQueryString = canonicalQueryString.substring(0,stringutils:lastIndexOf(canonicalQueryString, "&"));
     return canonicalQueryString;
 }
 
@@ -178,7 +179,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
     }
-    signedHeaders = signedHeaders.substring(0, getLastIndexOf(signedHeaders, ";"));
+    signedHeaders = signedHeaders.substring(0, stringutils:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
 
@@ -335,46 +336,4 @@ function handleHttpResponse(http:Response httpResponse) returns @tainted ServerE
 
 function extractResponsePayload(http:Response response) returns @tainted byte[]|error {
     return response.getBinaryPayload();
-}
-
-function equalsIgnoreCase(string str1, string str2) returns boolean {
-    if (str1.toUpperAscii() == str2.toUpperAscii()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function replaceText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
-    handle originalTextHandle = java:fromString(originalText);
-    handle textToReplaceHandle = java:fromString(textToReplace);
-    handle replacementHandle = java:fromString(replacement);
-    string? modifiedText = java:toString(replace(originalTextHandle, textToReplaceHandle, replacementHandle));
-    if (modifiedText is string) {
-        return modifiedText;
-    } else {
-        string errorMessage = "Error occured while replacing the text";
-        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage);
-        return stringUtilError;
-    }
-}
-
-function replaceFirstText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
-    handle originalTextHandle = java:fromString(originalText);
-    handle textToReplaceHandle = java:fromString(textToReplace);
-    handle replacementHandle = java:fromString(replacement);
-    string? modifiedText = java:toString(replaceFirst(originalTextHandle, textToReplaceHandle, replacementHandle));
-    if (modifiedText is string) {
-        return modifiedText;
-    } else {
-        string errorMessage = "Error occured while replacing the first text";
-        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage);
-        return stringUtilError;
-    }
-}
-
-function getLastIndexOf(string originalText, string str) returns int {
-    handle originalTextHandle = java:fromString(originalText);
-    handle strHandle = java:fromString(str);
-    return lastIndexOf(originalTextHandle, strHandle);
 }
