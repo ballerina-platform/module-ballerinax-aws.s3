@@ -2,13 +2,13 @@ Connects to Amazon S3 from Ballerina.
 
 # Module Overview
 
-The Amazon S3 client allows you to access Amazon S3 REST API through ballerina. The following section provide you the 
+The Amazon S3 client allows you to access Amazon S3 REST API through Ballerina. The following section provide you the 
 details on connector operations.
 
 **Buckets Operations**
 
 The `wso2/amazons3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, 
-delete a bucket and list objects in a bucket.
+delete a bucket, and list objects in a bucket.
 
 **Objects Operations**
 

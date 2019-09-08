@@ -1,5 +1,4 @@
-
-# Copyright (c) 2018, WSO2 Inc. (http://wso2.com) All Rights Reserved.
+# Copyright (c) 2019, WSO2 Inc. (http://wso2.com) All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,27 +13,8 @@
 # limitations under the License.
 
 script:
-- BALLERINA_VERSION=${VERSION:-0.990.1-SNAPSHOT}
-- echo -e "\033[36m${BALLERINA_VERSION}\033[m"
-
-- DISTRIBUTION_NAME=ballerina-${BALLERINA_VERSION}
-- echo -e "\033[36m${DISTRIBUTION_NAME}\033[m"
-
-- DOWNLOAD_CHANNEL=${CHANNEL:-nightly}
-- echo -e "\033[36m${DOWNLOAD_CHANNEL}\033[m"
-
-- DOWNLOAD_LOCATION=${URL:-https://product-dist.ballerina.io}
-- echo -e "\033[36m${DOWNLOAD_LOCATION}\033[m"
-
-- echo -e "\033[36m${DOWNLOAD_LOCATION}/${DOWNLOAD_CHANNEL}/${BALLERINA_VERSION}${RC:-}/${DISTRIBUTION_NAME}${RC:-}.zip\033[m"
-- wget ${DOWNLOAD_LOCATION}/${DOWNLOAD_CHANNEL}/${BALLERINA_VERSION}${RC:-}/${DISTRIBUTION_NAME}${RC:-}.zip
-
-- unzip -q ${DISTRIBUTION_NAME}${RC:-}.zip
-
-- export PATH=${PATH}:$(pwd)/${DISTRIBUTION_NAME}/bin
-
-- ballerina version
-
-- ballerina init
-
-- ballerina build amazons3 --skiptests
+  - wget https://product-dist.ballerina.io/downloads/1.0.0/ballerina-linux-installer-x64-1.0.0.deb
+  - sudo dpkg -i ballerina-linux-installer-x64-1.0.0.deb
+  - sudo apt-get install -f
+  - ballerina --version
+  - ballerina build -c --skip-tests amazons3
