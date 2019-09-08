@@ -104,7 +104,7 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns ConnectorError.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
+    public remote function createBucket(string bucketName, public CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -150,9 +150,9 @@ public type AmazonS3Client client object {
     #                       request as the continuation-token.
     # 
     # + return - If success, returns S3Object[] object, else returns ConnectorError
-    public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
-                        int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
+    public remote function listObjects(string bucketName, public string? delimiter = (), public string? encodingType = (), 
+                        public int? maxKeys = (), public string? prefix = (), public string? startAfter = (), public boolean? fetchOwner = (), 
+                        public string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -208,7 +208,7 @@ public type AmazonS3Client client object {
      #
      # + return - If success, returns S3ObjectContent object, else returns ConnectorError
      public remote function getObject(string bucketName, string objectName,
-                         ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
+                         public ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -268,7 +268,7 @@ public type AmazonS3Client client object {
     #
     # + return - If failed returns ConnectorError
     public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
-                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
+                         public CannedACL? cannedACL = (), public ObjectCreationHeaders? objectCreationHeaders = ())
                          returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
@@ -306,7 +306,7 @@ public type AmazonS3Client client object {
     # + versionId - The specific version of the object to delete, if versioning is enabled.
     # 
     # + return - If failed returns ConnectorError
-    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
+    public remote function deleteObject(string bucketName, string objectName, public string? versionId = ()) 
                         returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};

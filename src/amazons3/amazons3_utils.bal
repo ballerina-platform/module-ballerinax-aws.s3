@@ -126,7 +126,6 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 function getCanonicalURI(string requestURI) returns string|error {
     string value = check encoding:encodeUriComponent(requestURI, UTF_8);
     return stringutils:replace(value, ENCODED_SLASH, SLASH);
-    //replaceText(value, ENCODED_SLASH, SLASH);
 }
 
 # Function to generate canonical query string.
