@@ -18,36 +18,53 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
-import ballerina/io;
+import ballerina/lang.'array as arrays;
 import ballerina/time;
-import ballerinax/java;
+import ballerina/stringutils;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
-                           map<string>? queryParams = ()) returns SignatureGenerationError? {
+                           map<string>? queryParams = ()) returns ClientError? {
 
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
     map<string> requestHeaders = headers;
+    [string, string][amzDateStr, shortDateStr] = ["",""];
 
     // Generate date strings and put it in the headers map to generate the signature.
-    [string, string][amzDateStr, shortDateStr] = generateDateString();
-    requestHeaders[X_AMZ_DATE] = amzDateStr;
+    [string, string]|error dateStrings = generateDateString();
+    if (dateStrings is error) {
+        ClientError dataStringGenerationError = error(SIGNATURE_GENERATION_ERROR,
+                                                  message = DATE_STRING_GENERATION_ERROR_MSG,
+                                                  cause = dateStrings);
+        return dataStringGenerationError;
+    } else {
+        [amzDateStr, shortDateStr] = dateStrings;
+        requestHeaders[X_AMZ_DATE] = amzDateStr;
+    }
 
     // Get canonical URI.
     var canonicalURI = getCanonicalURI(requestURI);
     if (canonicalURI is string) {
         // Generate canonical query string.
         if (queryParams is map<string> && queryParams.length() > 0) {
-            canonicalQueryString = generateCanonicalQueryString(queryParams);
+            string|error canonicalQuery = generateCanonicalQueryString(queryParams);
+            if (canonicalQuery is string) {
+                canonicalQueryString = canonicalQuery;
+            } else {
+                ClientError canonicalQueryStringGenError = error(SIGNATURE_GENERATION_ERROR,
+                                      message = CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG,
+                                      cause = canonicalQuery);
+                return canonicalQueryStringGenError;
+            }
         }
 
         // Encode request payload.
         if (payload == UNSIGNED_PAYLOAD) {
             requestPayload = payload;
         } else {
-            requestPayload = encoding:encodeHex(crypto:hashSha256(payload.toBytes())).toLowerAscii();
+            requestPayload = arrays:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
             requestHeaders[CONTENT_TYPE] = request.getHeader(CONTENT_TYPE.toLowerAscii());
         }
 
@@ -68,24 +85,20 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         request.setHeader(AUTHORIZATION, authHeader);
         
     } else {
-        SignatureGenerationError signatureGenerationError = error(SIGNATURE_GENERATION_ERROR,
-                                      message = SIGNATURE_GENEREATION_ERROR_MSG, errorCode = SIGNATURE_GENERATION_ERROR,
+        ClientError canonicalUriGenerationError = error(SIGNATURE_GENERATION_ERROR,
+                                      message = CANONICAL_URI_GENERATION_ERROR_MSG,
                                       cause = canonicalURI);
-        return signatureGenerationError;
+        return canonicalUriGenerationError;
     }
-}
-
-function setResponseError(string errorMessage) returns error {
-    return error(errorMessage, message = errorMessage, code = AMAZONS3_ERROR_CODE);
 }
 
 # Funtion to generate the date strings.
 #
 # + return - amzDate string and short date string.
-function generateDateString() returns [string, string] {
-    time:Time time = checkpanic time:toTimeZone(time:currentTime(), "GMT");
-    string amzDate = checkpanic time:format(time, ISO8601_BASIC_DATE_FORMAT);
-    string shortDate = checkpanic time:format(time, SHORT_DATE_FORMAT);
+function generateDateString() returns [string, string]|error {
+    time:Time time = check time:toTimeZone(time:currentTime(), "GMT");
+    string amzDate = check time:format(time, ISO8601_BASIC_DATE_FORMAT);
+    string shortDate = check time:format(time, SHORT_DATE_FORMAT);
     return [amzDate, shortDate];
 }
 
@@ -93,15 +106,14 @@ function generateDateString() returns [string, string] {
 #
 # + amzDateStr - amzDate string.
 # + shortDateStr - Short date string.
-# + region - Endpoint region.
+# + region - Endpoint region.x
 # + canonicalRequest - Generated canonical request.
 #
 # + return - String to sign.
 function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
                             returns string{
     //Start creating the string to sign
-    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${encoding:encodeHex(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
-    // stringToSign = stringToSign + encoding:encodeHex(crypto:hashSha256(canonicalRequest.toByteArray(UTF_8))).toLower();
+    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${arrays:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
 
 }
@@ -111,10 +123,9 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # + requestURI - Request URI.
 #
 # + return - Return encoded request URI.
-function getCanonicalURI(string requestURI) returns string|StringUtilError {
-    string value = checkpanic http:encode(requestURI, UTF_8);
-    return replaceText(value, ENCODED_SLASH, SLASH);
-    //return value.replace(ENCODED_SLASH, SLASH);
+function getCanonicalURI(string requestURI) returns string|error {
+    string value = check encoding:encodeUriComponent(requestURI, UTF_8);
+    return stringutils:replace(value, ENCODED_SLASH, SLASH);
 }
 
 # Function to generate canonical query string.
@@ -122,7 +133,7 @@ function getCanonicalURI(string requestURI) returns string|StringUtilError {
 # + queryParams - Query params map.
 #
 # + return - Return canonical and signed headers.
-function generateCanonicalQueryString(map<string> queryParams) returns string {
+function generateCanonicalQueryString(map<string> queryParams) returns string|error {
     string canonicalQueryString = "";
     string key;
     string value;
@@ -133,31 +144,15 @@ function generateCanonicalQueryString(map<string> queryParams) returns string {
     int index = 0;
     while (index < sortedKeys.length()) {
         key = sortedKeys[index];
-        var encodedKey = http:encode(key, UTF_8);
-        if (encodedKey is string) {
-            var encodedKeyValueVar = replaceText(encodedKey, ENCODED_SLASH, SLASH);
-            if (encodedKeyValueVar is string) {
-                encodedKeyValue = encodedKeyValueVar;
-            }
-        } else {
-            panic error("Error occurred when converting to string", message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
-        }
+        string encodedKey = check encoding:encodeUriComponent(key, UTF_8);
+        encodedKeyValue = stringutils:replace(encodedKey, ENCODED_SLASH, SLASH);
         value = <string>queryParams[key];
-        var encodedVal = http:encode(value, UTF_8);
-        if (encodedVal is string) {
-            var encodedValueVar = replaceText(encodedVal, ENCODED_SLASH, SLASH);
-            if (encodedValueVar is string) {
-                encodedValue = encodedValueVar;
-            }
-            //encodedValue = encodedVal.replace(ENCODED_SLASH, SLASH);
-        } else {
-            panic error("Error occurred when converting to string", message = "Error occurred when converting to string", code = AMAZONS3_ERROR_CODE);
-        }
+        string encodedVal = check encoding:encodeUriComponent(value, UTF_8);
+        encodedValue = stringutils:replace(encodedVal, ENCODED_SLASH, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
     }
-    canonicalQueryString = canonicalQueryString.substring(0,getLastIndexOf(canonicalQueryString, "&"));
-
+    canonicalQueryString = canonicalQueryString.substring(0,stringutils:lastIndexOf(canonicalQueryString, "&"));
     return canonicalQueryString;
 }
 
@@ -183,7 +178,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
     }
-    signedHeaders = signedHeaders.substring(0, getLastIndexOf(signedHeaders, ";"));
+    signedHeaders = signedHeaders.substring(0, stringutils:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
 
@@ -205,7 +200,7 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
     byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
     byte[] signingKey = crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 
-    string encodedStr = encoding:encodeHex(crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+    string encodedStr = arrays:toBase16(crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
     string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
@@ -286,7 +281,7 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     // Append query parameter(max-keys).
     if (maxKeys is int) {
         queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeys}`;
-        queryParamsMap["max-keys"] = io:sprintf("%s", maxKeys);
+        queryParamsMap["max-keys"] = maxKeys.toString();
     }
 
     // Append query parameter(prefix).
@@ -304,7 +299,7 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     // Append query parameter(fetch-owner).
     if (fetchOwner is boolean) {
         queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwner}`;
-        queryParamsMap["fetch-owner"] = io:sprintf("%s", fetchOwner);
+        queryParamsMap["fetch-owner"] = fetchOwner.toString();
     }
 
     // Append query parameter(continuation-token).
@@ -315,71 +310,29 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     return queryParamsStr;
 }
 
-function handleResponse(http:Response httpResponse) returns @tainted ServerError?|HttpResponseHandlingFailed? {
+function handleHttpResponse(http:Response httpResponse) returns @tainted ServerError|ClientError? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
-        var amazonResponse = httpResponse.getXmlPayload();
-        if (amazonResponse is xml) {
-            string errorMessage = amazonResponse["Message"].getTextValue();
-            ServerError serverError = error(SERVER_ERROR, message = errorMessage,
-                                                                errorCode = SERVER_ERROR);
+        xml|error xmlPayload = httpResponse.getXmlPayload();
+        if (xmlPayload is xml) {
+            string errorReason = ERROR_REASON_PREFIX + xmlPayload["Code"].getTextValue();
+            string errorMessage = xmlPayload["Message"].getTextValue();
+            error err = error(errorReason, message = errorMessage);
+            if (err is BucketOperationError) {
+                return err;
+            } else {
+                UnknownServerError unknownServerError = error(UNKNOWN_SERVER_ERROR, message = UNKNOWN_SERVER_ERROR_MSG,
+                                                              cause = err);
+                return unknownServerError;
+            }
         } else {
-            HttpResponseHandlingFailed httpResponseHandlingFailed = error(HTTP_RESPONSE_HANDLING_FAILED,
-                                          message = XML_EXTRACTION_ERROR_MSG, errorCode = HTTP_RESPONSE_HANDLING_FAILED,
-                                          cause = amazonResponse);
-            return httpResponseHandlingFailed;
+            ClientError httpResponseHandlingError = error(HTTP_RESPONSE_HANDLING_ERROR,
+                                          message = XML_EXTRACTION_ERROR_MSG, cause = xmlPayload);
+            return httpResponseHandlingError;
         }
     }
 }
 
-function extractResponsePayload(http:Response response) returns @tainted byte[]| error {
-    var binaryObjectContent = response.getBinaryPayload();
-    if (binaryObjectContent is byte[]) {
-        return binaryObjectContent;
-    } else {
-        error err = error("Invalid response payload", message = "Invalid response payload", code = AMAZONS3_ERROR_CODE);
-        return err;
-    }
-}
-
-function equalsIgnoreCase(string str1, string str2) returns boolean {
-    if (str1.toUpperAscii() == str2.toUpperAscii()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function replaceText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
-    handle originalTextHandle = java:fromString(originalText);
-    handle textToReplaceHandle = java:fromString(textToReplace);
-    handle replacementHandle = java:fromString(replacement);
-    string? modifiedText = java:toString(replace(originalTextHandle, textToReplaceHandle, replacementHandle));
-    if (modifiedText is string) {
-        return modifiedText;
-    } else {
-        string errorMessage = "Error occured while replacing the text";
-        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage, errorCode = STRING_UTIL_ERROR);
-        return stringUtilError;
-    }
-}
-
-function replaceFirstText(string originalText, string textToReplace, string replacement) returns string|StringUtilError {
-    handle originalTextHandle = java:fromString(originalText);
-    handle textToReplaceHandle = java:fromString(textToReplace);
-    handle replacementHandle = java:fromString(replacement);
-    string? modifiedText = java:toString(replaceFirst(originalTextHandle, textToReplaceHandle, replacementHandle));
-    if (modifiedText is string) {
-        return modifiedText;
-    } else {
-        string errorMessage = "Error occured whle replacing the first text";
-        StringUtilError stringUtilError = error(STRING_UTIL_ERROR, message = errorMessage, errorCode = STRING_UTIL_ERROR); 
-        return stringUtilError;
-    }
-}
-
-function getLastIndexOf(string originalText, string str) returns int {
-    handle originalTextHandle = java:fromString(originalText);
-    handle strHandle = java:fromString(str);
-    return lastIndexOf(originalTextHandle, strHandle);
+function extractResponsePayload(http:Response response) returns @tainted byte[]|error {
+    return response.getBinaryPayload();
 }
