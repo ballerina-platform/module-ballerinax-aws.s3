@@ -17,7 +17,6 @@
 //
 
 import ballerina/config;
-import ballerina/http;
 import ballerina/log;
 import ballerina/test;
 
@@ -26,16 +25,7 @@ string testBucketName = config:getAsString("BUCKET_NAME");
 ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("ACCESS_KEY_ID"),
     secretAccessKey: config:getAsString("SECRET_ACCESS_KEY"),
-    region: config:getAsString("REGION"),
-    clientConfig: {
-        http1Settings: {chunking: http:CHUNKING_NEVER},
-        secureSocket:{
-            trustStore:{
-                path: config:getAsString("TRUST_STORE_PATH"),
-                password: config:getAsString("TRUST_STORE_PASSWORD")
-            }
-        }
-    }
+    region: config:getAsString("REGION")
 };
 
 @test:Config{}
