@@ -7,7 +7,7 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through balleri
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | ---------------------- |
-|            1.0.0           |       2006-03-01       |
+|            1.0.1           |       2006-03-01       |
 
 
 ## Pull and Install
