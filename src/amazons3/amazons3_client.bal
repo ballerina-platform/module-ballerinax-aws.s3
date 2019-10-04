@@ -50,7 +50,12 @@ public type AmazonS3Client client object {
                         message = CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, cause = verificationStatus);
             return clientConfigInitializationError;
         } else {
-            self.amazonS3 = new(baseURL, amazonS3Config.clientConfig);
+            http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.clientConfig?.secureSocket;
+            if (clientSecureSocket is ()) {
+                self.amazonS3 = new(baseURL, amazonS3Config.clientConfig);
+            } else {
+                self.amazonS3 = new("https://" + self.amazonHost, amazonS3Config.clientConfig);
+            }
         }
     }
 
