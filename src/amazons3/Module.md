@@ -12,7 +12,7 @@ delete a bucket, and list objects in a bucket.
 
 **Objects Operations**
 
-The `wso2/amazons3` module contains operations that create an object, delete an object and retrieve an object.
+The `wso2/amazons3` module contains operations that create an object, delete an object, and retrieve an object.
 
 ## Compatibility
 |                    |    Version     |  
@@ -41,19 +41,21 @@ Now you can use Ballerina to integrate with Amazon S3.
 
 #### Before you Begin
 
-You need to get credentials such as Access Key, Secret Access Key (API Secret) from Amazon S3.
+You need to get credentials such as **Access Key** and **Secret Access Key (API Secret)** from Amazon S3.
 
 **Obtaining Access Keys**
 
- 1. Create an amazon account by visiting <https://aws.amazon.com/s3/>
+ 1. Create an Amazon account by visiting <https://aws.amazon.com/s3/>
  2. Create a new access key, which includes a new secret access key.
-    - To create a new secret access key for your root account, use the [security credentials](https://console.aws.amazon.com/iam/home?#security_credential) page. Expand the Access Keys section, and then click Create New Root Key.
-    - To create a new secret access key for an IAM user, open the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1#home). Click Users in the Details pane, click the appropriate IAM user, and then click Create Access Key on the Security Credentials tab.
+    - To create a new secret access key for your root account, use the [security credentials](https://console.aws.amazon.com/iam/home?#security_credential) page. Expand the Access Keys section, and then click **Create New Root Key**.
+    - To create a new secret access key for an IAM user, open the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1#home). Click **Users** in the **Details** pane, click the appropriate IAM user, and then click **Create Access Key** on the **Security Credentials** tab.
 3. Download the newly created credentials, when prompted to do so in the key creation wizard.
 
 In the directory where you have your sample, create a `ballerina.conf` file and add the details you obtained above within the quotes.
 
-# Ballerina config file
+**Ballerina config file**
+
+```
 ACCESS_KEY_ID = ""
 
 SECRET_ACCESS_KEY = ""
@@ -66,7 +68,7 @@ TRUST_STORE_PASSWORD=""
 ```
 
 #### Ballerina Program to Create a new Bucket
-Create a new ballerina project and import the `ballerina/config` and `ballerina/http` module.
+Create a new Ballerina project and import the `ballerina/config` and `ballerina/http` module.
 
 ```ballerina
 import ballerina/config;
@@ -96,7 +98,7 @@ amazons3:ConnectorError? createBucketResponse = s3Client->createBucket(bucketNam
 
 If the creation was unsuccessful, the response from the `createBucket` function is an `amazons3:ConnectorError`.
 
-The complete source code look similar to the following:
+The complete source code looks similar to the following:
 ```ballerina
 import wso2/amazons3;
 import ballerina/config;
