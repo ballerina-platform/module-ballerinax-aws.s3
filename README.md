@@ -2,7 +2,7 @@
 
 # Ballerina Amazon S3 Client
 
-The Amazon S3 client allows you to access the Amazon S3 REST API through ballerina. The following section provide you the details on client operations.
+The Amazon S3 client allows you to access the Amazon S3 REST API through Ballerina. The following sections provide the details on client operations.
 
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
@@ -23,12 +23,11 @@ Alternatively, you can install AmazonS3 client from the source using the followi
 
 **Building the source**
 1. Clone this repository using the following command:
-```shell
+    ```shell
     $ git clone https://github.com/wso2-ballerina/module-amazons3.git
     ```
 
 2. Run this command from the `module-amazons3` root directory:
-
     ```shell
     $ ballerina build amazons3
     ```
@@ -38,11 +37,11 @@ You can install module-amazons3 using:
     ```shell
     $ ballerina install amazons3
     ```
-This adds the amazons3 module into the Ballerina home repository.
+This adds the `amazons3` module into the Ballerina home repository.
 
 ## Running Tests
 
-1. Create `ballerina.conf` file in `module-amazons3` with following configurations and provide appropriate value.
+1. Create `ballerina.conf` file in `module-amazons3` with the following configurations and provide appropriate value.
 
     ```
     ACCESS_KEY_ID="testAccessKeyValue"
@@ -59,7 +58,7 @@ This adds the amazons3 module into the Ballerina home repository.
     ballerina init
     ballerina test amazons3
     ```
+
 ## How you can contribute
 
 As an open source project, we welcome contributions from the community. Check the [issue tracker](https://github.com/wso2-ballerina/module-amazons3/issues) for open issues that interest you. We look forward to receiving your contributions.
-
