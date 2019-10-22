@@ -50,7 +50,11 @@ public type AmazonS3Client client object {
                         message = CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, cause = verificationStatus);
             return clientConfigInitializationError;
         } else {
-            self.amazonS3 = new(baseURL, amazonS3Config.clientConfig);
+            http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
+            if (clientSecureSocket is http:ClientSecureSocket) {
+                amazonS3Config.clientConfig.secureSocket = clientSecureSocket;
+            }
+                self.amazonS3  = new(baseURL, amazonS3Config.clientConfig);
         }
     }
 
@@ -382,9 +386,11 @@ function verifyCredentials(string accessKeyId, string secretAccessKey) returns C
 # + region - The AWS Region. If you don't specify an AWS region, AmazonS3Client uses US East (N. Virginia) as 
 #            default region.
 # + clientConfig - HTTP client config
+# + secureSocketConfig - Secure Socket config
 public type ClientConfiguration record {
     string accessKeyId;
     string secretAccessKey;
     string region = DEFAULT_REGION;
     http:ClientConfiguration clientConfig = {http1Settings: {chunking: http:CHUNKING_NEVER}};
+    http:ClientSecureSocket secureSocketConfig?;
 };
