@@ -17,7 +17,8 @@ The `wso2/amazons3` module contains operations that create an object, delete an 
 ## Compatibility
 |                    |    Version     |  
 |:------------------:|:--------------:|
-| Amazon S3 API      |   2006-03-01   |
+| Ballerina Language |  1.0.X, 1.1.X  |
+|   Amazon S3 API    |   2006-03-01   |
 
 ## Running Sample
 
