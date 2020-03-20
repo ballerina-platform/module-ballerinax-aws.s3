@@ -7,36 +7,36 @@ details on connector operations.
 
 **Buckets Operations**
 
-The `wso2/amazons3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, 
+The `ballerinax/aws.s3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, 
 delete a bucket, and list objects in a bucket.
 
 **Objects Operations**
 
-The `wso2/amazons3` module contains operations that create an object, delete an object, and retrieve an object.
+The `ballerinax/aws.s3` module contains operations that create an object, delete an object, and retrieve an object.
 
 ## Compatibility
 |                    |    Version     |  
 |:------------------:|:--------------:|
-| Ballerina Language |  1.0.X, 1.1.X  |
+| Ballerina Language |   1.2.0        |
 |   Amazon S3 API    |   2006-03-01   |
 
 ## Running Sample
 
 Let's get started with a simple program in Ballerina to create a new bucket.
 
-Use the following command to search for modules where the module name, description, or org name contains the word "amazons3".
+Use the following command to search for modules where the module name, description, or org name contains the word "aws.s3".
 
 ```ballerina
-$ ballerina search amazons3
+$ ballerina search aws.s3
 ```
 
 This results in a list of available modules. You can pull the one you want from Ballerina Central.
 
 ```ballerina
-$ ballerina pull wso2/amazons3
+$ ballerina pull ballerinax/aws.s3
 ```
 
-You can use the `wso2/amazons3` module to integrate with Amazon S3 back-end. Import the `wso2/amazons3` module into the Ballerina project.
+You can use the `ballerinax/aws.s3` module to integrate with Amazon S3 back-end. Import the `ballerinax/aws.s3` module into the Ballerina project.
 
 Now you can use Ballerina to integrate with Amazon S3.
 
@@ -79,13 +79,13 @@ import ballerina/http;
 Add this code after the import statement to create base/parent Amazon S3 client.
 
 ```ballerina
-amazons3:ClientConfiguration amazonS3Config = {
+s3:ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("ACCESS_KEY_ID"),
     secretAccessKey: config:getAsString("SECRET_ACCESS_KEY"),
     region: config:getAsString("REGION")
 };
 
-amazons3:AmazonS3Client|amazons3:ConnectorError amazonS3Client = new(amazonS3Config);
+s3:AmazonS3Client|s3:ConnectorError amazonS3Client = new(amazonS3Config);
 ```
 Here, we are creating a client object with the above configuration to connect with the Amazon S3 service.
 
@@ -94,20 +94,20 @@ Now you can create a new bucket in Amazon S3 by invoking the `createBucket` remo
 ```ballerina
 string bucketName = "sample-amazon-bucket";
 // Invoke createBucket remote function using base/parent Amazon S3 client.
-amazons3:ConnectorError? createBucketResponse = s3Client->createBucket(bucketName);
+s3:ConnectorError? createBucketResponse = s3Client->createBucket(bucketName);
 ```
 
-If the creation was unsuccessful, the response from the `createBucket` function is an `amazons3:ConnectorError`.
+If the creation was unsuccessful, the response from the `createBucket` function is an `s3:ConnectorError`.
 
 The complete source code looks similar to the following:
 ```ballerina
-import wso2/amazons3;
+import ballerinax/aws.s3;
 import ballerina/config;
 import ballerina/http;
 import ballerina/io;
 
  // Create the ClientConfiguration that can be used to connect with the Amazon S3 service..
-amazons3:ClientConfiguration amazonS3Config = {
+s3:ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("ACCESS_KEY_ID"),
     secretAccessKey: config:getAsString("SECRET_ACCESS_KEY"),
     region: config:getAsString("REGION"),
@@ -122,17 +122,17 @@ amazons3:ClientConfiguration amazonS3Config = {
     }
 };
 
-amazons3:AmazonS3Client|amazons3:ConnectorError amazonS3Client = new(amazonS3Config);
+s3:AmazonS3Client|s3:ConnectorError amazonS3Client = new(amazonS3Config);
 
 public function main() {
     // Create the AmazonS3 client with amazonS3Config. 
-    amazons3:AmazonS3Client|amazons3:ConnectorError amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is amazons3:AmazonS3Client) {
+    s3:AmazonS3Client|s3:ConnectorError amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is s3:AmazonS3Client) {
         string bucketName = "sample-amazon-bucket";
-        amazons3:CannedACL cannedACL = amazons3:ACL_PRIVATE;
+        s3:CannedACL cannedACL = s3:ACL_PRIVATE;
         // Invoke createBucket remote function using base/parent Amazon S3 client.
-        amazons3:ConnectorError? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
-        if (createBucketResponse is amazons3:ConnectorError) {
+        s3:ConnectorError? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
+        if (createBucketResponse is s3:ConnectorError) {
             // If unsuccessful, print the error returned.
             io:println("Error: ", createBucketResponse.reason());
         } else {
@@ -154,9 +154,9 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/lang.'string as strings;
 
-import wso2/amazons3;
+import ballerinax/aws.s3;
 
-amazons3:ClientConfiguration amazonS3Config = {
+s3:ClientConfiguration amazonS3Config = {
     accessKeyId: config:getAsString("ACCESS_KEY_ID"),
     secretAccessKey: config:getAsString("SECRET_ACCESS_KEY"),
     region: config:getAsString("REGION"),
@@ -171,13 +171,13 @@ amazons3:ClientConfiguration amazonS3Config = {
     }
 };
 public function main(string... args) {
-    amazons3:AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is amazons3:AmazonS3Client) {
+    s3:AmazonS3Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is s3:AmazonS3Client) {
         string bucketName = "sample-amazon-bucket";
         io:println("-----------------Calling createBucket() ------------------");
-        amazons3:CannedACL cannedACL = amazons3:ACL_PRIVATE;
-        amazons3:ConnectorError? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
-        if (createBucketResponse is amazons3:ConnectorError) {
+        s3:CannedACL cannedACL = s3:ACL_PRIVATE;
+        s3:ConnectorError? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
+        if (createBucketResponse is s3:ConnectorError) {
             // If unsuccessful, print the error returned.
             io:println("Error: ", createBucketResponse.reason());
         } else {
@@ -187,7 +187,7 @@ public function main(string... args) {
 
         io:println("-----------------Calling listBuckets() ------------------");
         var listBucketResponse = amazonS3Client->listBuckets();
-        if (listBucketResponse is amazons3:Bucket[]) {
+        if (listBucketResponse is s3:Bucket[]) {
             io:println("Listing all buckets: ");
             foreach var bucket in listBucketResponse {
                 io:println("Bucket Name: ", bucket.name);
@@ -197,8 +197,8 @@ public function main(string... args) {
         }
 
         io:println("-----------------Calling createObject() ------------------");
-        amazons3:ConnectorError? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
-        if (createObjectResponse is amazons3:ConnectorError) {
+        s3:ConnectorError? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
+        if (createObjectResponse is s3:ConnectorError) {
             io:println("Error: ", createObjectResponse.reason());
         } else {
             io:println("Object created successfully");
@@ -206,7 +206,7 @@ public function main(string... args) {
 
         io:println("-----------------Calling getObject() ------------------");
         var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
-        if (getObjectResponse is amazons3:S3Object) {
+        if (getObjectResponse is s3:S3Object) {
             io:println(getObjectResponse);
             byte[]? byteArray = getObjectResponse["content"];
             if (byteArray is byte[]) {
@@ -219,7 +219,7 @@ public function main(string... args) {
 
         io:println("-----------------Calling listObjects() ------------------");
         var listObjectsResponse = amazonS3Client->listObjects(bucketName);
-        if (listObjectsResponse is amazons3:S3Object[]) {
+        if (listObjectsResponse is s3:S3Object[]) {
             io:println("Listing all object: ");
             foreach var s3Object in listObjectsResponse {
                 io:println("---------------------------------");
@@ -231,16 +231,16 @@ public function main(string... args) {
         }
 
         io:println("-----------------Calling deleteObject() ------------------");
-        amazons3:ConnectorError? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
-        if (deleteObjectResponse is amazons3:ConnectorError) {
+        s3:ConnectorError? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
+        if (deleteObjectResponse is s3:ConnectorError) {
             io:println("Error: ", deleteObjectResponse.reason());
         } else {
             io:println("Successfully deleted object");
         }
 
         io:println("-----------------Calling deleteBucket() ------------------");
-        amazons3:ConnectorError? deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
-        if (deleteBucketResponse is amazons3:ConnectorError) {
+        s3:ConnectorError? deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
+        if (deleteBucketResponse is s3:ConnectorError) {
             io:println("Error: ", deleteBucketResponse.reason());
         } else {
             io:println("Successfully deleted bucket");
