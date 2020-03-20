@@ -79,8 +79,8 @@ public type AmazonS3Client client object {
                 if (httpResponse.statusCode == http:STATUS_OK) {
                     return getBucketsList(xmlPayload);
                 } else {
-                    string errorReason = ERROR_REASON_PREFIX + xmlPayload["Code"].getTextValue();
-                    string errorMessage = xmlPayload["Message"].getTextValue();
+                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
+                    string errorMessage = (xmlPayload/<Message>/*).toString();
                     error err = error(errorReason, message = errorMessage);
                     if (err is BucketOperationError) {
                         return err;
@@ -181,8 +181,8 @@ public type AmazonS3Client client object {
                 if (httpResponse.statusCode == http:STATUS_OK) {
                     return getS3ObjectsList(xmlPayload);
                 } else {
-                    string errorReason = ERROR_REASON_PREFIX + xmlPayload["Code"].getTextValue();
-                    string errorMessage = xmlPayload["Message"].getTextValue();
+                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
+                    string errorMessage = (xmlPayload/<Message>/*).toString();
                     error err = error(errorReason, message = errorMessage);
                     if (err is BucketOperationError) {
                         return err;
@@ -239,8 +239,8 @@ public type AmazonS3Client client object {
             } else {
                 xml|error xmlPayload = httpResponse.getXmlPayload();
                 if (xmlPayload is xml) {
-                    string errorReason = ERROR_REASON_PREFIX + xmlPayload["Code"].getTextValue();
-                    string errorMessage = xmlPayload["Message"].getTextValue();
+                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
+                    string errorMessage = (xmlPayload/<Message>/*).toString();
                     error err = error(errorReason, message = errorMessage);
                     if (err is BucketOperationError) {
                         return err;

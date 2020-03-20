@@ -14,15 +14,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
+import ballerina/io;
+
 function getBucketsList(xml response) returns Bucket[] {
+    xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
     Bucket[] buckets = [];
-    xml bucketsDetails = response["Buckets"];
+    io:println(response);
+    xml bucketsDetails = response/<Buckets>;
     int i = 0;
-    foreach var b in bucketsDetails.*.elements() {
+    foreach var b in bucketsDetails/<*> {
         if (b is xml) {
             xml bucketDetails = b.elements();
-            Bucket bucket = {name: bucketDetails["Name"].getTextValue(), 
-                            creationDate: bucketDetails["CreationDate"].getTextValue()};
+            Bucket bucket = {name: (bucketDetails/<Name>/*).toString(),
+                            creationDate: (bucketDetails/<CreationDate>/*).toString()};
             buckets[i]= bucket;
         }
         i = i + 1;
@@ -31,20 +35,21 @@ function getBucketsList(xml response) returns Bucket[] {
 }
 
 function getS3ObjectsList(xml response) returns S3Object[] {
+    xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
     S3Object[] s3Objects = [];
-    xml contents = response["Contents"];
+    xml contents = response/<Contents>;
     int i = 0;
     foreach var c in contents {
         if (c is xml) {
             xml content = c.elements();
             S3Object s3Object = {};
-            s3Object.objectName = content["Key"].getTextValue();
-            s3Object.lastModified = content["LastModified"].getTextValue();
-            s3Object.eTag = content["ETag"].getTextValue();
-            s3Object.objectSize = content["Size"].getTextValue();
-            s3Object.ownerId = content["Owner"]["ID"].getTextValue();
-            s3Object.ownerDisplayName = content["Owner"]["DisplayName"].getTextValue();
-            s3Object.storageClass = content["StorageClass"].getTextValue();
+            s3Object.objectName = (content/<Key>/*).toString();
+            s3Object.lastModified = (content/<LastModified>/*).toString();
+            s3Object.eTag = (content/<ETag>/*).toString();
+            s3Object.objectSize = (content/<Size>/*).toString();
+            s3Object.ownerId = (content/<Owner>/<ID>/*).toString();
+            s3Object.ownerDisplayName = (content/<Owner>/<DisplayName>/*).toString();
+            s3Object.storageClass = (content/<StorageClass>/*).toString();
             s3Objects[i] = s3Object;
         }
         i = i + 1;

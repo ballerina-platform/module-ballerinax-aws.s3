@@ -315,8 +315,8 @@ function handleHttpResponse(http:Response httpResponse) returns @tainted ServerE
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         xml|error xmlPayload = httpResponse.getXmlPayload();
         if (xmlPayload is xml) {
-            string errorReason = ERROR_REASON_PREFIX + xmlPayload["Code"].getTextValue();
-            string errorMessage = xmlPayload["Message"].getTextValue();
+            string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
+            string errorMessage = (xmlPayload/<Message>/*).toString();
             error err = error(errorReason, message = errorMessage);
             if (err is BucketOperationError) {
                 return err;
