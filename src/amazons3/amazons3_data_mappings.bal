@@ -14,12 +14,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/io;
+xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
 
 function getBucketsList(xml response) returns Bucket[] {
-    xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
     Bucket[] buckets = [];
-    io:println(response);
     xml bucketsDetails = response/<Buckets>;
     int i = 0;
     foreach var b in bucketsDetails/<*> {
@@ -35,7 +33,6 @@ function getBucketsList(xml response) returns Bucket[] {
 }
 
 function getS3ObjectsList(xml response) returns S3Object[] {
-    xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
     S3Object[] s3Objects = [];
     xml contents = response/<Contents>;
     int i = 0;
