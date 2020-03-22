@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ballerina-platform/module-aws.s3.svg?branch=master)](https://travis-ci.org/ballerina-platform/module-aws.s3)
+[![Build Status](https://travis-ci.org/ballerina-platform/module-amazons3.svg?branch=master)](https://travis-ci.org/ballerina-platform/module-amazons3)
 
 # Ballerina Amazon S3 Client
 
