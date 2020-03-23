@@ -62,4 +62,4 @@ const string HTTPS = "https://";
 
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
-const string ERROR_REASON_PREFIX = "{wso2/amazons3}";
+const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";

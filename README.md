@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/wso2-ballerina/module-amazons3.svg?branch=master)](https://travis-ci.org/wso2-ballerina/module-amazons3)
+[![Build Status](https://travis-ci.org/ballerina-platform/module-amazons3.svg?branch=master)](https://travis-ci.org/ballerina-platform/module-amazons3)
 
 # Ballerina Amazon S3 Client
 
@@ -7,7 +7,7 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through Balleri
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | ---------------------- |
-|        1.1.X, 1.0.X        |       2006-03-01       |
+|           1.2.0            |       2006-03-01       |
 
 
 ## Pull and Install
@@ -15,7 +15,7 @@ The Amazon S3 client allows you to access the Amazon S3 REST API through Balleri
 ### Pull the Module
 You can pull the Amazon S3 client from Ballerina Central:
 ```shell
-$ ballerina pull wso2/amazons3
+$ ballerina pull ballerinax/aws.s3
 ```
 
 ### Install from Source
@@ -24,20 +24,14 @@ Alternatively, you can install AmazonS3 client from the source using the followi
 **Building the source**
 1. Clone this repository using the following command:
     ```shell
-    $ git clone https://github.com/wso2-ballerina/module-amazons3.git
+    $ git clone https://github.com/ballerina-platform/module-amazons3.git
     ```
 
 2. Run this command from the `module-amazons3` root directory:
     ```shell
-    $ ballerina build amazons3
+    $ ballerina build aws.s3
     ```
 
-**Installation**
-You can install module-amazons3 using:
-    ```shell
-    $ ballerina install amazons3
-    ```
-This adds the `amazons3` module into the Ballerina home repository.
 
 ## Running Tests
 
@@ -55,10 +49,9 @@ This adds the `amazons3` module into the Ballerina home repository.
 3. Run tests :
 
     ```ballerina
-    ballerina init
-    ballerina test amazons3
+    ballerina test aws.s3
     ```
 
 ## How you can contribute
 
-As an open source project, we welcome contributions from the community. Check the [issue tracker](https://github.com/wso2-ballerina/module-amazons3/issues) for open issues that interest you. We look forward to receiving your contributions.
+As an open source project, we welcome contributions from the community. Check the [issue tracker](https://github.com/ballerina-platform/module-amazons3/issues) for open issues that interest you. We look forward to receiving your contributions.
