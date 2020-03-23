@@ -35,10 +35,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
     if (dateStrings is error) {
-        ClientError dataStringGenerationError = error(SIGNATURE_GENERATION_ERROR,
-                                                  message = DATE_STRING_GENERATION_ERROR_MSG,
-                                                  cause = dateStrings);
-        return dataStringGenerationError;
+        return prepareError(SIGNATURE_GENERATION_ERROR, DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
         requestHeaders[X_AMZ_DATE] = amzDateStr;
@@ -53,10 +50,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             if (canonicalQuery is string) {
                 canonicalQueryString = canonicalQuery;
             } else {
-                ClientError canonicalQueryStringGenError = error(SIGNATURE_GENERATION_ERROR,
-                                      message = CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG,
-                                      cause = canonicalQuery);
-                return canonicalQueryStringGenError;
+                return prepareError(SIGNATURE_GENERATION_ERROR, CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
             }
         }
 
@@ -85,10 +79,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         request.setHeader(AUTHORIZATION, authHeader);
         
     } else {
-        ClientError canonicalUriGenerationError = error(SIGNATURE_GENERATION_ERROR,
-                                      message = CANONICAL_URI_GENERATION_ERROR_MSG,
-                                      cause = canonicalURI);
-        return canonicalUriGenerationError;
+        return prepareError(SIGNATURE_GENERATION_ERROR, CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
 }
 
@@ -326,9 +317,7 @@ function handleHttpResponse(http:Response httpResponse) returns @tainted ServerE
                 return unknownServerError;
             }
         } else {
-            ClientError httpResponseHandlingError = error(HTTP_RESPONSE_HANDLING_ERROR,
-                                          message = XML_EXTRACTION_ERROR_MSG, cause = xmlPayload);
-            return httpResponseHandlingError;
+            return prepareError(HTTP_RESPONSE_HANDLING_ERROR, XML_EXTRACTION_ERROR_MSG, xmlPayload);
         }
     }
 }
