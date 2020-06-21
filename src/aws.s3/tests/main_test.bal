@@ -36,10 +36,10 @@ function testCreateBucket() {
         CannedACL cannedACL = ACL_PRIVATE;
         ConnectorError? response = amazonS3Client->createBucket(testBucketName, cannedACL);
         if (response is ConnectorError) {
-            test:assertFail(<string>response.detail()?.message);
+            test:assertFail(response.message());
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -52,13 +52,13 @@ function testListBuckets() {
     if (amazonS3Client is AmazonS3Client) {
         ConnectorError|Bucket[] response = amazonS3Client->listBuckets();
         if (response is ConnectorError) {
-            test:assertFail(response.reason());
+            test:assertFail(response.message());
         } else {
             string bucketName = response[0].name;
             test:assertTrue(bucketName.length() > 0, msg = "Failed to call listBuckets()");
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -71,10 +71,10 @@ function testCreateObject() {
     if (amazonS3Client is AmazonS3Client) {
         ConnectorError? response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
         if (response is ConnectorError) {
-            test:assertFail(response.reason());
+            test:assertFail(response.message());
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -89,10 +89,10 @@ function testGetObject() {
         if (response is S3Object) {
             byte[]? content = response["content"];
         } else {
-            test:assertFail(<string>response.detail()?.message);
+            test:assertFail(response.message());
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -105,12 +105,12 @@ function testListObjects() {
     if (amazonS3Client is AmazonS3Client) {
         S3Object[]|ConnectorError response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
         if (response is ConnectorError) {
-            test:assertFail(response.reason());
+            test:assertFail(response.message());
         } else {
             test:assertTrue(response.length() > 0, msg = "Failed to call listObjects()");
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -123,10 +123,10 @@ function testDeleteObject() {
     if (amazonS3Client is AmazonS3Client) {
         ConnectorError? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
         if (response is ConnectorError) {
-            test:assertFail(response.reason());
+            test:assertFail(response.message());
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }
 
@@ -139,9 +139,9 @@ function testDeleteBucket() {
     if (amazonS3Client is AmazonS3Client) {
         ConnectorError? response = amazonS3Client -> deleteBucket(testBucketName);
         if (response is ConnectorError) {
-            test:assertFail(response.reason());
+            test:assertFail(response.message());
         }
     } else {
-        test:assertFail(<string>amazonS3Client.detail()?.message);
+        test:assertFail(amazonS3Client.message());
     }
 }

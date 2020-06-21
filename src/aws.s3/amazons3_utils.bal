@@ -35,7 +35,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
     if (dateStrings is error) {
-        return prepareError(SIGNATURE_GENERATION_ERROR, DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
+        return SignatureGenerationError(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
         requestHeaders[X_AMZ_DATE] = amzDateStr;
@@ -50,7 +50,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             if (canonicalQuery is string) {
                 canonicalQueryString = canonicalQuery;
             } else {
-                return prepareError(SIGNATURE_GENERATION_ERROR, CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+                return SignatureGenerationError(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
             }
         }
 
@@ -79,7 +79,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         request.setHeader(AUTHORIZATION, authHeader);
         
     } else {
-        return prepareError(SIGNATURE_GENERATION_ERROR, CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
+        return SignatureGenerationError(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
 }
 
@@ -312,12 +312,10 @@ function handleHttpResponse(http:Response httpResponse) returns @tainted ServerE
             if (err is BucketOperationError) {
                 return err;
             } else {
-                UnknownServerError unknownServerError = error(UNKNOWN_SERVER_ERROR, message = UNKNOWN_SERVER_ERROR_MSG,
-                                                              cause = err);
-                return unknownServerError;
+                return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
             }
         } else {
-            return prepareError(HTTP_RESPONSE_HANDLING_ERROR, XML_EXTRACTION_ERROR_MSG, xmlPayload);
+            return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
         }
     }
 }
