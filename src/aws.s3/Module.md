@@ -15,10 +15,10 @@ delete a bucket, and list objects in a bucket.
 The `ballerinax/aws.s3` module contains operations that create an object, delete an object, and retrieve an object.
 
 ## Compatibility
-|                    |    Version     |  
-|:------------------:|:--------------:|
-| Ballerina Language |   1.2.0        |
-|   Amazon S3 API    |   2006-03-01   |
+|                    |    Version                  |  
+|:------------------:|:---------------------------:|
+| Ballerina Language |   Swan Lake Preview1        |
+|   Amazon S3 API    |   2006-03-01                |
 
 ## Running Sample
 
