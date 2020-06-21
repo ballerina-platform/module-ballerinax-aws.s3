@@ -26,14 +26,14 @@ public type AmazonS3Client client object {
     public string amazonHost = EMPTY_STRING;
     public http:Client amazonS3;
 
-    public function __init(ClientConfiguration amazonS3Config) returns ClientError? {
+    public function init(ClientConfiguration amazonS3Config) returns ClientError? {
         self.region = amazonS3Config.region;
         if (self.region != DEFAULT_REGION) {
             string|StringUtilError amazonHostVar = stringutils:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
             if (amazonHostVar is string) {
                 self.amazonHost = amazonHostVar;
             } else {
-                return prepareError(CLIENT_CONFIG_INITIALIZATION_ERROR, STRING_MANUPULATION_ERROR_MSG, amazonHostVar);
+                return ClientConfigInitializationError(STRING_MANUPULATION_ERROR_MSG, amazonHostVar);
             }
         } else {
             self.amazonHost = AMAZON_AWS_HOST;
@@ -43,7 +43,7 @@ public type AmazonS3Client client object {
         self.secretAccessKey = amazonS3Config.secretAccessKey;
         ClientError? verificationStatus = verifyCredentials(self.accessKeyId, self.secretAccessKey);
         if (verificationStatus is ClientError) {
-            return prepareError(CLIENT_CONFIG_INITIALIZATION_ERROR, CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, verificationStatus);
+            return ClientConfigInitializationError(CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, verificationStatus);
         } else {
             http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
             if (clientSecureSocket is http:ClientSecureSocket) {
@@ -80,17 +80,15 @@ public type AmazonS3Client client object {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        UnknownServerError unknownServerError = error(UNKNOWN_SERVER_ERROR, message = UNKNOWN_SERVER_ERROR_MSG,
-                                                                                  cause = err);
-                        return unknownServerError;
+                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 }
             } else {
-                return prepareError(HTTP_RESPONSE_HANDLING_ERROR, XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "listing buckets.";
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 
@@ -125,7 +123,7 @@ public type AmazonS3Client client object {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "creating bucket.";
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 
@@ -178,17 +176,15 @@ public type AmazonS3Client client object {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        UnknownServerError unknownServerError = error(UNKNOWN_SERVER_ERROR, message = UNKNOWN_SERVER_ERROR_MSG,
-                                                                                                      cause = err);
-                        return unknownServerError;
+                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 } 
             } else {
-                return prepareError(HTTP_RESPONSE_HANDLING_ERROR, XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName;
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 
@@ -218,7 +214,7 @@ public type AmazonS3Client client object {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 byte[]|error binaryPayload = extractResponsePayload(httpResponse);
                 if (binaryPayload is error) {
-                    return prepareError(HTTP_RESPONSE_HANDLING_ERROR, BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
+                    return HttpResponseHandlingError(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
                 } else {
                     return getS3Object(binaryPayload);
                 }
@@ -231,17 +227,15 @@ public type AmazonS3Client client object {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        UnknownServerError unknownServerError = error(UNKNOWN_SERVER_ERROR, message = UNKNOWN_SERVER_ERROR_MSG,
-                                                                                                      cause = err);
-                        return unknownServerError;
+                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 } else {
-                    return prepareError(HTTP_RESPONSE_HANDLING_ERROR, XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                    return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
                 }
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName;
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 
@@ -281,7 +275,7 @@ public type AmazonS3Client client object {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "creating object.";
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 
@@ -317,7 +311,7 @@ public type AmazonS3Client client object {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName;
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }     
 
@@ -341,7 +335,7 @@ public type AmazonS3Client client object {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName;
-            return prepareError(API_INVOCATION_ERROR, message);
+            return ApiInvocationError(message);
         }
     }
 };
@@ -354,7 +348,7 @@ public type AmazonS3Client client object {
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
 function verifyCredentials(string accessKeyId, string secretAccessKey) returns ClientError? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
-        return prepareError(CLIENT_CREDENTIALS_VERIFICATION_ERROR, EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
+        return ClientCredentialsVerificationError(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }
 
