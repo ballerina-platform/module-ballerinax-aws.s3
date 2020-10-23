@@ -20,7 +20,7 @@ final string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
 "t", "u", "v", "w", "x", "y", "z"];
 const string NON_ALPHABET = "nonAlp";
 
-type SortBucket object {
+class SortBucket {
 
     string[] items = [];
     int index = 0;
@@ -31,7 +31,7 @@ type SortBucket object {
         addToResultArray(buckets, self.result);
     }
 
-    function addItem(string item) {
+    isolated function addItem(string item) {
         self.items[self.items.length()] = item;
     }
 };
@@ -83,7 +83,7 @@ function addToBucket(string item, int index, map<any> bucketsMap, string[] resul
     }
 }
 
-function populateMap(map<any> bucketmap, string key, string item, int index, string[] result) {
+isolated function populateMap(map<any> bucketmap, string key, string item, int index, string[] result) {
     if (bucketmap.hasKey(key)) {
         SortBucket buck = <SortBucket>bucketmap[key];
         buck.addItem(item);
