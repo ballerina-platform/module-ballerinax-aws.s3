@@ -17,7 +17,7 @@ The `ballerinax/aws.s3` module contains operations that create an object, delete
 ## Compatibility
 |                    |    Version                  |  
 |:------------------:|:---------------------------:|
-| Ballerina Language |   Swan Lake Preview1        |
+| Ballerina Language |   Swan Lake Preview5        |
 |   Amazon S3 API    |   2006-03-01                |
 
 ## Running Sample

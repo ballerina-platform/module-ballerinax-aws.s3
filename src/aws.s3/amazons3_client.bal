@@ -18,7 +18,7 @@
 import ballerina/http;
 import ballerina/stringutils;
 
-public type AmazonS3Client client object {
+public client class AmazonS3Client {
 
     public string accessKeyId;
     public string secretAccessKey;
@@ -98,7 +98,7 @@ public type AmazonS3Client client object {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns ConnectorError.
-    public remote function createBucket(string bucketName, public CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
+    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -143,9 +143,9 @@ public type AmazonS3Client client object {
     #                       request as the continuation-token.
     # 
     # + return - If success, returns S3Object[] object, else returns ConnectorError
-    public remote function listObjects(string bucketName, public string? delimiter = (), public string? encodingType = (), 
-                        public int? maxKeys = (), public string? prefix = (), public string? startAfter = (), public boolean? fetchOwner = (), 
-                        public string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
+    public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
+                        int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
+                        string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -196,7 +196,7 @@ public type AmazonS3Client client object {
      #
      # + return - If success, returns S3ObjectContent object, else returns ConnectorError
      public remote function getObject(string bucketName, string objectName,
-                         public ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
+                         ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -249,7 +249,7 @@ public type AmazonS3Client client object {
     #
     # + return - If failed returns ConnectorError
     public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
-                         public CannedACL? cannedACL = (), public ObjectCreationHeaders? objectCreationHeaders = ())
+                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
                          returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
@@ -286,7 +286,7 @@ public type AmazonS3Client client object {
     # + versionId - The specific version of the object to delete, if versioning is enabled.
     # 
     # + return - If failed returns ConnectorError
-    public remote function deleteObject(string bucketName, string objectName, public string? versionId = ()) 
+    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
                         returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
@@ -338,7 +338,7 @@ public type AmazonS3Client client object {
             return ApiInvocationError(message);
         }
     }
-};
+}
 
 # Verify the existence of credentials.
 #
@@ -346,7 +346,7 @@ public type AmazonS3Client client object {
 # + secretAccessKey - The secret access key of the Amazon S3 account.
 # 
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
-function verifyCredentials(string accessKeyId, string secretAccessKey) returns ClientError? {
+isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns ClientError? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
         return ClientCredentialsVerificationError(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }

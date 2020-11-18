@@ -16,7 +16,7 @@
 
 xmlns "http://s3.amazonaws.com/doc/2006-03-01/";
 
-function getBucketsList(xml response) returns Bucket[] {
+isolated function getBucketsList(xml response) returns Bucket[] {
     Bucket[] buckets = [];
     xml bucketsDetails = response/<Buckets>;
     int i = 0;
@@ -32,7 +32,7 @@ function getBucketsList(xml response) returns Bucket[] {
     return buckets;
 }
 
-function getS3ObjectsList(xml response) returns S3Object[] {
+isolated function getS3ObjectsList(xml response) returns S3Object[] {
     S3Object[] s3Objects = [];
     xml contents = response/<Contents>;
     int i = 0;
@@ -54,7 +54,7 @@ function getS3ObjectsList(xml response) returns S3Object[] {
     return s3Objects;
 }
 
-function getS3Object(byte[] response) returns S3Object {
+isolated function getS3Object(byte[] response) returns S3Object {
     S3Object s3Object = {};
     s3Object.content =  response;
     return s3Object;

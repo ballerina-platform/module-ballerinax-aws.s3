@@ -66,8 +66,8 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         [string, string] [canonicalHeaders,signedHeaders] = generateCanonicalHeaders(headers, request);
 
         // Generate canonical request.
-        canonicalRequest = string `${canonicalRequest}\n${canonicalURI}\n${canonicalQueryString}\n`;
-        canonicalRequest = string `${canonicalRequest}${canonicalHeaders}\n${signedHeaders}\n${requestPayload}`;
+        canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
+        canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
 
         // Generate string to sign.
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
@@ -86,7 +86,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 # Funtion to generate the date strings.
 #
 # + return - amzDate string and short date string.
-function generateDateString() returns [string, string]|error {
+isolated function generateDateString() returns [string, string]|error {
     time:Time time = check time:toTimeZone(time:currentTime(), "GMT");
     string amzDate = check time:format(time, ISO8601_BASIC_DATE_FORMAT);
     string shortDate = check time:format(time, SHORT_DATE_FORMAT);
@@ -101,10 +101,10 @@ function generateDateString() returns [string, string]|error {
 # + canonicalRequest - Generated canonical request.
 #
 # + return - String to sign.
-function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
+isolated function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
                             returns string{
     //Start creating the string to sign
-    string stringToSign = string `${AWS4_HMAC_SHA256}\n${amzDateStr}\n${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}\n${arrays:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
+    string stringToSign = string `${AWS4_HMAC_SHA256}${"\n"}${amzDateStr}${"\n"}${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}${"\n"}${arrays:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
 
 }
@@ -114,7 +114,7 @@ function generateStringToSign(string amzDateStr, string shortDateStr, string reg
 # + requestURI - Request URI.
 #
 # + return - Return encoded request URI.
-function getCanonicalURI(string requestURI) returns string|error {
+isolated function getCanonicalURI(string requestURI) returns string|error {
     string value = check encoding:encodeUriComponent(requestURI, UTF_8);
     return stringutils:replace(value, ENCODED_SLASH, SLASH);
 }
@@ -165,7 +165,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
         key = sortedHeaderKeys[index];
         value = <string>headers[key];
         request.setHeader(<@untainted>key, value);
-        canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}\n`;
+        canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}${"\n"}`;
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
     }
@@ -183,7 +183,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
 # + stringToSign - stringToSign Parameter Description
 #
 # + return - Authorization header string value.
-function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
+isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
                                 string signedHeaders, string stringToSign) returns string {
     string signValue = AWS4 + secretAccessKey;
     byte[] dateKey = crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
@@ -203,7 +203,7 @@ function constructAuthSignature(string accessKeyId, string secretAccessKey, stri
 #
 # + requestHeaders - Request headers map.
 # + objectCreationHeaders - Optional headers for createObject function.
-function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders? objectCreationHeaders) {
+isolated function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders? objectCreationHeaders) {
     if(objectCreationHeaders != ()) {
         if (objectCreationHeaders?.cacheControl != ()) {
             requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders?.cacheControl;
@@ -233,7 +233,7 @@ function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationH
 #
 # + requestHeaders - Request headers map.
 # + objectRetrievalHeaders - Optional headers for getObject function.
-function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHeaders? objectRetrievalHeaders) {
+isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHeaders? objectRetrievalHeaders) {
     if(objectRetrievalHeaders != ()) {
         if (objectRetrievalHeaders?.modifiedSince != ()) {
             requestHeaders[IF_MODIFIED_SINCE] = <string>objectRetrievalHeaders?.modifiedSince;
@@ -253,7 +253,7 @@ function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHea
     }
 }
 
-function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
+isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
                     string? prefix = (), string? startAfter = (), boolean? fetchOwner = (),
                     string? continuationToken = ()) returns string {
     string queryParamsStr = "";
@@ -301,7 +301,7 @@ function populateOptionalParameters(map<string> queryParamsMap, string? delimite
     return queryParamsStr;
 }
 
-function handleHttpResponse(http:Response httpResponse) returns @tainted ServerError|ClientError? {
+isolated function handleHttpResponse(http:Response httpResponse) returns @tainted ServerError|ClientError? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         xml|error xmlPayload = httpResponse.getXmlPayload();
@@ -320,6 +320,6 @@ function handleHttpResponse(http:Response httpResponse) returns @tainted ServerE
     }
 }
 
-function extractResponsePayload(http:Response response) returns @tainted byte[]|error {
+isolated function extractResponsePayload(http:Response response) returns @tainted byte[]|error {
     return response.getBinaryPayload();
 }
