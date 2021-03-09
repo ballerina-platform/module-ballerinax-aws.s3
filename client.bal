@@ -16,9 +16,9 @@
 //
 
 import ballerina/http;
-import ballerina/stringutils;
+import ballerina/regex;
 
-public client class AmazonS3Client {
+public client class Client {
 
     public string accessKeyId;
     public string secretAccessKey;
@@ -26,14 +26,14 @@ public client class AmazonS3Client {
     public string amazonHost = EMPTY_STRING;
     public http:Client amazonS3;
 
-    public function init(ClientConfiguration amazonS3Config) returns ClientError? {
+    public function init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
         if (self.region != DEFAULT_REGION) {
-            string|StringUtilError amazonHostVar = stringutils:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
+            string|StringUtilError amazonHostVar = regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
             if (amazonHostVar is string) {
                 self.amazonHost = amazonHostVar;
             } else {
-                return ClientConfigInitializationError(STRING_MANUPULATION_ERROR_MSG, amazonHostVar);
+                return error ClientConfigInitializationError(STRING_MANUPULATION_ERROR_MSG, amazonHostVar);
             }
         } else {
             self.amazonHost = AMAZON_AWS_HOST;
@@ -43,27 +43,27 @@ public client class AmazonS3Client {
         self.secretAccessKey = amazonS3Config.secretAccessKey;
         ClientError? verificationStatus = verifyCredentials(self.accessKeyId, self.secretAccessKey);
         if (verificationStatus is ClientError) {
-            return ClientConfigInitializationError(CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, verificationStatus);
+            return error ClientConfigInitializationError(CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, verificationStatus);
         } else {
             http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
             if (clientSecureSocket is http:ClientSecureSocket) {
                 amazonS3Config.clientConfig.secureSocket = clientSecureSocket;
             }
-                self.amazonS3  = new(baseURL, amazonS3Config.clientConfig);
+                self.amazonS3  = check new(baseURL, amazonS3Config.clientConfig);
         }
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
     # + return - If success, returns a list of Bucket record, else returns ConnectorError
-    public remote function listBuckets() returns @tainted Bucket[]|ConnectorError {
+    remote function listBuckets() returns @tainted Bucket[]|ConnectorError {
         map<string> requestHeaders = {};
         http:Request request = new;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
                                                                 self.region, GET, SLASH,
                                                                 UNSIGNED_PAYLOAD, requestHeaders);
 
@@ -80,15 +80,15 @@ public client class AmazonS3Client {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
+                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 }
             } else {
-                return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "listing buckets.";
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 
@@ -98,7 +98,7 @@ public client class AmazonS3Client {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns ConnectorError.
-    public remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
+    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -114,7 +114,7 @@ public client class AmazonS3Client {
                                 </CreateBucketConfiguration>`;   
             request.setXmlPayload(xmlPayload);
         }
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
                                                     self.region, PUT, requestURI,
                                                     UNSIGNED_PAYLOAD, requestHeaders);
 
@@ -123,7 +123,7 @@ public client class AmazonS3Client {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "creating bucket.";
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 
@@ -143,7 +143,7 @@ public client class AmazonS3Client {
     #                       request as the continuation-token.
     # 
     # + return - If success, returns S3Object[] object, else returns ConnectorError
-    public remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
+    remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
                         int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
                         string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
         map<string> requestHeaders = {};
@@ -159,7 +159,7 @@ public client class AmazonS3Client {
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
                             self.region, GET, requestURI, UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
@@ -176,15 +176,15 @@ public client class AmazonS3Client {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
+                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 } 
             } else {
-                return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName;
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 
@@ -195,7 +195,7 @@ public client class AmazonS3Client {
      # + objectRetrievalHeaders - Optional headers for the get object function.
      #
      # + return - If success, returns S3ObjectContent object, else returns ConnectorError
-     public remote function getObject(string bucketName, string objectName,
+    remote function getObject(string bucketName, string objectName,
                          ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
         map<string> requestHeaders = {};
         http:Request request = new;
@@ -206,7 +206,7 @@ public client class AmazonS3Client {
         // Add optional headers.
         populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
         
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET,
                                                  requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->get(requestURI, message = request);
@@ -214,7 +214,7 @@ public client class AmazonS3Client {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 byte[]|error binaryPayload = extractResponsePayload(httpResponse);
                 if (binaryPayload is error) {
-                    return HttpResponseHandlingError(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
+                    return error HttpResponseHandlingError(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
                 } else {
                     return getS3Object(binaryPayload);
                 }
@@ -227,15 +227,15 @@ public client class AmazonS3Client {
                     if (err is BucketOperationError) {
                         return err;
                     } else {
-                        return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
+                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
                     }
                 } else {
-                    return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
+                    return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
                 }
             }
         } else {
             string message = API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName;
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 
@@ -248,7 +248,7 @@ public client class AmazonS3Client {
     # + objectCreationHeaders - Optional headers for the create object function.
     #
     # + return - If failed returns ConnectorError
-    public remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
+    remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
                          CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
                          returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
@@ -267,7 +267,7 @@ public client class AmazonS3Client {
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
 
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT,
                                                  requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->put(requestURI, request);
@@ -275,7 +275,7 @@ public client class AmazonS3Client {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "creating object.";
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 
@@ -286,7 +286,7 @@ public client class AmazonS3Client {
     # + versionId - The specific version of the object to delete, if versioning is enabled.
     # 
     # + return - If failed returns ConnectorError
-    public remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
+    remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
                         returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
@@ -302,7 +302,7 @@ public client class AmazonS3Client {
         
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
                                         requestURI, UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
@@ -311,7 +311,7 @@ public client class AmazonS3Client {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName;
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }     
 
@@ -320,14 +320,14 @@ public client class AmazonS3Client {
     # + bucketName - The name of the bucket.
     # 
     # + return - If failed returns ConnectorError
-    public remote function deleteBucket(string bucketName) returns @tainted ConnectorError? {
+    remote function deleteBucket(string bucketName) returns @tainted ConnectorError? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = check generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
                                                 requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->delete(requestURI, request);
@@ -335,7 +335,7 @@ public client class AmazonS3Client {
             return handleHttpResponse(httpResponse);
         } else {
             string message = API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName;
-            return ApiInvocationError(message);
+            return error ApiInvocationError(message);
         }
     }
 }
@@ -348,14 +348,14 @@ public client class AmazonS3Client {
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
 isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns ClientError? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
-        return ClientCredentialsVerificationError(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
+        return error ClientCredentialsVerificationError(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }
 
 # AmazonS3 Connector configurations can be setup here.
 # + accessKeyId - The access key is of the Amazon S3 account.
 # + secretAccessKey - The secret access key of the Amazon S3 account.
-# + region - The AWS Region. If you don't specify an AWS region, AmazonS3Client uses US East (N. Virginia) as 
+# + region - The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as 
 #            default region.
 # + clientConfig - HTTP client config
 # + secureSocketConfig - Secure Socket config

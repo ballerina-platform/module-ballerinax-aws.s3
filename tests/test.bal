@@ -16,23 +16,26 @@
 // under the License.
 //
 
-import ballerina/config;
 import ballerina/log;
 import ballerina/test;
+import ballerina/os;
 
-string testBucketName = config:getAsString("BUCKET_NAME");
+configurable string testBucketName = os:getEnv("BUCKET_NAME");
+configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
+configurable string secretAccessKey = os:getEnv("SECRET_ACCESS_KEY");
+configurable string region = os:getEnv("REGION");
 
 ClientConfiguration amazonS3Config = {
-    accessKeyId: config:getAsString("ACCESS_KEY_ID"),
-    secretAccessKey: config:getAsString("SECRET_ACCESS_KEY"),
-    region: config:getAsString("REGION")
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey,
+    region: region
 };
 
 @test:Config{}
 function testCreateBucket() {
-    log:printInfo("amazonS3Client->createBucket()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client->createBucket()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         CannedACL cannedACL = ACL_PRIVATE;
         ConnectorError? response = amazonS3Client->createBucket(testBucketName, cannedACL);
         if (response is ConnectorError) {
@@ -44,13 +47,13 @@ function testCreateBucket() {
 }
 
 @test:Config {
-    dependsOn: ["testCreateBucket"]
+    dependsOn: [testCreateBucket]
 }
 function testListBuckets() {
-    log:printInfo("amazonS3Client->listBuckets()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
-        ConnectorError|Bucket[] response = amazonS3Client->listBuckets();
+    log:print("amazonS3Client->listBuckets()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        ConnectorError|Bucket[] response =  amazonS3Client->listBuckets();
         if (response is ConnectorError) {
             test:assertFail(response.message());
         } else {
@@ -63,12 +66,12 @@ function testListBuckets() {
 }
 
 @test:Config {
-    dependsOn: ["testListBuckets"]
+    dependsOn: [testListBuckets]
 }
 function testCreateObject() {
-    log:printInfo("amazonS3Client->createObject()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client->createObject()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         ConnectorError? response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
         if (response is ConnectorError) {
             test:assertFail(response.message());
@@ -79,12 +82,12 @@ function testCreateObject() {
 }
 
 @test:Config {
-    dependsOn: ["testCreateObject"]
+    dependsOn: [testCreateObject]
 }
 function testGetObject() {
-    log:printInfo("amazonS3Client->getObject()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client->getObject()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         S3Object|ConnectorError response = amazonS3Client->getObject(testBucketName, "test.txt");
         if (response is S3Object) {
             byte[]? content = response["content"];
@@ -97,12 +100,12 @@ function testGetObject() {
 }
 
 @test:Config {
-    dependsOn: ["testGetObject"]
+    dependsOn: [testGetObject]
 }
 function testListObjects() {
-    log:printInfo("amazonS3Client->listObjects()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client->listObjects()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         S3Object[]|ConnectorError response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
         if (response is ConnectorError) {
             test:assertFail(response.message());
@@ -115,12 +118,12 @@ function testListObjects() {
 }
 
 @test:Config {
-    dependsOn: ["testListObjects"]
+    dependsOn: [testListObjects]
 }
 function testDeleteObject() {
-    log:printInfo("amazonS3Client -> deleteObject()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client -> deleteObject()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         ConnectorError? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
         if (response is ConnectorError) {
             test:assertFail(response.message());
@@ -131,12 +134,12 @@ function testDeleteObject() {
 }
 
 @test:Config {
-    dependsOn: ["testDeleteObject"]
+    dependsOn: [testDeleteObject]
 }
 function testDeleteBucket() {
-    log:printInfo("amazonS3Client -> deleteBucket()");
-    AmazonS3Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is AmazonS3Client) {
+    log:print("amazonS3Client -> deleteBucket()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
         ConnectorError? response = amazonS3Client -> deleteBucket(testBucketName);
         if (response is ConnectorError) {
             test:assertFail(response.message());

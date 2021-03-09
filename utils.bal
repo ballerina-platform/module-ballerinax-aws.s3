@@ -20,7 +20,8 @@ import ballerina/encoding;
 import ballerina/http;
 import ballerina/lang.'array as arrays;
 import ballerina/time;
-import ballerina/stringutils;
+import ballerina/regex;
+import ballerina/lang.'string as strings;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
@@ -35,7 +36,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
     if (dateStrings is error) {
-        return SignatureGenerationError(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
+        return error SignatureGenerationError(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
         requestHeaders[X_AMZ_DATE] = amzDateStr;
@@ -50,7 +51,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             if (canonicalQuery is string) {
                 canonicalQueryString = canonicalQuery;
             } else {
-                return SignatureGenerationError(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+                return error SignatureGenerationError(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
             }
         }
 
@@ -59,7 +60,13 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             requestPayload = payload;
         } else {
             requestPayload = arrays:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
-            requestHeaders[CONTENT_TYPE] = request.getHeader(CONTENT_TYPE.toLowerAscii());
+            string|error contentType = request.getHeader(CONTENT_TYPE.toLowerAscii()); 
+            if (contentType is error) {
+                return error SignatureGenerationError(REQUEST_CONTENT_TYPE_ERROR_MSG, contentType);
+            }
+            else {
+                requestHeaders[CONTENT_TYPE] = contentType;
+            }
         }
 
         // Generete canonical and signed headers.
@@ -73,13 +80,16 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
 
         // Construct authorization signature string.
-        string authHeader = constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
+        string|error authHeader = constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
                                 stringToSign);
-        // Set authorization header.
-        request.setHeader(AUTHORIZATION, authHeader);
-        
+        if (authHeader is string) {
+            // Set authorization header.
+            request.setHeader(AUTHORIZATION, authHeader);
+        } else {
+            return error SignatureGenerationError(AUTH_HEADER_ERROR_MSG, authHeader);
+        }             
     } else {
-        return SignatureGenerationError(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
+        return error SignatureGenerationError(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
 }
 
@@ -116,7 +126,7 @@ isolated function generateStringToSign(string amzDateStr, string shortDateStr, s
 # + return - Return encoded request URI.
 isolated function getCanonicalURI(string requestURI) returns string|error {
     string value = check encoding:encodeUriComponent(requestURI, UTF_8);
-    return stringutils:replace(value, ENCODED_SLASH, SLASH);
+    return regex:replaceAll(value, ENCODED_SLASH, SLASH);
 }
 
 # Function to generate canonical query string.
@@ -136,14 +146,14 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
     while (index < sortedKeys.length()) {
         key = sortedKeys[index];
         string encodedKey = check encoding:encodeUriComponent(key, UTF_8);
-        encodedKeyValue = stringutils:replace(encodedKey, ENCODED_SLASH, SLASH);
+        encodedKeyValue = regex:replaceAll(encodedKey, ENCODED_SLASH, SLASH);
         value = <string>queryParams[key];
         string encodedVal = check encoding:encodeUriComponent(value, UTF_8);
-        encodedValue = stringutils:replace(encodedVal, ENCODED_SLASH, SLASH);
+        encodedValue = regex:replaceAll(encodedVal, ENCODED_SLASH, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
     }
-    canonicalQueryString = canonicalQueryString.substring(0,stringutils:lastIndexOf(canonicalQueryString, "&"));
+    canonicalQueryString = canonicalQueryString.substring(0, <int>strings:lastIndexOf(canonicalQueryString, "&"));
     return canonicalQueryString;
 }
 
@@ -169,7 +179,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
     }
-    signedHeaders = signedHeaders.substring(0, stringutils:lastIndexOf(signedHeaders, ";"));
+    signedHeaders = signedHeaders.substring(0, <int>strings:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
 
@@ -184,14 +194,14 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
 #
 # + return - Authorization header string value.
 isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
-                                string signedHeaders, string stringToSign) returns string {
+                                string signedHeaders, string stringToSign) returns string|error {
     string signValue = AWS4 + secretAccessKey;
-    byte[] dateKey = crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
-    byte[] regionKey = crypto:hmacSha256(region.toBytes(), dateKey);
-    byte[] serviceKey = crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
-    byte[] signingKey = crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
+    byte[] dateKey =  check crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
+    byte[] regionKey = check crypto:hmacSha256(region.toBytes(), dateKey);
+    byte[] serviceKey = check crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
+    byte[] signingKey = check  crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 
-    string encodedStr = arrays:toBase16(crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+    string encodedStr = arrays:toBase16(check  crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
     string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
@@ -312,10 +322,10 @@ isolated function handleHttpResponse(http:Response httpResponse) returns @tainte
             if (err is BucketOperationError) {
                 return err;
             } else {
-                return UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
+                return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
             }
         } else {
-            return HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
+            return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
         }
     }
 }

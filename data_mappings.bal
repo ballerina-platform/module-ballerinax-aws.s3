@@ -21,12 +21,11 @@ isolated function getBucketsList(xml response) returns Bucket[] {
     xml bucketsDetails = response/<Buckets>;
     int i = 0;
     foreach var b in bucketsDetails/<*> {
-        if (b is xml) {
-            xml bucketDetails = b.elements();
-            Bucket bucket = {name: (bucketDetails/<Name>/*).toString(),
-                            creationDate: (bucketDetails/<CreationDate>/*).toString()};
-            buckets[i]= bucket;
-        }
+        xml bucketDetails = b.elements();
+        Bucket bucket = {name: (bucketDetails/<Name>/*).toString(),
+                        creationDate: (bucketDetails/<CreationDate>/*).toString()};
+        buckets[i]= bucket;
+        
         i = i + 1;
     }
     return buckets;
@@ -37,18 +36,17 @@ isolated function getS3ObjectsList(xml response) returns S3Object[] {
     xml contents = response/<Contents>;
     int i = 0;
     foreach var c in contents {
-        if (c is xml) {
-            xml content = c.elements();
-            S3Object s3Object = {};
-            s3Object.objectName = (content/<Key>/*).toString();
-            s3Object.lastModified = (content/<LastModified>/*).toString();
-            s3Object.eTag = (content/<ETag>/*).toString();
-            s3Object.objectSize = (content/<Size>/*).toString();
-            s3Object.ownerId = (content/<Owner>/<ID>/*).toString();
-            s3Object.ownerDisplayName = (content/<Owner>/<DisplayName>/*).toString();
-            s3Object.storageClass = (content/<StorageClass>/*).toString();
-            s3Objects[i] = s3Object;
-        }
+        xml content = c.elements();
+        S3Object s3Object = {};
+        s3Object.objectName = (content/<Key>/*).toString();
+        s3Object.lastModified = (content/<LastModified>/*).toString();
+        s3Object.eTag = (content/<ETag>/*).toString();
+        s3Object.objectSize = (content/<Size>/*).toString();
+        s3Object.ownerId = (content/<Owner>/<ID>/*).toString();
+        s3Object.ownerDisplayName = (content/<Owner>/<DisplayName>/*).toString();
+        s3Object.storageClass = (content/<StorageClass>/*).toString();
+        s3Objects[i] = s3Object;
+        
         i = i + 1;
     }
     return s3Objects;

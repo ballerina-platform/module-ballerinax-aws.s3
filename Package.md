@@ -1,67 +1,68 @@
-[![Build Status](https://travis-ci.org/ballerina-platform/module-ballerinax-aws.s3.svg?branch=master)](https://travis-ci.org/ballerina-platform/module-ballerinax-aws.s3)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-aws.s3.svg)](https://github.com/ballerina-platform/module-ballerinax-aws.s3./commits/master)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+Connects to Amazon S3 from Ballerina. 
 
-# Ballerina Amazon S3 Client
+# Module Overview
 
-The Amazon S3 client allows you to access the Amazon S3 REST API through Ballerina. The following sections provide the details on client operations.
+The Amazon S3 client allows you to access Amazon S3 REST API through Ballerina. The following section provide you the 
+details on connector operations.
+
+**Buckets Operations**
+
+The `ballerinax/aws.s3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, 
+delete a bucket, and list objects in a bucket.
+
+**Objects Operations**
+
+The `ballerinax/aws.s3` module contains operations that create an object, delete an object, and retrieve an object.
 
 ## Compatibility
-| Ballerina Language Version | Amazon S3 API version  |
-| -------------------------- | ---------------------- |
-|     Swan Lake Alpha2       |       2006-03-01       |
+|                    |    Version                  |  
+|:------------------:|:---------------------------:|
+| Ballerina Language |   Swan Lake Alpha2          |
+|   Amazon S3 API    |   2006-03-01                |
 
+## Running Sample
 
-## Pull and Install
+Let's get started with a simple program in Ballerina to create a new bucket.
 
-### Pull the Module
-You can pull the Amazon S3 client from Ballerina Central:
-```shell
+Use the following command to search for modules where the module name, description, or org name contains the word "aws.s3".
+
+```ballerina
+$ bal search aws.s3
+```
+
+This results in a list of available modules. You can pull the one you want from Ballerina Central.
+
+```ballerina
 $ bal pull ballerinax/aws.s3
 ```
 
-### Install from Source
-Alternatively, you can install AmazonS3 client from the source using the following instructions.
+You can use the `ballerinax/aws.s3` module to integrate with Amazon S3 back-end. Import the `ballerinax/aws.s3` module into the Ballerina project.
 
-**Building the source**
-1. Clone this repository using the following command:
-    ```shell
-    $ git clone https://github.com/ballerina-platform/module-amazons3.git
-    ```
+Now you can use Ballerina to integrate with Amazon S3.
 
-2. Run this command from the `module-amazons3` root directory:
-    ```shell
-    $ bal build
-    ```
-
-### Obtaining Access Keys
+#### Before you Begin
 
 You need to get credentials such as **Access Key** and **Secret Access Key (API Secret)** from Amazon S3.
 
-1. Create an Amazon account by visiting <https://aws.amazon.com/s3/>
-2. Create a new access key, which includes a new secret access key.
-- To create a new secret access key for your root account, use the [security credentials](https://console.aws.amazon.com/iam/home?#security_credential) page. Expand the Access Keys section, and then click **Create New Root Key**.
-- To create a new secret access key for an IAM user, open the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1#home). Click **Users** in the **Details** pane, click the appropriate IAM user, and then click **Create Access Key** on the **Security Credentials** tab.
+**Obtaining Access Keys**
+
+ 1. Create an Amazon account by visiting <https://aws.amazon.com/s3/>
+ 2. Create a new access key, which includes a new secret access key.
+    - To create a new secret access key for your root account, use the [security credentials](https://console.aws.amazon.com/iam/home?#security_credential) page. Expand the Access Keys section, and then click **Create New Root Key**.
+    - To create a new secret access key for an IAM user, open the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1#home). Click **Users** in the **Details** pane, click the appropriate IAM user, and then click **Create Access Key** on the **Security Credentials** tab.
 3. Download the newly created credentials, when prompted to do so in the key creation wizard.
 
-## Running Tests
+In the directory where you have your sample, create a `Config.toml` file and add the details you obtained above within the quotes. region, trustStorePath and trustStorePassword are optionals.
 
-1. Create `Config.toml` file in `module-ballerinax-aws.s3` with the following configurations and provide appropriate value.
+**Ballerina Config.toml file**
 
-    ```
-    accessKeyId = "testAccessKeyValue"
-    secretAccessKey = "testSecretAccessKeyValue"
-    region = "testRegion"
-    testBucketName = "testBucketName"
-    ```
-
-2. Navigate to the `module-ballerinax-aws.s3` directory.
-
-3. Run tests :
-
-    ```ballerina
-    bal test
-    ```
+```
+accessKeyId = ""
+secretAccessKey = ""
+region = ""
+trustStorePath = ""
+trustStorePassword = ""
+```
 
 ## Samples
 
@@ -277,7 +278,3 @@ public function main() {
     }
 }
 ```
-
-## How you can contribute
-
-As an open source project, we welcome contributions from the community. Check the [issue tracker](https://github.com/ballerina-platform/module-amazons3/issues) for open issues that interest you. We look forward to receiving your contributions.
