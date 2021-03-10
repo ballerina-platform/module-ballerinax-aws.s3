@@ -37,12 +37,12 @@ function testCreateBucket() {
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         CannedACL cannedACL = ACL_PRIVATE;
-        ConnectorError? response = amazonS3Client->createBucket(testBucketName, cannedACL);
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        error? response = amazonS3Client->createBucket(testBucketName, cannedACL);
+        if (response is error) {
+            test:assertFail(response.toString());
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -53,15 +53,15 @@ function testListBuckets() {
     log:print("amazonS3Client->listBuckets()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        ConnectorError|Bucket[] response =  amazonS3Client->listBuckets();
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        Bucket[]|error response =  amazonS3Client->listBuckets();
+        if (response is error) {
+            test:assertFail(response.toString());
         } else {
             string bucketName = response[0].name;
             test:assertTrue(bucketName.length() > 0, msg = "Failed to call listBuckets()");
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -72,12 +72,12 @@ function testCreateObject() {
     log:print("amazonS3Client->createObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        ConnectorError? response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        error? response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
+        if (response is error) {
+            test:assertFail(response.toString());
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -88,14 +88,14 @@ function testGetObject() {
     log:print("amazonS3Client->getObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        S3Object|ConnectorError response = amazonS3Client->getObject(testBucketName, "test.txt");
+        S3Object|error response = amazonS3Client->getObject(testBucketName, "test.txt");
         if (response is S3Object) {
             byte[]? content = response["content"];
         } else {
-            test:assertFail(response.message());
+            test:assertFail(response.toString());
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -106,14 +106,14 @@ function testListObjects() {
     log:print("amazonS3Client->listObjects()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        S3Object[]|ConnectorError response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        S3Object[]|error response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
+        if (response is error) {
+            test:assertFail(response.toString());
         } else {
             test:assertTrue(response.length() > 0, msg = "Failed to call listObjects()");
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -124,12 +124,12 @@ function testDeleteObject() {
     log:print("amazonS3Client -> deleteObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        ConnectorError? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        error? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
+        if (response is error) {
+            test:assertFail(response.toString());
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
@@ -140,11 +140,11 @@ function testDeleteBucket() {
     log:print("amazonS3Client -> deleteBucket()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        ConnectorError? response = amazonS3Client -> deleteBucket(testBucketName);
-        if (response is ConnectorError) {
-            test:assertFail(response.message());
+        error? response = amazonS3Client -> deleteBucket(testBucketName);
+        if (response is error) {
+            test:assertFail(response.toString());
         }
     } else {
-        test:assertFail(amazonS3Client.message());
+        test:assertFail(amazonS3Client.toString());
     }
 }

@@ -68,7 +68,7 @@ You need to get credentials such as **Access Key** and **Secret Access Key (API 
 #### Create a new Bucket
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -86,18 +86,18 @@ s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 
 public function main() {
     s3:CannedACL cannedACL = s3:ACL_PRIVATE;
-    s3:ConnectorError? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
-    if (createBucketResponse is s3:ConnectorError) {
-        io:println("Error: ", createBucketResponse.message());
+    error? createBucketResponse = amazonS3Client->createBucket(bucketName, cannedACL);
+    if (createBucketResponse is error) {
+        log:printError("Error: " + createBucketResponse.toString());
     } else {
-        io:println("Bucket Creation Status: Success");
+        log:print("Bucket Creation Status: Success");
     }
 }
 ```
 #### List Buckets
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -115,19 +115,19 @@ s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 public function main() {
     var listBucketResponse = amazonS3Client->listBuckets();
     if (listBucketResponse is s3:Bucket[]) {
-        io:println("Listing all buckets: ");
+        log:print("Listing all buckets: ");
         foreach var bucket in listBucketResponse {
-            io:println("Bucket Name: ", bucket.name);
+            log:print("Bucket Name: " + bucket.name);
         }
     } else {
-        io:println("Error: ", listBucketResponse);
+        log:printError("Error: " + listBucketResponse.toString());
     }
 }
 ```
 #### Create a new Object
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -144,11 +144,11 @@ s3:ClientConfiguration amazonS3Config = {
 s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 
 public function main() {
-    s3:ConnectorError? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
-    if (createObjectResponse is s3:ConnectorError) {
-        io:println("Error: ", createObjectResponse.message());
+    error? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
+    if (createObjectResponse is error) {
+        log:printError("Error: "+ createObjectResponse.toString());
     } else {
-        io:println("Object created successfully");
+        log:print("Object created successfully");
     }
 }
 ```
@@ -156,7 +156,7 @@ public function main() {
 #### List Objects
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -175,21 +175,21 @@ s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 public function main() returns error? {
     var listObjectsResponse = amazonS3Client->listObjects(bucketName);
     if (listObjectsResponse is s3:S3Object[]) {
-        io:println("Listing all object: ");
+        log:print("Listing all object: ");
         foreach var s3Object in listObjectsResponse {
-            io:println("---------------------------------");
-            io:println("Object Name: ", s3Object["objectName"]);
-            io:println("Object Size: ", s3Object["objectSize"]);
+            log:print("---------------------------------");
+            log:print("Object Name: " + s3Object["objectName"].toString());
+            log:print("Object Size: " + s3Object["objectSize"].toString());
         }
     } else {
-        io:println("Error: ", listObjectsResponse);
+        log:printError("Error: " + listObjectsResponse.toString());
     }
 }
 ```
 #### Get an Object
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerina/lang.'string as strings;
 import ballerinax/aws.s3;
 
@@ -209,21 +209,21 @@ s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 public function main() returns error? {
     var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
     if (getObjectResponse is s3:S3Object) {
-        io:println(getObjectResponse);
+        log:print(getObjectResponse.toString());
         byte[]? byteArray = getObjectResponse["content"];
         if (byteArray is byte[]) {
             string content = check strings:fromBytes(byteArray);
-            io:println("Object content: ", content);
+            log:print("Object content: " + content);
         }
     } else {
-        io:println("Error: ", getObjectResponse);
+        log:printError("Error: " + getObjectResponse.toString());
     }
 }
 ```
 #### Delete an Object
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -240,11 +240,11 @@ s3:ClientConfiguration amazonS3Config = {
 s3:Client amazonS3Client = checkpanic new(amazonS3Config);
 
 public function main() {
-    s3:ConnectorError? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
-    if (deleteObjectResponse is s3:ConnectorError) {
-        io:println("Error: ", deleteObjectResponse.message());
+    error? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
+    if (deleteObjectResponse is error) {
+        log:printError("Error: " + deleteObjectResponse.toString());
     } else {
-        io:println("Successfully deleted object");
+        log:print("Successfully deleted object");
     }
 }
 ```
@@ -252,7 +252,7 @@ public function main() {
 #### Delete a Bucket
 
 ```ballerina
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -269,11 +269,11 @@ s3:ClientConfiguration amazonS3Config = {
 s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 
 public function main() {
-    s3:ConnectorError? deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
-    if (deleteBucketResponse is s3:ConnectorError) {
-        io:println("Error: ", deleteBucketResponse.message());
+    error? deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);
+    if (deleteBucketResponse is error) {
+        log:printError("Error: " + deleteBucketResponse.toString());
     } else {
-        io:println("Successfully deleted bucket");
+        log:print("Successfully deleted bucket");
     }
 }
 ```

@@ -25,7 +25,7 @@ import ballerina/lang.'string as strings;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
-                           map<string>? queryParams = ()) returns ClientError? {
+                           map<string>? queryParams = ()) returns error? {
 
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
@@ -36,7 +36,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
     if (dateStrings is error) {
-        return error SignatureGenerationError(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
+        return error(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
         requestHeaders[X_AMZ_DATE] = amzDateStr;
@@ -51,7 +51,7 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             if (canonicalQuery is string) {
                 canonicalQueryString = canonicalQuery;
             } else {
-                return error SignatureGenerationError(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
             }
         }
 
@@ -60,13 +60,9 @@ function generateSignature(http:Request request, string accessKeyId, string secr
             requestPayload = payload;
         } else {
             requestPayload = arrays:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
-            string|error contentType = request.getHeader(CONTENT_TYPE.toLowerAscii()); 
-            if (contentType is error) {
-                return error SignatureGenerationError(REQUEST_CONTENT_TYPE_ERROR_MSG, contentType);
-            }
-            else {
-                requestHeaders[CONTENT_TYPE] = contentType;
-            }
+            string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii()); 
+            requestHeaders[CONTENT_TYPE] = contentType;
+            
         }
 
         // Generete canonical and signed headers.
@@ -80,16 +76,12 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
 
         // Construct authorization signature string.
-        string|error authHeader = constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
+        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
                                 stringToSign);
-        if (authHeader is string) {
-            // Set authorization header.
-            request.setHeader(AUTHORIZATION, authHeader);
-        } else {
-            return error SignatureGenerationError(AUTH_HEADER_ERROR_MSG, authHeader);
-        }             
+        // Set authorization header.
+        request.setHeader(AUTHORIZATION, authHeader);                
     } else {
-        return error SignatureGenerationError(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
+        return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
 }
 
@@ -311,22 +303,11 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
     return queryParamsStr;
 }
 
-isolated function handleHttpResponse(http:Response httpResponse) returns @tainted ServerError|ClientError? {
+isolated function handleHttpResponse(http:Response httpResponse) returns error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
-        xml|error xmlPayload = httpResponse.getXmlPayload();
-        if (xmlPayload is xml) {
-            string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
-            string errorMessage = (xmlPayload/<Message>/*).toString();
-            error err = error(errorReason, message = errorMessage);
-            if (err is BucketOperationError) {
-                return err;
-            } else {
-                return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
-            }
-        } else {
-            return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
-        }
+        xml xmlPayload = check httpResponse.getXmlPayload();
+        return error(xmlPayload.toString());  
     }
 }
 

@@ -1,4 +1,4 @@
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -17,13 +17,13 @@ s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 public function main() returns error? {
     var listObjectsResponse = amazonS3Client->listObjects(bucketName);
     if (listObjectsResponse is s3:S3Object[]) {
-        io:println("Listing all object: ");
+        log:print("Listing all object: ");
         foreach var s3Object in listObjectsResponse {
-            io:println("---------------------------------");
-            io:println("Object Name: ", s3Object["objectName"]);
-            io:println("Object Size: ", s3Object["objectSize"]);
+            log:print("---------------------------------");
+            log:print("Object Name: " + s3Object["objectName"].toString());
+            log:print("Object Size: " + s3Object["objectSize"].toString());
         }
     } else {
-        io:println("Error: ", listObjectsResponse);
+        log:printError("Error: " + listObjectsResponse.toString());
     }
 }

@@ -29,34 +29,25 @@ public client class Client {
     public function init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
         if (self.region != DEFAULT_REGION) {
-            string|StringUtilError amazonHostVar = regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
-            if (amazonHostVar is string) {
-                self.amazonHost = amazonHostVar;
-            } else {
-                return error ClientConfigInitializationError(STRING_MANUPULATION_ERROR_MSG, amazonHostVar);
-            }
+            self.amazonHost = regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
         } else {
             self.amazonHost = AMAZON_AWS_HOST;
         }
         string baseURL = HTTPS + self.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
-        ClientError? verificationStatus = verifyCredentials(self.accessKeyId, self.secretAccessKey);
-        if (verificationStatus is ClientError) {
-            return error ClientConfigInitializationError(CLIENT_CREDENTIALS_VERIFICATION_ERROR_MSG, verificationStatus);
-        } else {
-            http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
-            if (clientSecureSocket is http:ClientSecureSocket) {
-                amazonS3Config.clientConfig.secureSocket = clientSecureSocket;
-            }
-                self.amazonS3  = check new(baseURL, amazonS3Config.clientConfig);
+        check verifyCredentials(self.accessKeyId, self.secretAccessKey);  
+        http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
+        if (clientSecureSocket is http:ClientSecureSocket) {
+            amazonS3Config.clientConfig.secureSocket = clientSecureSocket;
         }
+        self.amazonS3  = check new(baseURL, amazonS3Config.clientConfig);      
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
-    # + return - If success, returns a list of Bucket record, else returns ConnectorError
-    remote function listBuckets() returns @tainted Bucket[]|ConnectorError {
+    # + return - If success, returns a list of Bucket record, else returns error
+    remote function listBuckets() returns @tainted Bucket[]|error {
         map<string> requestHeaders = {};
         http:Request request = new;
 
@@ -69,26 +60,14 @@ public client class Client {
 
         var httpResponse = self.amazonS3->get(SLASH, message = request);
         if (httpResponse is http:Response) {
-            xml|error xmlPayload = httpResponse.getXmlPayload();
-            if (xmlPayload is xml) {
-                if (httpResponse.statusCode == http:STATUS_OK) {
-                    return getBucketsList(xmlPayload);
-                } else {
-                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
-                    string errorMessage = (xmlPayload/<Message>/*).toString();
-                    error err = error(errorReason, message = errorMessage);
-                    if (err is BucketOperationError) {
-                        return err;
-                    } else {
-                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
-                    }
-                }
-            } else {
-                return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
-            }
+            xml xmlPayload = check httpResponse.getXmlPayload();
+            if (httpResponse.statusCode == http:STATUS_OK) {
+                return getBucketsList(xmlPayload);
+            } else {    
+                return error(xmlPayload.toString());              
+            }           
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "listing buckets.";
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "listing buckets.");
         }
     }
 
@@ -97,8 +76,8 @@ public client class Client {
     # + bucketName - Unique name for the bucket to create.
     # + cannedACL - The access control list of the new bucket.
     # 
-    # + return - If failed turns ConnectorError.
-    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted ConnectorError? {
+    # + return - If failed turns error.
+    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -122,8 +101,7 @@ public client class Client {
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "creating bucket.";
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "creating bucket.");
         }
     }
 
@@ -142,10 +120,10 @@ public client class Client {
     #                       To list the next set of objects, you can use the NextContinuationToken element in the next 
     #                       request as the continuation-token.
     # 
-    # + return - If success, returns S3Object[] object, else returns ConnectorError
+    # + return - If success, returns S3Object[] object, else returns error
     remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
                         int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns @tainted S3Object[]|ConnectorError {
+                        string? continuationToken = ()) returns @tainted S3Object[]|error {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -165,26 +143,14 @@ public client class Client {
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3->get(requestURI, message = request);
         if (httpResponse is http:Response) {
-            xml|error xmlPayload = httpResponse.getXmlPayload();
-            if (xmlPayload is xml) {
-                if (httpResponse.statusCode == http:STATUS_OK) {
-                    return getS3ObjectsList(xmlPayload);
-                } else {
-                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
-                    string errorMessage = (xmlPayload/<Message>/*).toString();
-                    error err = error(errorReason, message = errorMessage);
-                    if (err is BucketOperationError) {
-                        return err;
-                    } else {
-                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
-                    }
-                } 
+            xml xmlPayload = check httpResponse.getXmlPayload();
+            if (httpResponse.statusCode == http:STATUS_OK) {
+                return getS3ObjectsList(xmlPayload);
             } else {
-                return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
-            }
+                return error(xmlPayload.toString());               
+            } 
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName;
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
         }
     }
 
@@ -194,9 +160,9 @@ public client class Client {
      # + objectName - The name of the object.
      # + objectRetrievalHeaders - Optional headers for the get object function.
      #
-     # + return - If success, returns S3ObjectContent object, else returns ConnectorError
+     # + return - If success, returns S3ObjectContent object, else returns error
     remote function getObject(string bucketName, string objectName,
-                         ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|ConnectorError {
+                         ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -214,28 +180,16 @@ public client class Client {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 byte[]|error binaryPayload = extractResponsePayload(httpResponse);
                 if (binaryPayload is error) {
-                    return error HttpResponseHandlingError(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
+                    return error(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
                 } else {
                     return getS3Object(binaryPayload);
                 }
             } else {
-                xml|error xmlPayload = httpResponse.getXmlPayload();
-                if (xmlPayload is xml) {
-                    string errorReason = ERROR_REASON_PREFIX + (xmlPayload/<Code>/*).toString();
-                    string errorMessage = (xmlPayload/<Message>/*).toString();
-                    error err = error(errorReason, message = errorMessage);
-                    if (err is BucketOperationError) {
-                        return err;
-                    } else {
-                        return error UnknownServerError(UNKNOWN_SERVER_ERROR_MSG, err);
-                    }
-                } else {
-                    return error HttpResponseHandlingError(XML_EXTRACTION_ERROR_MSG, xmlPayload);
-                }
+                xml xmlPayload = check httpResponse.getXmlPayload();
+                return error(xmlPayload.toString());              
             }
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName;
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName);
         }
     }
 
@@ -247,10 +201,10 @@ public client class Client {
     # + cannedACL - The access control list of the new object.
     # + objectCreationHeaders - Optional headers for the create object function.
     #
-    # + return - If failed returns ConnectorError
+    # + return - If failed returns error
     remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
                          CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
-                         returns @tainted ConnectorError? {
+                         returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -274,8 +228,7 @@ public client class Client {
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "creating object.";
-            return error ApiInvocationError(message);
+            return error (API_INVOCATION_ERROR_MSG + "creating object.");
         }
     }
 
@@ -285,9 +238,9 @@ public client class Client {
     # + objectName - The name of the object
     # + versionId - The specific version of the object to delete, if versioning is enabled.
     # 
-    # + return - If failed returns ConnectorError
+    # + return - If failed returns error
     remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns @tainted ConnectorError? {
+                        returns error? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
         http:Request request = new;
@@ -310,8 +263,7 @@ public client class Client {
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName;
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName);
         }
     }     
 
@@ -319,8 +271,8 @@ public client class Client {
     # 
     # + bucketName - The name of the bucket.
     # 
-    # + return - If failed returns ConnectorError
-    remote function deleteBucket(string bucketName) returns @tainted ConnectorError? {
+    # + return - If failed returns error
+    remote function deleteBucket(string bucketName) returns error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
@@ -334,8 +286,7 @@ public client class Client {
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         } else {
-            string message = API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName;
-            return error ApiInvocationError(message);
+            return error(API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName);
         }
     }
 }
@@ -346,9 +297,9 @@ public client class Client {
 # + secretAccessKey - The secret access key of the Amazon S3 account.
 # 
 # + return - Returns an error object if accessKeyId or secretAccessKey not exists.
-isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns ClientError? {
+isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
     if ((accessKeyId == "") || (secretAccessKey == "")) {
-        return error ClientCredentialsVerificationError(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
+        return error(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }
 

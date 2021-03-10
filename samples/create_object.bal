@@ -1,4 +1,4 @@
-import ballerina/io;
+import ballerina/log;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -15,10 +15,10 @@ s3:ClientConfiguration amazonS3Config = {
 s3:Client amazonS3Client = checkpanic new (amazonS3Config);
 
 public function main() {
-    s3:ConnectorError? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
-    if (createObjectResponse is s3:ConnectorError) {
-        io:println("Error: ", createObjectResponse.message());
+    error? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
+    if (createObjectResponse is error) {
+        log:printError("Error: "+ createObjectResponse.toString());
     } else {
-        io:println("Object created successfully");
+        log:print("Object created successfully");
     }
 }
