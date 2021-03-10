@@ -14,8 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/stringutils;
-
 final string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
 "t", "u", "v", "w", "x", "y", "z"];
 const string NON_ALPHABET = "nonAlp";
@@ -34,7 +32,7 @@ class SortBucket {
     isolated function addItem(string item) {
         self.items[self.items.length()] = item;
     }
-};
+}
 
 # Returns sorted string array after performing bucket sort repeatedly.
 # By default, sorting is done on the english alphabet order.
@@ -70,7 +68,7 @@ function addToBucket(string item, int index, map<any> bucketsMap, string[] resul
 
     boolean matchFound = false;
     foreach var char in alphabet {
-        if (stringutils:equalsIgnoreCase(item.substring(index, nextIndex), char)) {
+        if (string:equalsIgnoreCaseAscii(item.substring(index, nextIndex), char)) {
             populateMap(bucketsMap, char, item, index, result);
             matchFound = true;
             break;

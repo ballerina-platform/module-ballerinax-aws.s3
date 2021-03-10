@@ -6,9 +6,13 @@
 
 #conf file
 ballerina.conf
+Config.toml
 
 #lock file
 Ballerina.lock
+
+#Resources file
+**/resources
 
 # BlueJ files
 *.ctxt
