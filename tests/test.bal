@@ -72,7 +72,7 @@ function testCreateObject() {
     log:print("amazonS3Client->createObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client->createObject(testBucketName, "test.txt","Sample content");
+        error? response = amazonS3Client->createObject(testBucketName, "test.txt", "Sample content");
         if (response is error) {
             test:assertFail(response.toString());
         }

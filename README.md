@@ -82,7 +82,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     s3:CannedACL cannedACL = s3:ACL_PRIVATE;
@@ -110,7 +110,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     var listBucketResponse = amazonS3Client->listBuckets();
@@ -141,7 +141,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     error? createObjectResponse = amazonS3Client->createObject(bucketName, "test.txt", "Sample content");
@@ -170,7 +170,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() returns error? {
     var listObjectsResponse = amazonS3Client->listObjects(bucketName);
@@ -204,7 +204,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() returns error? {
     var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
@@ -237,7 +237,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new(amazonS3Config);
+s3:Client amazonS3Client = check new(amazonS3Config);
 
 public function main() {
     error? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
@@ -266,7 +266,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     error? deleteBucketResponse = amazonS3Client->deleteBucket(bucketName);

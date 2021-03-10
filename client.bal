@@ -19,7 +19,6 @@ import ballerina/http;
 import ballerina/regex;
 
 public client class Client {
-
     public string accessKeyId;
     public string secretAccessKey;
     public string region;
@@ -54,9 +53,8 @@ public client class Client {
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
         
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
-                                                                self.region, GET, SLASH,
-                                                                UNSIGNED_PAYLOAD, requestHeaders);
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH,
+            UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->get(SLASH, message = request);
         if (httpResponse is http:Response) {
@@ -93,9 +91,8 @@ public client class Client {
                                 </CreateBucketConfiguration>`;   
             request.setXmlPayload(xmlPayload);
         }
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
-                                                    self.region, PUT, requestURI,
-                                                    UNSIGNED_PAYLOAD, requestHeaders);
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
@@ -131,14 +128,14 @@ public client class Client {
         string queryParamsStr = "?list-type=2";
         queryParamsMap["list-type"] = "2";
 
-        string queryParams = populateOptionalParameters(queryParamsMap, delimiter = delimiter, encodingType = encodingType, 
-                                maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
-                                continuationToken = continuationToken);
+        string queryParams = populateOptionalParameters(queryParamsMap, delimiter = delimiter, encodingType = 
+            encodingType, maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
+            continuationToken = continuationToken);
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey,
-                            self.region, GET, requestURI, UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3->get(requestURI, message = request);
@@ -173,7 +170,7 @@ public client class Client {
         populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
         
         var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET,
-                                                 requestURI, UNSIGNED_PAYLOAD, requestHeaders);
+                                            requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
         var httpResponse = self.amazonS3->get(requestURI, message = request);
         if (httpResponse is http:Response) {

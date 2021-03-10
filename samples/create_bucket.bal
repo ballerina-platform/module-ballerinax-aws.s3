@@ -12,7 +12,7 @@ s3:ClientConfiguration amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = checkpanic new (amazonS3Config);
+s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     s3:CannedACL cannedACL = s3:ACL_PRIVATE;

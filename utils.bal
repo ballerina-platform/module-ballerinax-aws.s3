@@ -18,10 +18,9 @@
 import ballerina/crypto;
 import ballerina/encoding;
 import ballerina/http;
-import ballerina/lang.'array as arrays;
+import ballerina/lang.array;
 import ballerina/time;
 import ballerina/regex;
-import ballerina/lang.'string as strings;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
@@ -59,10 +58,9 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         if (payload == UNSIGNED_PAYLOAD) {
             requestPayload = payload;
         } else {
-            requestPayload = arrays:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
+            requestPayload = array:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
             string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii()); 
-            requestHeaders[CONTENT_TYPE] = contentType;
-            
+            requestHeaders[CONTENT_TYPE] = contentType;     
         }
 
         // Generete canonical and signed headers.
@@ -76,8 +74,8 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
 
         // Construct authorization signature string.
-        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
-                                stringToSign);
+        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
+            signedHeaders, stringToSign);
         // Set authorization header.
         request.setHeader(AUTHORIZATION, authHeader);                
     } else {
@@ -106,7 +104,7 @@ isolated function generateDateString() returns [string, string]|error {
 isolated function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
                             returns string{
     //Start creating the string to sign
-    string stringToSign = string `${AWS4_HMAC_SHA256}${"\n"}${amzDateStr}${"\n"}${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}${"\n"}${arrays:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
+    string stringToSign = string `${AWS4_HMAC_SHA256}${"\n"}${amzDateStr}${"\n"}${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}${"\n"}${array:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
 
 }
@@ -145,7 +143,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
     }
-    canonicalQueryString = canonicalQueryString.substring(0, <int>strings:lastIndexOf(canonicalQueryString, "&"));
+    canonicalQueryString = canonicalQueryString.substring(0, <int>string:lastIndexOf(canonicalQueryString, "&"));
     return canonicalQueryString;
 }
 
@@ -153,7 +151,6 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
 #
 # + headers - Headers map.
 # + request - HTTP request.
-#
 # + return - Return canonical and signed headers.
 function generateCanonicalHeaders(map<string> headers, http:Request request) returns @tainted[string, string] {
     string canonicalHeaders = "";
@@ -171,7 +168,7 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
     }
-    signedHeaders = signedHeaders.substring(0, <int>strings:lastIndexOf(signedHeaders, ";"));
+    signedHeaders = signedHeaders.substring(0, <int>string:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
 
@@ -183,7 +180,6 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
 # + region - Endpoint region.
 # + signedHeaders - Signed headers.
 # + stringToSign - stringToSign Parameter Description
-#
 # + return - Authorization header string value.
 isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
                                 string signedHeaders, string stringToSign) returns string|error {
@@ -193,7 +189,7 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
     byte[] serviceKey = check crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
     byte[] signingKey = check  crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 
-    string encodedStr = arrays:toBase16(check  crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+    string encodedStr = array:toBase16(check  crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
     string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
@@ -205,7 +201,8 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 #
 # + requestHeaders - Request headers map.
 # + objectCreationHeaders - Optional headers for createObject function.
-isolated function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders? objectCreationHeaders) {
+isolated function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders?
+                                                objectCreationHeaders) {
     if(objectCreationHeaders != ()) {
         if (objectCreationHeaders?.cacheControl != ()) {
             requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders?.cacheControl;
@@ -255,9 +252,10 @@ isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRet
     }
 }
 
-isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
-                    string? prefix = (), string? startAfter = (), boolean? fetchOwner = (),
-                    string? continuationToken = ()) returns string {
+isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType =
+                                                (), int? maxKeys = (), string? prefix = (), string? startAfter = (), 
+                                                boolean? fetchOwner = (), string? continuationToken = ()) returns 
+                                                string {
     string queryParamsStr = "";
     // Append query parameter(delimiter).
         if (delimiter is string) {
