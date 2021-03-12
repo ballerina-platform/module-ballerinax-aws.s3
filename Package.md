@@ -1,18 +1,24 @@
-Connects to Amazon S3 from Ballerina. 
+# Ballerina Amazon S3 Connector 
+Connects to Amazon S3 using Ballerina.
 
-# Module Overview
+# Introduction
+## Amazon S3
+[Amazon Simple Storage Service (Amazon S3)](https://aws.amazon.com/s3/) is an object storage service that offers industry-leading scalability, data availability, security, and performance.This means customers of all sizes and industries can use it to store and protect any amount of data for a range of use cases, such as data lakes, websites, mobile applications, backup and restore, archive, enterprise applications, IoT devices, and big data analytics. 
 
-The Amazon S3 client allows you to access Amazon S3 REST API through Ballerina. The following section provide you the 
-details on connector operations.
+## Key Features of Amazon S3
+* Manage buckets
+* Manage objects 
 
-**Buckets Operations**
+## Connector Overview
 
-The `ballerinax/aws.s3` module contains operations that work with buckets. You can list the existing buckets, create a bucket, 
-delete a bucket, and list objects in a bucket.
+The Amazon S3 Connector allows you to access the Amazon S3 REST API through Ballerina. The following sections provide the details on client operations.
 
-**Objects Operations**
+**Buckets operations** - 
+Connector contains operations that list the existing buckets, create a bucket, delete a bucket, and list objects in a bucket.
 
-The `ballerinax/aws.s3` module contains operations that create an object, delete an object, and retrieve an object.
+**Objects operations** - 
+Connector contains operations that create an object, delete an object, and retrieve an object.
+
 
 ## Compatibility
 |                    |    Version                  |  
@@ -20,31 +26,14 @@ The `ballerinax/aws.s3` module contains operations that create an object, delete
 | Ballerina Language |   Swan Lake Alpha2          |
 |   Amazon S3 API    |   2006-03-01                |
 
-## Running Sample
 
-Let's get started with a simple program in Ballerina to create a new bucket.
 
-Use the following command to search for modules where the module name, description, or org name contains the word "aws.s3".
 
-```ballerina
-$ bal search aws.s3
-```
-
-This results in a list of available modules. You can pull the one you want from Ballerina Central.
-
-```ballerina
-$ bal pull ballerinax/aws.s3
-```
-
-You can use the `ballerinax/aws.s3` module to integrate with Amazon S3 back-end. Import the `ballerinax/aws.s3` module into the Ballerina project.
-
-Now you can use Ballerina to integrate with Amazon S3.
-
-#### Before you Begin
+## Before you Begin
 
 You need to get credentials such as **Access Key** and **Secret Access Key (API Secret)** from Amazon S3.
 
-**Obtaining Access Keys**
+#### Obtaining Access Keys
 
  1. Create an Amazon account by visiting <https://aws.amazon.com/s3/>
  2. Create a new access key, which includes a new secret access key.
@@ -60,13 +49,58 @@ In the directory where you have your sample, create a `Config.toml` file and add
 accessKeyId = ""
 secretAccessKey = ""
 region = ""
-trustStorePath = ""
-trustStorePassword = ""
 ```
 
-## Samples
+# Quickstart
 
-#### Create a new Bucket
+## Create a bucket
+### Step 1: Import the AWS S3 module
+First, import the `ballerinax/aws.s3` module into the Ballerina project.
+```ballerina
+import ballerinax/aws.s3;
+```
+
+### Step 2: Initialize the Calendar Client giving necessary credentials
+You can now enter the credentials in the S3 client config.
+```ballerina
+s3:ClientConfiguration amazonS3Config = {
+    accessKeyId: <ACCESS_KEY_ID>,
+    secretAccessKey: <SECRET_ACCESS_KEY>,
+    region: <REGION>
+};
+
+s3:Client amazonS3Client = check new (amazonS3Config);
+```
+
+### Step 3: Set up all the data required to create the bucket
+The `createBucket` remote function creates a bucket. The `bucketName` represents the name of the bucket that has to be created. This operation returns an `error` if unsuccessful. 
+
+```ballerina
+string bucketName = "name";
+```
+
+### Step 4: Create bucket
+The response from `createBucket` is an `error` if creating the bucket was unsuccessful.
+
+```ballerina
+//Create new bucket.
+error? createBucketResponse = amazonS3Client->createBucket(bucketName);
+if (createBucketResponse is error) {
+    // If unsuccessful
+    log:printError("Error: " + createBucketResponse.toString());
+} else {
+    // If successful
+    log:print("Bucket Creation Status: Success");
+}
+```
+
+# Samples
+
+Samples are available at : https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/samples. To run a sample, create a new TOML file with name `Config.toml` in the same directory as the `.bal` file with above-mentioned configurable values.
+
+### Create a new bucket
+
+This sample shows how to create a new bucket in AWS. The bucket name is required to do this operation. This operation returns an `error` if unsuccessful. 
 
 ```ballerina
 import ballerina/log;
@@ -95,7 +129,10 @@ public function main() {
     }
 }
 ```
-#### List Buckets
+
+### List all buckets
+
+This sample shows how to list all buckets that are available in an authorized user's account. This operation returns array of `Bucket` if successful. Else returns `error`. 
 
 ```ballerina
 import ballerina/log;
@@ -121,11 +158,14 @@ public function main() {
             log:print("Bucket Name: " + bucket.name);
         }
     } else {
-        logError:print("Error: " + listBucketResponse.toString());
+        log:printError("Error: " + listBucketResponse.toString());
     }
 }
 ```
-#### Create a new Object
+
+### Create a new object
+
+This sample shows how to create a new object in a bucket. The bucket name, object name and file content are required to do this operation. This operation returns an `error` if unsuccessful. 
 
 ```ballerina
 import ballerina/log;
@@ -154,7 +194,9 @@ public function main() {
 }
 ```
 
-#### List Objects
+### List all objects
+
+This sample shows how to list all objects that are available in a bucket. This operation returns array of `S3Object` if successful. Else returns `error`. 
 
 ```ballerina
 import ballerina/log;
@@ -187,7 +229,10 @@ public function main() returns error? {
     }
 }
 ```
-#### Get an Object
+
+### Get an object
+
+This sample shows how to get an object that is available in a bucket. The bucket name and object name are required to do this operation. This operation returns a `S3Object` if successful. Else returns `error`. 
 
 ```ballerina
 import ballerina/log;
@@ -221,7 +266,10 @@ public function main() returns error? {
     }
 }
 ```
-#### Delete an Object
+
+### Delete an object
+
+This sample shows how to delete an object that is available in a bucket. The bucket name and object name are required to do this operation. This operation returns an `error` if unsuccessful
 
 ```ballerina
 import ballerina/log;
@@ -250,7 +298,9 @@ public function main() {
 }
 ```
 
-#### Delete a Bucket
+### Delete a bucket
+
+This sample shows how to delete a bucket that is available in an user's account. The bucket name is required to do this operation. This operation returns an `error` if unsuccessful
 
 ```ballerina
 import ballerina/log;
