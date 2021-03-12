@@ -18,20 +18,20 @@
 import ballerina/http;
 import ballerina/regex;
 
+# Amazon S3 connector client
+# 
+# + amazonS3 - HTTP client
 public client class Client {
-    public string accessKeyId;
-    public string secretAccessKey;
-    public string region;
-    public string amazonHost = EMPTY_STRING;
+    private string accessKeyId;
+    private string secretAccessKey;
+    private string region;
+    private string amazonHost = EMPTY_STRING;
     public http:Client amazonS3;
 
     public function init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
-        if (self.region != DEFAULT_REGION) {
-            self.amazonHost = regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, SERVICE_NAME + "." + self.region);
-        } else {
-            self.amazonHost = AMAZON_AWS_HOST;
-        }
+        self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, 
+            SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
@@ -61,12 +61,10 @@ public client class Client {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
                 return getBucketsList(xmlPayload);
-            } else {    
-                return error(xmlPayload.toString());              
-            }           
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "listing buckets.");
+            }   
+            return error(xmlPayload.toString());                        
         }
+        return error(API_INVOCATION_ERROR_MSG + "listing buckets.");
     }
 
     # Create a bucket.
@@ -75,7 +73,7 @@ public client class Client {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns error.
-    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns error? {
+    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -97,9 +95,8 @@ public client class Client {
         var httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "creating bucket.");
         }
+        return error(API_INVOCATION_ERROR_MSG + "creating bucket.");
     }
 
     # Retrieve the existing objects in a given bucket
@@ -118,9 +115,9 @@ public client class Client {
     #                       request as the continuation-token.
     # 
     # + return - If success, returns S3Object[] object, else returns error
-    remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), 
-                        int? maxKeys = (), string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                        string? continuationToken = ()) returns @tainted S3Object[]|error {
+    remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
+                                string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
+                                string? continuationToken = ()) returns @tainted S3Object[]|error {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -143,12 +140,10 @@ public client class Client {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
                 return getS3ObjectsList(xmlPayload);
-            } else {
-                return error(xmlPayload.toString());               
-            } 
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
+            }
+            return error(xmlPayload.toString());                
         }
+        return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
     }
 
      # Retrieves objects from Amazon S3.
@@ -159,7 +154,7 @@ public client class Client {
      #
      # + return - If success, returns S3ObjectContent object, else returns error
     remote function getObject(string bucketName, string objectName,
-                         ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
+                                ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -175,7 +170,7 @@ public client class Client {
         var httpResponse = self.amazonS3->get(requestURI, message = request);
         if (httpResponse is http:Response) {
             if (httpResponse.statusCode == http:STATUS_OK) {
-                byte[]|error binaryPayload = extractResponsePayload(httpResponse);
+                byte[]|error binaryPayload = httpResponse.getBinaryPayload();
                 if (binaryPayload is error) {
                     return error(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
                 } else {
@@ -185,9 +180,8 @@ public client class Client {
                 xml xmlPayload = check httpResponse.getXmlPayload();
                 return error(xmlPayload.toString());              
             }
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName);
         }
+        return error(API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName);
     }
 
     # Create an object.
@@ -200,8 +194,8 @@ public client class Client {
     #
     # + return - If failed returns error
     remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
-                         CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
-                         returns error? {
+                                    CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
+                                    returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -224,9 +218,8 @@ public client class Client {
         var httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
-        } else {
-            return error (API_INVOCATION_ERROR_MSG + "creating object.");
         }
+        return error (API_INVOCATION_ERROR_MSG + "creating object.");
     }
 
     # Delete an object.
@@ -237,7 +230,7 @@ public client class Client {
     # 
     # + return - If failed returns error
     remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
-                        returns error? {
+                                    returns @tainted error? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
         http:Request request = new;
@@ -259,9 +252,8 @@ public client class Client {
         var httpResponse = self.amazonS3->delete(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName);
         }
+        return error(API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName);
     }     
 
     # Delete a bucket.
@@ -269,7 +261,7 @@ public client class Client {
     # + bucketName - The name of the bucket.
     # 
     # + return - If failed returns error
-    remote function deleteBucket(string bucketName) returns error? {
+    remote function deleteBucket(string bucketName) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
@@ -282,9 +274,8 @@ public client class Client {
         var httpResponse = self.amazonS3->delete(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
-        } else {
-            return error(API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName);
         }
+        return error(API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName);
     }
 }
 
