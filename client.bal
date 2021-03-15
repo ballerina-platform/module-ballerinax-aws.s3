@@ -18,6 +18,7 @@
 import ballerina/http;
 import ballerina/regex;
 
+@display {label: "Amazon S3 Client"}
 public client class Client {
     public string accessKeyId;
     public string secretAccessKey;
@@ -43,6 +44,7 @@ public client class Client {
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
     # + return - If success, returns a list of Bucket record, else returns error
+  //  @display {label: "Get buckets"}
     remote function listBuckets() returns @tainted Bucket[]|error {
         map<string> requestHeaders = {};
         http:Request request = new;
@@ -70,7 +72,9 @@ public client class Client {
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns error.
-    remote function createBucket(string bucketName, CannedACL? cannedACL = ()) returns @tainted error? {
+    @display {label: "Create bucket"}
+    remote function createBucket(@display {label: "Bucket name"} string bucketName,
+                                    @display {label: "Grant"} CannedACL? cannedACL = ()) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
@@ -112,9 +116,16 @@ public client class Client {
     #                       request as the continuation-token.
     # 
     # + return - If success, returns S3Object[] object, else returns error
-    remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
-                                string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
-                                string? continuationToken = ()) returns @tainted S3Object[]|error {
+    @display {label: "Get objects"}
+    remote function listObjects(@display {label: "Bucket name"} string bucketName,
+                                @display {label: "Group identifier"} string? delimiter = (),
+                                @display {label: "Encoding type"} string?  encodingType = (),
+                                @display {label: "Maximum number of keys"} int? maxKeys = (),
+                                @display {label: "Required object prefix"} string? prefix = (),
+                                @display {label: "Object key starts from"} string? startAfter = (),
+                                @display {label: "Is owner information required?"} boolean? fetchOwner = (),
+                                @display {label: "Next list token"} string? continuationToken = ()) returns @tainted
+                                @display {label: "Array of objects"} S3Object[]|error {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
         http:Request request = new;
@@ -143,15 +154,19 @@ public client class Client {
         return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
     }
 
-     # Retrieves objects from Amazon S3.
-     #
-     # + bucketName - The name of the bucket.
-     # + objectName - The name of the object.
-     # + objectRetrievalHeaders - Optional headers for the get object function.
-     #
-     # + return - If success, returns S3ObjectContent object, else returns error
-    remote function getObject(string bucketName, string objectName,
-                                ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
+    # Retrieves objects from Amazon S3.
+    #
+    # + bucketName - The name of the bucket.
+    # + objectName - The name of the object.
+    # + objectRetrievalHeaders - Optional headers for the get object function.
+    #
+    # + return - If success, returns S3ObjectContent object, else returns error
+    @display {label: "Get object"}
+    remote function getObject(@display {label: "Bucket name"} string bucketName,
+                                @display {label: "Object name"} string objectName,
+                                @display {label: "Optional header parameters"} ObjectRetrievalHeaders?
+                                objectRetrievalHeaders = ()) returns @tainted @display {label: "Object"} S3Object|error
+                                {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -189,10 +204,14 @@ public client class Client {
     # + cannedACL - The access control list of the new object.
     # + objectCreationHeaders - Optional headers for the create object function.
     #
-    # + return - If failed returns error
-    remote function createObject(string bucketName, string objectName, string|xml|json|byte[] payload,
-                                    CannedACL? cannedACL = (), ObjectCreationHeaders? objectCreationHeaders = ())
-                                    returns @tainted error? {
+     # + return - If failed returns error
+    @display {label: "Create object"}
+    remote function createObject(@display {label: "Bucket name"} string bucketName,
+                                @display {label: "Object name"} string objectName,
+                                @display {label: "File content"} string|xml|json|byte[] payload,
+                                @display {label: "Grant"} CannedACL? cannedACL = (),
+                                @display {label: "Optional header parameters"} ObjectCreationHeaders?
+                                objectCreationHeaders = ()) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -226,7 +245,10 @@ public client class Client {
     # + versionId - The specific version of the object to delete, if versioning is enabled.
     # 
     # + return - If failed returns error
-    remote function deleteObject(string bucketName, string objectName, string? versionId = ()) 
+    @display {label: "Delete object"}
+    remote function deleteObject(@display {label: "Bucket name"} string bucketName,
+                                    @display {label: "Object name"} string objectName,
+                                    @display {label: "Object version"} string? versionId = ())
                                     returns @tainted error? {
         map<string> requestHeaders = {};
         map<string> queryParamsMap = {};
@@ -258,7 +280,8 @@ public client class Client {
     # + bucketName - The name of the bucket.
     # 
     # + return - If failed returns error
-    remote function deleteBucket(string bucketName) returns @tainted error? {
+    @display {label: "Delete bucket"}
+    remote function deleteBucket(@display {label: "Bucket name"} string bucketName) returns @tainted error? {
         map<string> requestHeaders = {};
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
