@@ -24,8 +24,7 @@ import ballerina/regex;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
-                           map<string>? queryParams = ()) returns error? {
-
+                           map<string>? queryParams = ()) returns @tainted error? {
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
@@ -301,14 +300,10 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
     return queryParamsStr;
 }
 
-isolated function handleHttpResponse(http:Response httpResponse) returns error? {
+isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         xml xmlPayload = check httpResponse.getXmlPayload();
         return error(xmlPayload.toString());  
     }
-}
-
-isolated function extractResponsePayload(http:Response response) returns @tainted byte[]|error {
-    return response.getBinaryPayload();
 }
