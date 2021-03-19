@@ -18,17 +18,20 @@
 import ballerina/http;
 import ballerina/regex;
 
+# Amazon S3 connector client
+#
+# + amazonS3 - HTTP client
 @display {label: "Amazon S3 Client"}
 public client class Client {
-    public string accessKeyId;
-    public string secretAccessKey;
-    public string region;
-    public string amazonHost = EMPTY_STRING;
+    private string accessKeyId;
+    private string secretAccessKey;
+    private string region;
+    private string amazonHost = EMPTY_STRING;
     public http:Client amazonS3;
 
     public function init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
-        self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, 
+        self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
             SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
         self.accessKeyId = amazonS3Config.accessKeyId;
@@ -44,7 +47,7 @@ public client class Client {
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
     # 
     # + return - If success, returns a list of Bucket record, else returns error
-  //  @display {label: "Get buckets"}
+    @display {label: "Get buckets"}
     remote function listBuckets() returns @tainted Bucket[]|error {
         map<string> requestHeaders = {};
         http:Request request = new;
@@ -60,8 +63,8 @@ public client class Client {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
                 return getBucketsList(xmlPayload);
-            }   
-            return error(xmlPayload.toString());                        
+            }
+            return error(xmlPayload.toString());
         }
         return error(API_INVOCATION_ERROR_MSG + "listing buckets.");
     }
@@ -149,7 +152,7 @@ public client class Client {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 return getS3ObjectsList(xmlPayload);
             }
-            return error(xmlPayload.toString());                
+            return error(xmlPayload.toString());
         }
         return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
     }
