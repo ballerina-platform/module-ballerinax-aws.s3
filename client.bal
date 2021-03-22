@@ -21,7 +21,7 @@ import ballerina/regex;
 # Amazon S3 connector client
 #
 # + amazonS3 - HTTP client
-@display {label: "Amazon S3 Client"}
+@display {label: "Amazon S3 Client", iconPath: "AwsS3Logo.png"}
 public client class Client {
     private string accessKeyId;
     private string secretAccessKey;
