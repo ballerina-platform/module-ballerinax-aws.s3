@@ -19,6 +19,6 @@ public function main() {
     if (deleteBucketResponse is error) {
         log:printError("Error: " + deleteBucketResponse.toString());
     } else {
-        log:print("Successfully deleted bucket");
+        log:printInfo("Successfully deleted bucket");
     }
 }

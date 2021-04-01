@@ -19,6 +19,6 @@ public function main() {
     if (deleteObjectResponse is error) {
         log:printError("Error: " + deleteObjectResponse.toString());
     } else {
-        log:print("Successfully deleted object");
+        log:printInfo("Successfully deleted object");
     }
 }

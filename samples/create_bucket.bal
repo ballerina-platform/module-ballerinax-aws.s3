@@ -20,6 +20,6 @@ public function main() {
     if (createBucketResponse is error) {
         log:printError("Error: " + createBucketResponse.toString());
     } else {
-        log:print("Bucket Creation Status: Success");
+        log:printInfo("Bucket Creation Status: Success");
     }
 }

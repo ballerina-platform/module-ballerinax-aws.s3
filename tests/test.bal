@@ -33,7 +33,7 @@ ClientConfiguration amazonS3Config = {
 
 @test:Config{}
 function testCreateBucket() {
-    log:print("amazonS3Client->createBucket()");
+    log:printInfo("amazonS3Client->createBucket()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         CannedACL cannedACL = ACL_PRIVATE;
@@ -50,7 +50,7 @@ function testCreateBucket() {
     dependsOn: [testCreateBucket]
 }
 function testListBuckets() {
-    log:print("amazonS3Client->listBuckets()");
+    log:printInfo("amazonS3Client->listBuckets()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         Bucket[]|error response =  amazonS3Client->listBuckets();
@@ -69,7 +69,7 @@ function testListBuckets() {
     dependsOn: [testListBuckets]
 }
 function testCreateObject() {
-    log:print("amazonS3Client->createObject()");
+    log:printInfo("amazonS3Client->createObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client->createObject(testBucketName, "test.txt", "Sample content");
@@ -85,7 +85,7 @@ function testCreateObject() {
     dependsOn: [testCreateObject]
 }
 function testGetObject() {
-    log:print("amazonS3Client->getObject()");
+    log:printInfo("amazonS3Client->getObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         S3Object|error response = amazonS3Client->getObject(testBucketName, "test.txt");
@@ -103,7 +103,7 @@ function testGetObject() {
     dependsOn: [testGetObject]
 }
 function testListObjects() {
-    log:print("amazonS3Client->listObjects()");
+    log:printInfo("amazonS3Client->listObjects()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         S3Object[]|error response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
@@ -121,7 +121,7 @@ function testListObjects() {
     dependsOn: [testListObjects]
 }
 function testDeleteObject() {
-    log:print("amazonS3Client -> deleteObject()");
+    log:printInfo("amazonS3Client -> deleteObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
@@ -133,11 +133,9 @@ function testDeleteObject() {
     }
 }
 
-@test:Config {
-    dependsOn: [testDeleteObject]
-}
+@test:AfterSuite {}
 function testDeleteBucket() {
-    log:print("amazonS3Client -> deleteBucket()");
+    log:printInfo("amazonS3Client -> deleteBucket()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client -> deleteBucket(testBucketName);

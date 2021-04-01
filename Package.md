@@ -23,7 +23,7 @@ Connector contains operations that create an object, delete an object, and retri
 ## Compatibility
 |                    |    Version                  |  
 |:------------------:|:---------------------------:|
-| Ballerina Language |   Swan Lake Alpha2          |
+| Ballerina Language |   Swan Lake Alpha3          |
 |   Amazon S3 API    |   2006-03-01                |
 
 
@@ -90,7 +90,7 @@ if (createBucketResponse is error) {
     log:printError("Error: " + createBucketResponse.toString());
 } else {
     // If successful
-    log:print("Bucket Creation Status: Success");
+    log:printInfo("Bucket Creation Status: Success");
 }
 ```
 
@@ -125,7 +125,7 @@ public function main() {
     if (createBucketResponse is error) {
         log:printError("Error: " + createBucketResponse.toString());
     } else {
-        log:print("Bucket Creation Status: Success");
+        log:printInfo("Bucket Creation Status: Success");
     }
 }
 ```
@@ -153,9 +153,9 @@ s3:Client amazonS3Client = check new (amazonS3Config);
 public function main() {
     var listBucketResponse = amazonS3Client->listBuckets();
     if (listBucketResponse is s3:Bucket[]) {
-        log:print("Listing all buckets: ");
+        log:printInfo("Listing all buckets: ");
         foreach var bucket in listBucketResponse {
-            log:print("Bucket Name: " + bucket.name);
+            log:printInfo("Bucket Name: " + bucket.name);
         }
     } else {
         log:printError("Error: " + listBucketResponse.toString());
@@ -189,7 +189,7 @@ public function main() {
     if (createObjectResponse is error) {
         log:printError("Error: "+ createObjectResponse.toString());
     } else {
-        log:print("Object created successfully");
+        log:printInfo("Object created successfully");
     }
 }
 ```
@@ -218,11 +218,11 @@ s3:Client amazonS3Client = check new (amazonS3Config);
 public function main() returns error? {
     var listObjectsResponse = amazonS3Client->listObjects(bucketName);
     if (listObjectsResponse is s3:S3Object[]) {
-        log:print("Listing all object: ");
+        log:printInfo("Listing all object: ");
         foreach var s3Object in listObjectsResponse {
-            log:print("---------------------------------");
-            log:print("Object Name: " + s3Object["objectName"].toString());
-            log:print("Object Size: " + s3Object["objectSize"].toString());
+            log:printInfo("---------------------------------");
+            log:printInfo("Object Name: " + s3Object["objectName"].toString());
+            log:printInfo("Object Size: " + s3Object["objectSize"].toString());
         }
     } else {
         log:printError("Error: " + listObjectsResponse.toString());
@@ -255,11 +255,11 @@ s3:Client amazonS3Client = check new (amazonS3Config);
 public function main() returns error? {
     var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
     if (getObjectResponse is s3:S3Object) {
-        log:print(getObjectResponse.toString());
+        log:printInfo(getObjectResponse.toString());
         byte[]? byteArray = getObjectResponse["content"];
         if (byteArray is byte[]) {
             string content = check strings:fromBytes(byteArray);
-            log:print("Object content: " + content);
+            log:printInfo("Object content: " + content);
         }
     } else {
         log:printError("Error: " + getObjectResponse.toString());
@@ -293,7 +293,7 @@ public function main() {
     if (deleteObjectResponse is error) {
         log:printError("Error: " + deleteObjectResponse.toString());
     } else {
-        log:print("Successfully deleted object");
+        log:printInfo("Successfully deleted object");
     }
 }
 ```
@@ -324,7 +324,7 @@ public function main() {
     if (deleteBucketResponse is error) {
         log:printError("Error: " + deleteBucketResponse.toString());
     } else {
-        log:print("Successfully deleted bucket");
+        log:printInfo("Successfully deleted bucket");
     }
 }
 ```

@@ -16,11 +16,12 @@
 //
 
 import ballerina/crypto;
-import ballerina/encoding;
 import ballerina/http;
+import ballerina/jballerina.java;
 import ballerina/lang.array;
-import ballerina/time;
 import ballerina/regex;
+import ballerina/time;
+import ballerina/url;
 
 function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
                            string httpVerb, string requestURI, string payload, map<string> headers,
@@ -70,13 +71,64 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
 
         // Generate string to sign.
-        string stringToSign = generateStringToSign(amzDateStr, shortDateStr,region, canonicalRequest);
+        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
+        // Construct authorization signature string.
+        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
+            signedHeaders, stringToSign);
+        // Set authorization header.
+        request.setHeader(AUTHORIZATION, authHeader);
+    } else {
+        return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
+    }
+}
+
+function generateGetSignature(string accessKeyId, string secretAccessKey, string region,
+                                string httpVerb, string requestURI, string requestPayload, map<string> headers,
+                                map<string>? queryParams = ()) returns @tainted error? {
+                                       
+    map<string> requestHeaders = headers;
+
+    string canonicalRequest = httpVerb;
+    string canonicalQueryString = "";
+    [string, string][amzDateStr, shortDateStr] = ["",""];
+
+    // Generate date strings and put it in the headers map to generate the signature.
+    [string, string]|error dateStrings = generateDateString();
+    if (dateStrings is error) {
+        return error(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
+    } else {
+        [amzDateStr, shortDateStr] = dateStrings;
+        requestHeaders[X_AMZ_DATE] = amzDateStr;
+    }
+
+    // Get canonical URI.
+    var canonicalURI = getCanonicalURI(requestURI);
+    if (canonicalURI is string) {
+        // Generate canonical query string.
+        if (queryParams is map<string> && queryParams.length() > 0) {
+            string|error canonicalQuery = generateCanonicalQueryString(queryParams);
+            if (canonicalQuery is string) {
+                canonicalQueryString = canonicalQuery;
+            } else {
+                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+            }
+        }
+
+        // Generete canonical and signed headers.
+       [string, string] [canonicalHeaders,signedHeaders] = generateCanonicalGetHeaders(headers);
+
+        // Generate canonical request.
+        canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
+        canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
+
+        // Generate string to sign.
+        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
 
         // Construct authorization signature string.
         string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
             signedHeaders, stringToSign);
         // Set authorization header.
-        request.setHeader(AUTHORIZATION, authHeader);                
+        requestHeaders[AUTHORIZATION] = authHeader;               
     } else {
         return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
@@ -86,10 +138,21 @@ function generateSignature(http:Request request, string accessKeyId, string secr
 #
 # + return - amzDate string and short date string.
 isolated function generateDateString() returns [string, string]|error {
-    time:Time time = check time:toTimeZone(time:currentTime(), "GMT");
-    string amzDate = check time:format(time, ISO8601_BASIC_DATE_FORMAT);
-    string shortDate = check time:format(time, SHORT_DATE_FORMAT);
+    time:Utc time = time:utcNow();
+    string amzDate = check utcToString(time, ISO8601_BASIC_DATE_FORMAT);
+    string shortDate = check utcToString(time, SHORT_DATE_FORMAT);
     return [amzDate, shortDate];
+}
+
+isolated function utcToString(time:Utc utc, string pattern) returns string|error {
+    [int, decimal][epochSeconds, lastSecondFraction] = utc;
+    int nanoAdjustments = <int>(lastSecondFraction * 1000000000);
+    var instant = ofEpochSecond(epochSeconds, nanoAdjustments);
+    var zoneId = getZoneId(java:fromString("Z"));
+    var zonedDateTime = atZone(instant, zoneId);
+    var dateTimeFormatter = ofPattern(java:fromString(pattern));
+    handle formatString = format(zonedDateTime, dateTimeFormatter);
+    return formatString.toBalString();
 }
 
 # Function to generate string to sign.
@@ -114,7 +177,7 @@ isolated function generateStringToSign(string amzDateStr, string shortDateStr, s
 #
 # + return - Return encoded request URI.
 isolated function getCanonicalURI(string requestURI) returns string|error {
-    string value = check encoding:encodeUriComponent(requestURI, UTF_8);
+    string value = check url:encode(requestURI, UTF_8);
     return regex:replaceAll(value, ENCODED_SLASH, SLASH);
 }
 
@@ -134,10 +197,10 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
     int index = 0;
     while (index < sortedKeys.length()) {
         key = sortedKeys[index];
-        string encodedKey = check encoding:encodeUriComponent(key, UTF_8);
+        string encodedKey = check url:encode(key, UTF_8);
         encodedKeyValue = regex:replaceAll(encodedKey, ENCODED_SLASH, SLASH);
         value = <string>queryParams[key];
-        string encodedVal = check encoding:encodeUriComponent(value, UTF_8);
+        string encodedVal = check url:encode(value, UTF_8);
         encodedValue = regex:replaceAll(encodedVal, ENCODED_SLASH, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
@@ -170,6 +233,30 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
     signedHeaders = signedHeaders.substring(0, <int>string:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
+
+# Function to generate canonical headers and signed headers and populate GET request headers.
+#
+# + headers - Headers map.
+# + return - Return canonical and signed headers.
+function generateCanonicalGetHeaders(map<string> headers) returns @tainted[string, string] {
+    string canonicalHeaders = "";
+    string signedHeaders = "";
+    string key;
+    string value;
+    string[] headerKeys = headers.keys();
+    string[] sortedHeaderKeys = sort(headerKeys);
+    int index = 0;
+    while (index < sortedHeaderKeys.length()) {
+        key = sortedHeaderKeys[index];
+        value = <string>headers[key];
+        canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}${"\n"}`;
+        signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
+        index = index + 1;
+    }
+    signedHeaders = signedHeaders.substring(0, <int>string:lastIndexOf(signedHeaders, ";"));
+    return [canonicalHeaders, signedHeaders];
+}
+
 
 # Funtion to construct authorization header string.
 #

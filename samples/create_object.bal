@@ -19,6 +19,6 @@ public function main() {
     if (createObjectResponse is error) {
         log:printError("Error: "+ createObjectResponse.toString());
     } else {
-        log:print("Object created successfully");
+        log:printInfo("Object created successfully");
     }
 }

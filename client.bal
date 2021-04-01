@@ -28,7 +28,7 @@ public client class Client {
     private string amazonHost = EMPTY_STRING;
     public http:Client amazonS3;
 
-    public function init(ClientConfiguration amazonS3Config) returns error? {
+    public isolated function init(ClientConfiguration amazonS3Config) returns error? {
         self.region = amazonS3Config.region;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME, 
             SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
@@ -47,16 +47,15 @@ public client class Client {
     # 
     # + return - If success, returns a list of Bucket record, else returns error
     remote function listBuckets() returns @tainted Bucket[]|error {
-        map<string> requestHeaders = {};
-        http:Request request = new;
-
-        requestHeaders[HOST] = self.amazonHost;
-        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+        map<string> requestHeaders = {
+            [HOST]: self.amazonHost,
+            [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
+        };
         
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH,
+        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH,
             UNSIGNED_PAYLOAD, requestHeaders);
 
-        var httpResponse = self.amazonS3->get(SLASH, message = request);
+        var httpResponse = self.amazonS3->get(SLASH, requestHeaders);
         if (httpResponse is http:Response) {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
@@ -118,9 +117,7 @@ public client class Client {
     remote function listObjects(string bucketName, string? delimiter = (), string? encodingType = (), int? maxKeys = (),
                                 string? prefix = (), string? startAfter = (), boolean? fetchOwner = (), 
                                 string? continuationToken = ()) returns @tainted S3Object[]|error {
-        map<string> requestHeaders = {};
         map<string> queryParamsMap = {};  
-        http:Request request = new;
         string requestURI = string `/${bucketName}/`;
         string queryParamsStr = "?list-type=2";
         queryParamsMap["list-type"] = "2";
@@ -129,13 +126,15 @@ public client class Client {
             encodingType, maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
             continuationToken = continuationToken);
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
-        requestHeaders[HOST] = self.amazonHost;
-        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
+        map<string> requestHeaders = {
+            [HOST]: self.amazonHost,
+            [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
+        };
+        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3->get(requestURI, message = request);
+        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse is http:Response) {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
@@ -155,19 +154,19 @@ public client class Client {
      # + return - If success, returns S3ObjectContent object, else returns error
     remote function getObject(string bucketName, string objectName,
                                 ObjectRetrievalHeaders? objectRetrievalHeaders = ()) returns @tainted S3Object|error {
-        map<string> requestHeaders = {};
-        http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
 
-        requestHeaders[HOST] = self.amazonHost;
-        requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
+         map<string> requestHeaders = {
+            [HOST]: self.amazonHost,
+            [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
+        };
         // Add optional headers.
         populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
         
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, GET,
+        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET,
                                             requestURI, UNSIGNED_PAYLOAD, requestHeaders);
 
-        var httpResponse = self.amazonS3->get(requestURI, message = request);
+        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse is http:Response) {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 byte[]|error binaryPayload = httpResponse.getBinaryPayload();
