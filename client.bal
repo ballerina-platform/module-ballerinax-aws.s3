@@ -52,8 +52,8 @@ public client class Client {
             [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
         };
         
-        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH,
-            UNSIGNED_PAYLOAD, requestHeaders);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
+            requestHeaders);
 
         var httpResponse = self.amazonS3->get(SLASH, requestHeaders);
         if (httpResponse is http:Response) {
@@ -88,8 +88,8 @@ public client class Client {
                                 </CreateBucketConfiguration>`;   
             request.setXmlPayload(xmlPayload);
         }
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, request);
 
         var httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
@@ -123,15 +123,15 @@ public client class Client {
         queryParamsMap["list-type"] = "2";
 
         string queryParams = populateOptionalParameters(queryParamsMap, delimiter = delimiter, encodingType = 
-            encodingType, maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner, 
+            encodingType, maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner,
             continuationToken = continuationToken);
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
         map<string> requestHeaders = {
             [HOST]: self.amazonHost,
             [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
         };
-        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
@@ -140,7 +140,7 @@ public client class Client {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 return getS3ObjectsList(xmlPayload);
             }
-            return error(xmlPayload.toString());                
+            return error(xmlPayload.toString());
         }
         return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
     }
@@ -160,11 +160,12 @@ public client class Client {
             [HOST]: self.amazonHost,
             [X_AMZ_CONTENT_SHA256]: UNSIGNED_PAYLOAD
         };
+        
         // Add optional headers.
         populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
         
-        var signature = generateGetSignature(self.accessKeyId, self.secretAccessKey, self.region, GET,
-                                            requestURI, UNSIGNED_PAYLOAD, requestHeaders);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders);
 
         var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse is http:Response) {
@@ -177,7 +178,7 @@ public client class Client {
                 }
             } else {
                 xml xmlPayload = check httpResponse.getXmlPayload();
-                return error(xmlPayload.toString());              
+                return error(xmlPayload.toString());
             }
         }
         return error(API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName);
@@ -211,8 +212,8 @@ public client class Client {
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
 
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, PUT,
-                                                 requestURI, UNSIGNED_PAYLOAD, requestHeaders);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, request);
 
         var httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
@@ -244,8 +245,8 @@ public client class Client {
         
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
-                                        requestURI, UNSIGNED_PAYLOAD, requestHeaders, queryParams = queryParamsMap);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
 
         requestURI = string `${requestURI}${queryParamsStr}`;
         var httpResponse = self.amazonS3->delete(requestURI, request);
@@ -267,8 +268,8 @@ public client class Client {
 
         requestHeaders[HOST] = self.amazonHost;
         requestHeaders[X_AMZ_CONTENT_SHA256] = UNSIGNED_PAYLOAD;
-        var signature = generateSignature(request, self.accessKeyId, self.secretAccessKey, self.region, DELETE,
-                                                requestURI, UNSIGNED_PAYLOAD, requestHeaders);
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+            UNSIGNED_PAYLOAD, requestHeaders, request);
 
         var httpResponse = self.amazonS3->delete(requestURI, request);
         if (httpResponse is http:Response) {

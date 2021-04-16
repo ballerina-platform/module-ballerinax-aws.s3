@@ -121,7 +121,7 @@ function testListObjects() {
     dependsOn: [testListObjects]
 }
 function testDeleteObject() {
-    log:printInfo("amazonS3Client -> deleteObject()");
+    log:printInfo("amazonS3Client->deleteObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
@@ -135,7 +135,7 @@ function testDeleteObject() {
 
 @test:AfterSuite {}
 function testDeleteBucket() {
-    log:printInfo("amazonS3Client -> deleteBucket()");
+    log:printInfo("amazonS3Client->deleteBucket()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client -> deleteBucket(testBucketName);

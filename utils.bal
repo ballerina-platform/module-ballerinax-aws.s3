@@ -23,9 +23,9 @@ import ballerina/regex;
 import ballerina/time;
 import ballerina/url;
 
-function generateSignature(http:Request request, string accessKeyId, string secretAccessKey, string region,
-                           string httpVerb, string requestURI, string payload, map<string> headers,
-                           map<string>? queryParams = ()) returns @tainted error? {
+function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
+                            requestURI, string payload, map<string> headers, http:Request? request = (),
+                            map<string>? queryParams = ()) returns @tainted error? {
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
@@ -57,10 +57,10 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         // Encode request payload.
         if (payload == UNSIGNED_PAYLOAD) {
             requestPayload = payload;
-        } else {
+        } else if (request is http:Request) {
             requestPayload = array:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
             string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii()); 
-            requestHeaders[CONTENT_TYPE] = contentType;     
+            requestHeaders[CONTENT_TYPE] = contentType;
         }
 
         // Generete canonical and signed headers.
@@ -76,59 +76,11 @@ function generateSignature(http:Request request, string accessKeyId, string secr
         string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
             signedHeaders, stringToSign);
         // Set authorization header.
-        request.setHeader(AUTHORIZATION, authHeader);
-    } else {
-        return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
-    }
-}
-
-function generateGetSignature(string accessKeyId, string secretAccessKey, string region,
-                                string httpVerb, string requestURI, string requestPayload, map<string> headers,
-                                map<string>? queryParams = ()) returns @tainted error? {
-                                       
-    map<string> requestHeaders = headers;
-
-    string canonicalRequest = httpVerb;
-    string canonicalQueryString = "";
-    [string, string][amzDateStr, shortDateStr] = ["",""];
-
-    // Generate date strings and put it in the headers map to generate the signature.
-    [string, string]|error dateStrings = generateDateString();
-    if (dateStrings is error) {
-        return error(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
-    } else {
-        [amzDateStr, shortDateStr] = dateStrings;
-        requestHeaders[X_AMZ_DATE] = amzDateStr;
-    }
-
-    // Get canonical URI.
-    var canonicalURI = getCanonicalURI(requestURI);
-    if (canonicalURI is string) {
-        // Generate canonical query string.
-        if (queryParams is map<string> && queryParams.length() > 0) {
-            string|error canonicalQuery = generateCanonicalQueryString(queryParams);
-            if (canonicalQuery is string) {
-                canonicalQueryString = canonicalQuery;
-            } else {
-                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
-            }
+        if (request is http:Request) {
+            request.setHeader(AUTHORIZATION, authHeader);
+        } else {
+            requestHeaders[AUTHORIZATION] = authHeader; 
         }
-
-        // Generete canonical and signed headers.
-       [string, string] [canonicalHeaders,signedHeaders] = generateCanonicalGetHeaders(headers);
-
-        // Generate canonical request.
-        canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
-        canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
-
-        // Generate string to sign.
-        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
-
-        // Construct authorization signature string.
-        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
-            signedHeaders, stringToSign);
-        // Set authorization header.
-        requestHeaders[AUTHORIZATION] = authHeader;               
     } else {
         return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
     }
@@ -214,7 +166,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
 # + headers - Headers map.
 # + request - HTTP request.
 # + return - Return canonical and signed headers.
-function generateCanonicalHeaders(map<string> headers, http:Request request) returns @tainted[string, string] {
+function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted[string, string] {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;
@@ -225,7 +177,9 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
     while (index < sortedHeaderKeys.length()) {
         key = sortedHeaderKeys[index];
         value = <string>headers[key];
-        request.setHeader(<@untainted>key, value);
+        if (request is http:Request) {
+            request.setHeader(<@untainted>key, value);
+        }
         canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}${"\n"}`;
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
         index = index + 1;
@@ -233,30 +187,6 @@ function generateCanonicalHeaders(map<string> headers, http:Request request) ret
     signedHeaders = signedHeaders.substring(0, <int>string:lastIndexOf(signedHeaders, ";"));
     return [canonicalHeaders, signedHeaders];
 }
-
-# Function to generate canonical headers and signed headers and populate GET request headers.
-#
-# + headers - Headers map.
-# + return - Return canonical and signed headers.
-function generateCanonicalGetHeaders(map<string> headers) returns @tainted[string, string] {
-    string canonicalHeaders = "";
-    string signedHeaders = "";
-    string key;
-    string value;
-    string[] headerKeys = headers.keys();
-    string[] sortedHeaderKeys = sort(headerKeys);
-    int index = 0;
-    while (index < sortedHeaderKeys.length()) {
-        key = sortedHeaderKeys[index];
-        value = <string>headers[key];
-        canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}${"\n"}`;
-        signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
-        index = index + 1;
-    }
-    signedHeaders = signedHeaders.substring(0, <int>string:lastIndexOf(signedHeaders, ";"));
-    return [canonicalHeaders, signedHeaders];
-}
-
 
 # Funtion to construct authorization header string.
 #
@@ -338,8 +268,8 @@ isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRet
     }
 }
 
-isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType =
-                                                (), int? maxKeys = (), string? prefix = (), string? startAfter = (), 
+isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType
+                                                = (), int? maxKeys = (), string? prefix = (), string? startAfter = (), 
                                                 boolean? fetchOwner = (), string? continuationToken = ()) returns 
                                                 string {
     string queryParamsStr = "";
@@ -391,6 +321,6 @@ isolated function handleHttpResponse(http:Response httpResponse) returns @tainte
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
         xml xmlPayload = check httpResponse.getXmlPayload();
-        return error(xmlPayload.toString());  
+        return error(xmlPayload.toString());
     }
 }

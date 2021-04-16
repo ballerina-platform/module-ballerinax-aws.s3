@@ -29,7 +29,7 @@ Connector contains operations that create an object, delete an object, and retri
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | ---------------------- |
-|     Swan Lake Alpha3       |       2006-03-01       |
+|     Swan Lake Alpha4       |       2006-03-01       |
 
 
 ### Obtaining Access Keys
@@ -348,7 +348,7 @@ $ bal pull ballerinax/aws.s3
 ```
 
 ### Building the Source
-Execute the commands below to build from the source after installing Ballerina SLAlpha2 version.
+Execute the commands below to build from the source after installing required Ballerina version.
 
 1. Clone this repository using the following command:
     ```shell
