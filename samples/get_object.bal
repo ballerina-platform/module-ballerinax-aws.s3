@@ -18,11 +18,11 @@ s3:Client amazonS3Client = check new (amazonS3Config);
 public function main() returns error? {
     var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
     if (getObjectResponse is s3:S3Object) {
-        log:print(getObjectResponse.toString());
+        log:printInfo(getObjectResponse.toString());
         byte[]? byteArray = getObjectResponse["content"];
         if (byteArray is byte[]) {
             string content = check strings:fromBytes(byteArray);
-            log:print("Object content: " + content);
+            log:printInfo("Object content: " + content);
         }
     } else {
         log:printError("Error: " + getObjectResponse.toString());

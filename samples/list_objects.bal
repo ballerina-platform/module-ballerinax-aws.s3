@@ -17,11 +17,11 @@ s3:Client amazonS3Client = check new (amazonS3Config);
 public function main() returns error? {
     var listObjectsResponse = amazonS3Client->listObjects(bucketName);
     if (listObjectsResponse is s3:S3Object[]) {
-        log:print("Listing all object: ");
+        log:printInfo("Listing all object: ");
         foreach var s3Object in listObjectsResponse {
-            log:print("---------------------------------");
-            log:print("Object Name: " + s3Object["objectName"].toString());
-            log:print("Object Size: " + s3Object["objectSize"].toString());
+            log:printInfo("---------------------------------");
+            log:printInfo("Object Name: " + s3Object["objectName"].toString());
+            log:printInfo("Object Size: " + s3Object["objectSize"].toString());
         }
     } else {
         log:printError("Error: " + listObjectsResponse.toString());
