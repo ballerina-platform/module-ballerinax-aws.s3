@@ -13,6 +13,11 @@ jobs:
         uses: ballerina-platform/ballerina-action/@master
         with:
           args: build -c
+        env:
+          ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          REGION: ${{ secrets.REGION }}
+          BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       - name: Ballerina Push
         uses: ballerina-platform/ballerina-action/@master
         with:
