@@ -29,7 +29,7 @@ Connector contains operations that create an object, delete an object, and retri
 ## Compatibility
 | Ballerina Language Version | Amazon S3 API version  |
 | -------------------------- | ---------------------- |
-|     Swan Lake Alpha4       |       2006-03-01       |
+|     Swan Lake Alpha 5      |       2006-03-01       |
 
 
 ### Obtaining Access Keys
