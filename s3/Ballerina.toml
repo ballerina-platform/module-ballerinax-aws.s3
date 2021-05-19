@@ -1,8 +1,8 @@
 [package]
 org = "ballerinax"
 name = "aws.s3"
-version = "0.99.4"
+version = "0.99.5-SNAPSHOT"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["ballerina", "aws.s3", "amazon", "client", "connector"]
-repository = "https://github.com/ballerina-platform/module-amazons3"
+repository = "https://github.com/sachinira/module-ballerinax-aws.s3"
