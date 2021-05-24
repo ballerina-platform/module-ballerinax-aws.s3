@@ -52,15 +52,12 @@ public client class Client {
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
             requestHeaders);
-        var httpResponse = self.amazonS3->get(SLASH, requestHeaders);
-        if (httpResponse is http:Response) {
-            xml xmlPayload = check httpResponse.getXmlPayload();
-            if (httpResponse.statusCode == http:STATUS_OK) {
-                return getBucketsList(xmlPayload);
-            }
-            return error(xmlPayload.toString());
+        http:Response httpResponse = check self.amazonS3->get(SLASH, requestHeaders);
+        xml xmlPayload = check httpResponse.getXmlPayload();
+        if (httpResponse.statusCode == http:STATUS_OK) {
+            return getBucketsList(xmlPayload);
         }
-        return error(API_INVOCATION_ERROR_MSG + "listing buckets.");
+        return error(xmlPayload.toString());
     }
 
     # Create a bucket.
@@ -88,11 +85,8 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, request);
-        var httpResponse = self.amazonS3->put(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleHttpResponse(httpResponse);
-        }
-        return error(API_INVOCATION_ERROR_MSG + "creating bucket.");
+        http:Response httpResponse = check self.amazonS3->put(requestURI, request);
+        return handleHttpResponse(httpResponse);
     }
 
     # Retrieve the existing objects in a given bucket
@@ -134,15 +128,12 @@ public client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
-        if (httpResponse is http:Response) {
-            xml xmlPayload = check httpResponse.getXmlPayload();
-            if (httpResponse.statusCode == http:STATUS_OK) {
-                return getS3ObjectsList(xmlPayload);
-            }
-            return error(xmlPayload.toString());
+        http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
+        xml xmlPayload = check httpResponse.getXmlPayload();
+        if (httpResponse.statusCode == http:STATUS_OK) {
+            return getS3ObjectsList(xmlPayload);
         }
-        return error(API_INVOCATION_ERROR_MSG + "listing objects from bucket " + bucketName);
+        return error(xmlPayload.toString());
     }
 
     # Retrieves objects from Amazon S3.
@@ -166,21 +157,18 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders);
-        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
-        if (httpResponse is http:Response) {
-            if (httpResponse.statusCode == http:STATUS_OK) {
-                byte[]|error binaryPayload = httpResponse.getBinaryPayload();
-                if (binaryPayload is error) {
-                    return error(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
-                } else {
-                    return getS3Object(binaryPayload);
-                }
+        http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
+        if (httpResponse.statusCode == http:STATUS_OK) {
+            byte[]|error binaryPayload = httpResponse.getBinaryPayload();
+            if (binaryPayload is error) {
+                return error(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
             } else {
-                xml xmlPayload = check httpResponse.getXmlPayload();
-                return error(xmlPayload.toString());
+                return getS3Object(binaryPayload);
             }
+        } else {
+            xml xmlPayload = check httpResponse.getXmlPayload();
+            return error(xmlPayload.toString());
         }
-        return error(API_INVOCATION_ERROR_MSG + "extracting object " + objectName + " from bucket " + bucketName);
     }
 
     # Create an object.
@@ -213,11 +201,8 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, request);
-        var httpResponse = self.amazonS3->put(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleHttpResponse(httpResponse);
-        }
-        return error (API_INVOCATION_ERROR_MSG + "creating object.");
+        http:Response httpResponse = check self.amazonS3->put(requestURI, request);
+        return handleHttpResponse(httpResponse);
     }
 
     # Delete an object.
@@ -247,11 +232,8 @@ public client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3->delete(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleHttpResponse(httpResponse);
-        }
-        return error(API_INVOCATION_ERROR_MSG + "deleting object " + objectName + " from bucket " + bucketName);
+        http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
+        return handleHttpResponse(httpResponse);
     }     
 
     # Delete a bucket.
@@ -267,11 +249,8 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders, request);
-        var httpResponse = self.amazonS3->delete(requestURI, request);
-        if (httpResponse is http:Response) {
-            return handleHttpResponse(httpResponse);
-        }
-        return error(API_INVOCATION_ERROR_MSG + "deleting bucket " + bucketName);
+        http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
+        return handleHttpResponse(httpResponse);
     }
 }
 

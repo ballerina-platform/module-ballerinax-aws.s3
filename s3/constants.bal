@@ -70,5 +70,4 @@ const string DATE_STRING_GENERATION_ERROR_MSG = "Error occured while generating 
 const string CANONICAL_URI_GENERATION_ERROR_MSG = "Error occured while generating canonical URI.";
 const string CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG = "Error occured while generating canonical query string.";
 const string XML_EXTRACTION_ERROR_MSG = "Error occurred while accessing the XML payload from the http response.";
-const string API_INVOCATION_ERROR_MSG = "Error occurred while invoking the AmazonS3 API while ";
 const string BINARY_CONTENT_EXTRACTION_ERROR_MSG = "Error occured while accessing binary content from the http response";
