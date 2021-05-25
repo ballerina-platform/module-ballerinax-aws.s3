@@ -42,6 +42,9 @@ You need to get credentials such as **Access Key** and **Secret Access Key (API 
 - To create a new secret access key for an IAM user, open the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1#home). Click **Users** in the **Details** pane, click the appropriate IAM user, and then click **Create Access Key** on the **Security Credentials** tab.
 3. Download the newly created credentials, when prompted to do so in the key creation wizard.
 
+**Note**
+By default, the bucket is created in the US East (N. Virginia) Region. You can optionally specify a Region in the configuration. You might choose a Region to optimize latency, minimize costs, or address regulatory requirements.
+
 ## Running Tests
 
 1. Create `Config.toml` file in `module-ballerinax-aws.s3` with the following configurations and provide appropriate value.
