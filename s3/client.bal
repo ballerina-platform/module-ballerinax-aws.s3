@@ -30,7 +30,7 @@ public client class Client {
     public http:Client amazonS3;
 
     public isolated function init(ClientConfiguration amazonS3Config) returns error? {
-        self.region = amazonS3Config.region;
+        self.region = (amazonS3Config?.region is string) ? <string>(amazonS3Config?.region) : DEFAULT_REGION;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
             SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
@@ -284,7 +284,7 @@ isolated function verifyCredentials(string accessKeyId, string secretAccessKey) 
 public type ClientConfiguration record {
     string accessKeyId;
     string secretAccessKey;
-    string region = DEFAULT_REGION;
+    string region?;
     http:ClientConfiguration clientConfig = {http1Settings: {chunking: http:CHUNKING_NEVER}};
     http:ClientSecureSocket secureSocketConfig?;
 };
