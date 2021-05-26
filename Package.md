@@ -43,6 +43,9 @@ You need to get credentials such as **Access Key** and **Secret Access Key (API 
 
 In the directory where you have your sample, create a `Config.toml` file and add the details you obtained above within the quotes. region, trustStorePath and trustStorePassword are optionals.
 
+**Note**
+By default, the bucket is created in the US East (N. Virginia) Region. You can optionally specify a Region in the configuration. You might choose a Region to optimize latency, minimize costs, or address regulatory requirements.
+
 **Ballerina Config.toml file**
 
 ```
