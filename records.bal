@@ -61,10 +61,15 @@ public type S3Object record {
 # + ifNoneMatch - Return the object only if its entity tag (ETag) is different from the one specified.
 # + range - Downloads the specified range bytes of an object. 
 public type ObjectRetrievalHeaders record {
+    @display {label: "Modified Since"}
     string modifiedSince?;
+    @display {label: "Unmodified Since"}
     string unModifiedSince?;
+    @display {label: "If Match"}
     string ifMatch?;
+    @display {label: "If None Match"}
     string ifNoneMatch?;
+    @display {label: "Range"}
     string range?;
 };
 
@@ -76,13 +81,20 @@ public type ObjectRetrievalHeaders record {
 # + contentLength - The size of the object, in bytes.
 # + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers).
 # + expect - When your application uses 100-continue, it does not send the request body until it receives an acknowledgment.The date and time at which the object is no longer able to be cached. 
-# + expires - 
+# + expires - The date and time at which the object is no longer cacheable
 public type ObjectCreationHeaders record {
+    @display {label: "Cache Control"}
     string cacheControl?;
+    @display {label: "Content Disposition"}
     string contentDisposition?;
+    @display {label: "Content Encoding"}
     string contentEncoding?;
+    @display {label: "Content Length"}
     string contentLength?;
+    @display {label: "MD5 of Content"}
     string contentMD5?;
+    @display {label: "Expect"}
     string expect?;
+    @display {label: "Expiry Time"}
     string expires?;
 };
