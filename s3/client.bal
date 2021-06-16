@@ -63,7 +63,7 @@ public client class Client {
 
     # Create a bucket.
     # 
-    # + bucketName - Unique name for the bucket to create.
+    # + bucketName - A unique name for the bucket.
     # + cannedACL - The access control list of the new bucket.
     # 
     # + return - If failed turns error.
@@ -283,7 +283,7 @@ isolated function verifyCredentials(string accessKeyId, string secretAccessKey) 
 # + secureSocketConfig - Secure Socket config
 @display {label: "Connection Config"}
 public type ClientConfiguration record {
-    @display {label: "Access Key Id"}
+    @display {label: "Access Key ID"}
     string accessKeyId;
     @display {label: "Secret Access Key"}
     string secretAccessKey;
