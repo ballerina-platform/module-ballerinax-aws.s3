@@ -16,6 +16,7 @@
 // under the License.
 //
 
+import ballerina/io;
 import ballerina/log;
 import ballerina/test;
 import ballerina/os;
@@ -24,6 +25,8 @@ configurable string testBucketName = os:getEnv("BUCKET_NAME");
 configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
 configurable string secretAccessKey = os:getEnv("SECRET_ACCESS_KEY");
 configurable string region = os:getEnv("REGION");
+string fileName = "test.txt";
+string content = "Sample content";
 
 ClientConfiguration amazonS3Config = {
     accessKeyId: accessKeyId,
@@ -72,7 +75,7 @@ function testCreateObject() {
     log:printInfo("amazonS3Client->createObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client->createObject(testBucketName, "test.txt", "Sample content");
+        error? response = amazonS3Client->createObject(testBucketName, fileName, content);
         if (response is error) {
             test:assertFail(response.toString());
         }
@@ -84,18 +87,14 @@ function testCreateObject() {
 @test:Config {
     dependsOn: [testCreateObject]
 }
-function testGetObject() {
+function testGetObject() returns error? {
     log:printInfo("amazonS3Client->getObject()");
-    Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is Client) {
-        S3Object|error response = amazonS3Client->getObject(testBucketName, "test.txt");
-        if (response is S3Object) {
-            byte[]? content = response["content"];
-        } else {
-            test:assertFail(response.toString());
-        }
-    } else {
-        test:assertFail(amazonS3Client.toString());
+    Client amazonS3Client = check new (amazonS3Config);
+    stream<byte[], io:Error?> response = check amazonS3Client->getObject(testBucketName, fileName);
+    record {|byte[] value;|}? chunk = check response.next();
+    if chunk is record {|byte[] value;|} {
+        string resContent = check string:fromBytes(chunk.value);
+        test:assertEquals(content, resContent, "Content mismatch");
     }
 }
 
@@ -124,7 +123,7 @@ function testDeleteObject() {
     log:printInfo("amazonS3Client->deleteObject()");
     Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client -> deleteObject(testBucketName, "test.txt");
+        error? response = amazonS3Client -> deleteObject(testBucketName, fileName);
         if (response is error) {
             test:assertFail(response.toString());
         }

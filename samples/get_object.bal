@@ -1,3 +1,4 @@
+import ballerina/io;
 import ballerina/log;
 import ballerina/lang.'string as strings;
 import ballerinax/aws.s3;
@@ -16,14 +17,11 @@ s3:ClientConfiguration amazonS3Config = {
 s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() returns error? {
-    var getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
-    if (getObjectResponse is s3:S3Object) {
-        log:printInfo(getObjectResponse.toString());
-        byte[]? byteArray = getObjectResponse["content"];
-        if (byteArray is byte[]) {
-            string content = check strings:fromBytes(byteArray);
-            log:printInfo("Object content: " + content);
-        }
+    stream<byte[], io:Error?>|error getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
+    if (getObjectResponse is stream<byte[], io:Error?>) {
+        error? err = getObjectResponse.forEach(isolated function(byte[] res) {
+            error? writeRes = io:fileWriteBytes("./resources/test.txt", res, io:APPEND);
+        });
     } else {
         log:printError("Error: " + getObjectResponse.toString());
     }
