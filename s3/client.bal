@@ -16,6 +16,7 @@
 //
 
 import ballerina/http;
+import ballerina/io;
 import ballerina/regex;
 
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
@@ -146,13 +147,15 @@ public isolated client class Client {
     # + bucketName - The name of the bucket
     # + objectName - The name of the object
     # + objectRetrievalHeaders - Optional headers for the get object
+    # + byteArraySize - A defaultable parameter to state the size of the byte array. Default size is 8KB
     # + return - If success, S3ObjectContent object, else an error
     @display {label: "Get Object"}
     remote function getObject(@display {label: "Bucket Name"} string bucketName,
                                 @display {label: "Object Name"} string objectName,
-                                @display {label: "Object Retrieval Headers "} ObjectRetrievalHeaders?
-                                objectRetrievalHeaders = ()) returns @tainted @display {label: "Object"} S3Object|error
-                                {
+                                @display {label: "Object Retrieval Headers"} ObjectRetrievalHeaders?
+                                objectRetrievalHeaders = (), 
+                                @display {label: "Byte Array Size"} int? byteArraySize = ()) 
+                                returns @tainted @display {label: "Byte Stream"} stream<byte[], io:Error?>|error {
         string requestURI = string `/${bucketName}/${objectName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
@@ -163,12 +166,10 @@ public isolated client class Client {
             requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse.statusCode == http:STATUS_OK) {
-            byte[]|error binaryPayload = httpResponse.getBinaryPayload();
-            if (binaryPayload is error) {
-                return error(BINARY_CONTENT_EXTRACTION_ERROR_MSG, binaryPayload);
-            } else {
-                return getS3Object(binaryPayload);
+            if byteArraySize is int {
+                return httpResponse.getByteStream(byteArraySize);
             }
+            return httpResponse.getByteStream();
         } else {
             xml xmlPayload = check httpResponse.getXmlPayload();
             return error(xmlPayload.toString());

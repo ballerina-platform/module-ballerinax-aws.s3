@@ -32,3 +32,8 @@ version = "2.0.0"
 org = "ballerina"
 name = "crypto"
 version = "2.0.0"
+
+[[dependency]]
+org = "ballerina"
+name = "io"
+version = "1.0.0"
