@@ -51,9 +51,3 @@ isolated function getS3ObjectsList(xml response) returns S3Object[] {
     }
     return s3Objects;
 }
-
-isolated function getS3Object(byte[] response) returns S3Object {
-    S3Object s3Object = {};
-    s3Object.content =  response;
-    return s3Object;
-}
