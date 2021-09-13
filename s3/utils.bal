@@ -23,7 +23,7 @@ import ballerina/regex;
 import ballerina/time;
 import ballerina/url;
 
-function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
+isolated function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
                             requestURI, string payload, map<string> headers, http:Request? request = (),
                             map<string>? queryParams = ()) returns @tainted error? {
     string canonicalRequest = httpVerb;
@@ -138,7 +138,7 @@ isolated function getCanonicalURI(string requestURI) returns string|error {
 # + queryParams - Query params map.
 #
 # + return - Return canonical and signed headers.
-function generateCanonicalQueryString(map<string> queryParams) returns string|error {
+isolated function generateCanonicalQueryString(map<string> queryParams) returns string|error {
     string canonicalQueryString = "";
     string key;
     string value;
@@ -166,7 +166,7 @@ function generateCanonicalQueryString(map<string> queryParams) returns string|er
 # + headers - Headers map.
 # + request - HTTP request.
 # + return - Return canonical and signed headers.
-function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted[string, string] {
+isolated function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted[string, string] {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;

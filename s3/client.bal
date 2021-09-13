@@ -56,7 +56,7 @@ public isolated client class Client {
     # 
     # + return - If success, a list of Bucket record, else an error
     @display {label: "List Buckets"}
-    remote function listBuckets() returns @tainted Bucket[]|error {
+    remote isolated function listBuckets() returns @tainted Bucket[]|error {
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
             requestHeaders);
@@ -74,7 +74,7 @@ public isolated client class Client {
     # + cannedACL - The access control list of the new bucket
     # + return - An error on failure or else `()`
     @display {label: "Create Bucket"}
-    remote function createBucket(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function createBucket(@display {label: "Bucket Name"} string bucketName,
                                     @display {label: "Access Control List"} CannedACL? cannedACL = ()) returns 
                                     @tainted error? {
         http:Request request = new;
@@ -112,7 +112,7 @@ public isolated client class Client {
     #                       request as the continuation-token
     # + return - If success, list of S3 objects, else an error
     @display {label: "List Objects"}
-    remote function listObjects(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function listObjects(@display {label: "Bucket Name"} string bucketName,
                                 @display {label: "Group Identifier"} string? delimiter = (),
                                 @display {label: "Encoding Type"} string?  encodingType = (),
                                 @display {label: "Maximum Number of Keys"} int? maxKeys = (),
@@ -150,7 +150,7 @@ public isolated client class Client {
     # + byteArraySize - A defaultable parameter to state the size of the byte array. Default size is 8KB
     # + return - If success, S3ObjectContent object, else an error
     @display {label: "Get Object"}
-    remote function getObject(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
                                 @display {label: "Object Name"} string objectName,
                                 @display {label: "Object Retrieval Headers"} ObjectRetrievalHeaders?
                                 objectRetrievalHeaders = (), 
@@ -185,7 +185,7 @@ public isolated client class Client {
     # + objectCreationHeaders - Optional headers for the create object function
     # + return - An error on failure or else `()`
     @display {label: "Create Object"}
-    remote function createObject(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function createObject(@display {label: "Bucket Name"} string bucketName,
                                     @display {label: "Object Name"} string objectName,
                                     @display {label: "File Content"} string|xml|json|byte[] payload,
                                     @display {label: "Grant"} CannedACL? cannedACL = (),
@@ -216,7 +216,7 @@ public isolated client class Client {
     # + versionId - The specific version of the object to delete, if versioning is enabled
     # + return - An error on failure or else `()`
     @display {label: "Delete Object"}
-    remote function deleteObject(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function deleteObject(@display {label: "Bucket Name"} string bucketName,
                                     @display {label: "Object Name"} string objectName,
                                     @display {label: "Object Version"} string? versionId = ())
                                     returns @tainted error? {
@@ -244,7 +244,7 @@ public isolated client class Client {
     # + bucketName - The name of the bucket
     # + return - An error on failure or else `()`
     @display {label: "Delete Bucket"}
-    remote function deleteBucket(@display {label: "Bucket Name"} string bucketName) returns @tainted error? {
+    remote isolated function deleteBucket(@display {label: "Bucket Name"} string bucketName) returns @tainted error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
