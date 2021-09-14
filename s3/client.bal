@@ -100,10 +100,10 @@ public isolated client class Client {
     # 
     # + bucketName - The name of the bucket
     # + delimiter - A delimiter is a character you use to group keys
-    # + encodingType - The encoding method to be applied on the response
+    # + encodingType - The encoding method to be applied to the response
     # + maxKeys - The maximum number of keys to include in the response
     # + prefix - The prefix of the objects to be listed. If unspecified, all objects are listed
-    # + startAfter - Object key from where to begin listing
+    # + startAfter - Object key from which to begin listing
     # + fetchOwner - Set to true, to retrieve the owner information in the response. By default the API does not return
     #                the Owner information in the response
     # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element 
@@ -182,7 +182,7 @@ public isolated client class Client {
     # + objectName - The name of the object
     # + payload - The file content that needed to be added to the bucket
     # + cannedACL - The access control list of the new object
-    # + objectCreationHeaders - Optional headers for the create object function
+    # + objectCreationHeaders - Optional headers for the `createObject` function
     # + return - An error on failure or else `()`
     @display {label: "Create Object"}
     remote isolated function createObject(@display {label: "Bucket Name"} string bucketName,
@@ -266,7 +266,7 @@ isolated function setDefaultHeaders(string amazonHost) returns map<string> {
 
 # Verifies the existence of credentials.
 #
-# + accessKeyId - The access key is of the Amazon S3 account
+# + accessKeyId - The access key of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # 
 # + return - An error on failure or else `()`
@@ -277,7 +277,7 @@ isolated function verifyCredentials(string accessKeyId, string secretAccessKey) 
 }
 
 # AmazonS3 Connector configurations.
-# + accessKeyId - The access key is of the Amazon S3 account
+# + accessKeyId - The access key of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as 
 #            default region
