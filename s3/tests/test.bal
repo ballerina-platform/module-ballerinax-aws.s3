@@ -28,7 +28,7 @@ configurable string region = os:getEnv("REGION");
 string fileName = "test.txt";
 string content = "Sample content";
 
-ClientConfiguration amazonS3Config = {
+ConnectionConfig amazonS3Config = {
     accessKeyId: accessKeyId,
     secretAccessKey: secretAccessKey,
     region: region

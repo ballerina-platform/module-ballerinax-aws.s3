@@ -18,9 +18,9 @@ import ballerinax/aws.s3;
 ```
 
 ### Step 2: Create a new connector instance
-Create a `s3:ClientConfiguration` with the tokens obtained, and initialize the connector with it.
+Create a `s3:ConnectionConfig` with the tokens obtained, and initialize the connector with it.
 ```ballerina
-s3:ClientConfiguration amazonS3Config = {
+s3:ConnectionConfig amazonS3Config = {
     accessKeyId: <ACCESS_KEY_ID>,
     secretAccessKey: <SECRET_ACCESS_KEY>,
     region: <REGION>

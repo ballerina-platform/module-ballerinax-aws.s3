@@ -6,7 +6,7 @@ configurable string secretAccessKey = ?;
 configurable string region = ?;
 configurable string bucketName = ?;
 
-s3:ClientConfiguration amazonS3Config = {
+s3:ConnectionConfig amazonS3Config = {
     accessKeyId: accessKeyId,
     secretAccessKey: secretAccessKey,
     region: region
