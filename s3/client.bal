@@ -22,22 +22,22 @@ import ballerina/regex;
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
 # This connector lets you to get authorized access to AWS S3 buckets and objects.
 #
-@display {label: "Amazon S3", iconPath: "logo.png"}
+@display {label: "Amazon S3", iconPath: "resources/aws.s3.svg"}
 public isolated client class Client {
     private final string accessKeyId;
     private final string secretAccessKey;
     private final string region;
     private final string amazonHost;
     private final http:Client amazonS3;
-    private final http:ClientConfiguration clientConfig = {http1Settings: {chunking: http:CHUNKING_NEVER}};
 
     # Initializes the connector. During initialization you have to pass access key id and secret access key
     # Create an AWS account and obtain tokens following
     # [this guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
     # 
     # + amazonS3Config - Configuration required to initialize the client
+    # + httpConfig - HTTP configuration
     # + return - An error on failure of initialization or else `()`
-    public isolated function init(ClientConfiguration amazonS3Config) returns error? {
+    public isolated function init(ConnectionConfig amazonS3Config, http:ClientConfiguration httpConfig = {}) returns error? {
         self.region = (amazonS3Config?.region is string) ? <string>(amazonS3Config?.region) : DEFAULT_REGION;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
             SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
@@ -45,11 +45,10 @@ public isolated client class Client {
         self.accessKeyId = amazonS3Config.accessKeyId;
         self.secretAccessKey = amazonS3Config.secretAccessKey;
         check verifyCredentials(self.accessKeyId, self.secretAccessKey);  
-        http:ClientSecureSocket? clientSecureSocket = amazonS3Config?.secureSocketConfig;
-        if (clientSecureSocket is http:ClientSecureSocket) {
-            self.clientConfig.secureSocket = clientSecureSocket;
-        }
-        self.amazonS3  = check new(baseURL, self.clientConfig);      
+
+        http:ClientConfiguration httpClientConfig = httpConfig;
+        httpClientConfig.http1Settings = {chunking: http:CHUNKING_NEVER};
+        self.amazonS3  = check new(baseURL, httpClientConfig);      
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
@@ -281,15 +280,12 @@ isolated function verifyCredentials(string accessKeyId, string secretAccessKey) 
 # + secretAccessKey - The secret access key of the Amazon S3 account
 # + region - The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as 
 #            default region
-# + secureSocketConfig - Secure Socket config
 @display {label: "Connection Config"}
-public type ClientConfiguration record {
+public type ConnectionConfig record {
     @display {label: "Access Key ID"}
     string accessKeyId;
     @display {label: "Secret Access Key"}
     string secretAccessKey;
     @display {label: "Region"}
     string region?;
-    @display {label: "SSL Config"}
-    http:ClientSecureSocket secureSocketConfig?;
 };

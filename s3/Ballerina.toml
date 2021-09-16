@@ -4,5 +4,5 @@ name = "aws.s3"
 version = "0.99.5-SNAPSHOT"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = ["ballerina", "aws.s3", "amazon", "client", "connector"]
+keywords = ["content & files/file management & storage", "cost/paid", "vendor/amazon"]
 repository = "https://github.com/sachinira/module-ballerinax-aws.s3"

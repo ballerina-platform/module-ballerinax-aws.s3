@@ -12,7 +12,7 @@ Config.toml
 Ballerina.lock
 
 #Resources file
-**/resources
+**/resources/*.json
 
 # BlueJ files
 *.ctxt
