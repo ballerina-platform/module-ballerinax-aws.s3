@@ -53,7 +53,7 @@ public client class Client {
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
             requestHeaders);
-        var httpResponse = self.amazonS3->get(SLASH, requestHeaders);
+        http:Response|error httpResponse = self.amazonS3->get(SLASH, requestHeaders);
         if (httpResponse is http:Response) {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
@@ -89,7 +89,7 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, request);
-        var httpResponse = self.amazonS3->put(requestURI, request);
+        http:Response|error httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         }
@@ -135,7 +135,7 @@ public client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
+        http:Response|error httpResponse = self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse is http:Response) {
             xml xmlPayload = check httpResponse.getXmlPayload();
             if (httpResponse.statusCode == http:STATUS_OK) {
@@ -167,7 +167,7 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders);
-        var httpResponse = self.amazonS3->get(requestURI, requestHeaders);
+        http:Response|error httpResponse = self.amazonS3->get(requestURI, requestHeaders);
         if (httpResponse is http:Response) {
             if (httpResponse.statusCode == http:STATUS_OK) {
                 byte[]|error binaryPayload = httpResponse.getBinaryPayload();
@@ -214,7 +214,7 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, request);
-        var httpResponse = self.amazonS3->put(requestURI, request);
+        http:Response|error httpResponse = self.amazonS3->put(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         }
@@ -248,7 +248,7 @@ public client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
-        var httpResponse = self.amazonS3->delete(requestURI, request);
+        http:Response|error httpResponse = self.amazonS3->delete(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         }
@@ -268,7 +268,7 @@ public client class Client {
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
             UNSIGNED_PAYLOAD, requestHeaders, request);
-        var httpResponse = self.amazonS3->delete(requestURI, request);
+        http:Response|error httpResponse = self.amazonS3->delete(requestURI, request);
         if (httpResponse is http:Response) {
             return handleHttpResponse(httpResponse);
         }

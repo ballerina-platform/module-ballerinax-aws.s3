@@ -1,7 +1,7 @@
 [package]
 org = "ballerinax"
 name = "aws.s3"
-version = "0.99.6"
+version = "0.99.7"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["ballerina", "aws.s3", "amazon", "client", "connector"]
