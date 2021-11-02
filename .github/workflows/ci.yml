@@ -12,7 +12,11 @@ jobs:
       - name: Ballerina Build
         uses: ballerina-platform/ballerina-action/@nightly
         with:
-          args: build -c ./s3
+          args: pack ./s3
+      - name: Ballerina Test
+        uses: ballerina-platform/ballerina-action/@nightly
+        with:
+          args: test ./s3
         env:
           ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
