@@ -22,11 +22,11 @@ For more information about configuration and operations, go to the module.
 Execute the commands below to build from the source:
 * To build the package:
    ```   
-   bal build -c ./s3
+   bal pack ./s3
    ```
-* To build the package without tests:
+* To run the tests after build:
    ```
-   bal build -c --skip-tests ./s3
+   bal test ./s3
    ```
 ## Contributing to Ballerina
  

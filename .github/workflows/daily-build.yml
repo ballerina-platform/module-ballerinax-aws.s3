@@ -35,12 +35,22 @@ jobs:
                 JAVA_OPTS: -DBALLERINA_DEV_COMPILE_BALLERINA_ORG=true
               run: |
                 ./gradlew build
+
             # Build the ballerina project
             - name: Ballerina Build
               uses: ballerina-platform/ballerina-action/@nightly
               with:
                   args:
-                      build -c ./s3
+                      pack ./s3
+              env:
+                JAVA_HOME: /usr/lib/jvm/default-jvm
+           
+            # Test the ballerina project
+            - name: Ballerina Test
+              uses: ballerina-platform/ballerina-action/@nightly
+              with:
+                  args:
+                      test ./s3
               env:
                 JAVA_HOME: /usr/lib/jvm/default-jvm
                 ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
