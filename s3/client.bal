@@ -22,7 +22,7 @@ import ballerina/regex;
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
 # This connector lets you to get authorized access to AWS S3 buckets and objects.
 #
-@display {label: "Amazon S3", iconPath: "resources/aws.s3.svg"}
+@display {label: "Amazon S3", iconPath: "icon.png"}
 public isolated client class Client {
     private final string accessKeyId;
     private final string secretAccessKey;
