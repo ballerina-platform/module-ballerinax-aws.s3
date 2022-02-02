@@ -16,9 +16,24 @@ jobs:
       - name: Ballerina Test
         uses: ballerina-platform/ballerina-action/@nightly
         with:
-          args: test ./s3
+          args: test --code-coverage ./s3
         env:
           ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           REGION: ${{ secrets.REGION }}
           BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+
+      # Read the ballerina test results
+      - name: Read Ballerina Test Results
+        id: test_results
+        run: |
+          content=`cat ./s3/target/report/test_results.json`                
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          echo "::set-output name=testResultsJson::$content"
+
+      # Print the code coverage information
+      - name: Code Coverage
+        run: |
+          echo "Code Coverage Percentage : ${{fromJson(steps.test_results.outputs.testResultsJson).coveragePercentage}}"
