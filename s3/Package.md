@@ -6,10 +6,10 @@ The `ballerinax/aws.s3` is a [Ballerina](https://ballerina.io/) connector for AW
 * Perform AWS S3 related operations programmatically. The `ballerinax/aws.s3` module provides this capability.
 
 ### Compatibility
-|                    | Version         |  
-|--------------------|-----------------|
-| Ballerina Language | Swan Lake Beta6 |
-| Amazon S3 API      | 2006-03-01      |
+|                    | Version            |  
+|--------------------|--------------------|
+| Ballerina Language | Swan Lake 2201.0.0 |
+| Amazon S3 API      | 2006-03-01         |
 
 ## Report issues
 To report bugs, request new features, start new discussions, view project boards, etc., go to the [Ballerina Extended Library repository](https://github.com/ballerina-platform/ballerina-extended-library)
