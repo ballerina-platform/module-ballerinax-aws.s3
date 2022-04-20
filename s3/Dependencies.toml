@@ -296,7 +296,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "aws.s3"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
 	{org = "ballerina", name = "crypto"},
 	{org = "ballerina", name = "http"},
