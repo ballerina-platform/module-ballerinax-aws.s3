@@ -48,7 +48,7 @@ public isolated client class Client {
 
         http:ClientConfiguration httpClientConfig = httpConfig;
         httpClientConfig.http1Settings = {chunking: http:CHUNKING_NEVER};
-        self.amazonS3  = check new(baseURL, httpClientConfig);      
+        self.amazonS3  = check new(baseURL, httpClientConfig); 
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
@@ -186,15 +186,17 @@ public isolated client class Client {
     @display {label: "Create Object"}
     remote isolated function createObject(@display {label: "Bucket Name"} string bucketName,
                                     @display {label: "Object Name"} string objectName,
-                                    @display {label: "File Content"} string|xml|json|byte[] payload,
+                                    @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
                                     @display {label: "Grant"} CannedACL? cannedACL = (),
                                     @display {label: "Object Creation Headers"} ObjectCreationHeaders?
                                     objectCreationHeaders = ()) returns @tainted error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        if (payload is byte[]) {
-            request.setBinaryPayload(payload, contentType = "application/octet-stream");
+        if payload is byte[] {
+            request.setBinaryPayload(payload);
+        } else if payload is stream<io:Block, io:Error?> {
+            request.setByteStream(payload);
         } else {
             request.setPayload(payload);
         }
