@@ -37,17 +37,31 @@ public isolated client class Client {
     # + amazonS3Config - Configuration required to initialize the client
     # + httpConfig - HTTP configuration
     # + return - An error on failure of initialization or else `()`
-    public isolated function init(ConnectionConfig amazonS3Config, http:ClientConfiguration httpConfig = {}) returns error? {
-        self.region = (amazonS3Config?.region is string) ? <string>(amazonS3Config?.region) : DEFAULT_REGION;
+    public isolated function init(ConnectionConfig config) returns error? {
+        self.region = (config?.region is string) ? <string>(config?.region) : DEFAULT_REGION;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
             SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
-        self.accessKeyId = amazonS3Config.accessKeyId;
-        self.secretAccessKey = amazonS3Config.secretAccessKey;
+        self.accessKeyId = config.accessKeyId;
+        self.secretAccessKey = config.secretAccessKey;
         check verifyCredentials(self.accessKeyId, self.secretAccessKey);  
 
-        http:ClientConfiguration httpClientConfig = httpConfig;
-        httpClientConfig.http1Settings = {chunking: http:CHUNKING_NEVER};
+        http:ClientConfiguration httpClientConfig = {
+            httpVersion: config.httpVersion,
+            http1Settings: {chunking: http:CHUNKING_NEVER},
+            http2Settings: config.http2Settings,
+            timeout: config.timeout,
+            forwarded: config.forwarded,
+            poolConfig: config.poolConfig,
+            cache: config.cache,
+            compression: config.compression,
+            circuitBreaker: config.circuitBreaker,
+            retryConfig: config.retryConfig,
+            responseLimits: config.responseLimits,
+            secureSocket: config.secureSocket,
+            proxy: config.proxy,
+            validation: config.validation
+        };
         self.amazonS3  = check new(baseURL, httpClientConfig); 
     }
 
@@ -276,18 +290,3 @@ isolated function verifyCredentials(string accessKeyId, string secretAccessKey) 
         return error(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }
-
-# AmazonS3 Connector configurations.
-# + accessKeyId - The access key of the Amazon S3 account
-# + secretAccessKey - The secret access key of the Amazon S3 account
-# + region - The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as 
-#            default region
-@display {label: "Connection Config"}
-public type ConnectionConfig record {
-    @display {label: "Access Key ID"}
-    string accessKeyId;
-    @display {label: "Secret Access Key"}
-    string secretAccessKey;
-    @display {label: "Region"}
-    string region?;
-};
