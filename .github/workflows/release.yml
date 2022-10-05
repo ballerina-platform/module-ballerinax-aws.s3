@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Ballerina Build
-        uses: ballerina-platform/ballerina-action/@master
+        uses: ballerina-platform/ballerina-action/@2201.2.1
         with:
           args: pack ./s3
         env:
@@ -21,7 +21,7 @@ jobs:
           REGION: ${{ secrets.REGION }}
           BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       - name: Ballerina Push
-        uses: ballerina-platform/ballerina-action/@master
+        uses: ballerina-platform/ballerina-action/@2201.2.1
         with:
           args: push
         env:

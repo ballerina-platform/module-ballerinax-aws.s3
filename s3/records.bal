@@ -15,6 +15,9 @@
 // under the License.
 //
 
+import ballerina/http;
+import ballerinax/'client.config;
+
 public const ACL_PRIVATE = "private";
 public const ACL_PUBLIC_READ = "public-read";
 public const ACL_PUBLIC_READ_WRITE = "public-read-write";
@@ -22,6 +25,27 @@ public const ACL_AUTHENTICATED_READ = "aws-exec-read";
 public const ACL_LOG_DELIVERY_WRITE = "authenticated-read";
 public const ACL_BUCKET_OWNER_READ = "bucket-owner-read";
 public const ACL_BUCKET_OWNER_FULL_CONTROL = "bucket-owner-full-control";
+
+# Represents the AmazonS3 Connector configurations.
+#
+@display {label: "Connection Config"}
+public type ConnectionConfig record {|
+    *config:ConnectionConfig;
+    never auth?;
+    # The access key of the Amazon S3 account
+    string accessKeyId;
+    # The secret access key of the Amazon S3 account
+    @display {
+        label: "",
+        kind: "password"
+    }
+    string secretAccessKey;
+    # The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as default region
+    string region?;
+    # The HTTP version understood by the client
+    http:HttpVersion httpVersion = http:HTTP_1_1;
+|};
+
 public type CannedACL ACL_PRIVATE|ACL_PUBLIC_READ|ACL_PUBLIC_READ_WRITE|ACL_AUTHENTICATED_READ|ACL_LOG_DELIVERY_WRITE|
                     ACL_BUCKET_OWNER_READ|ACL_BUCKET_OWNER_FULL_CONTROL;
 
