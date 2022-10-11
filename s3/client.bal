@@ -18,6 +18,7 @@
 import ballerina/http;
 import ballerina/io;
 import ballerina/regex;
+import ballerinax/'client.config;
 
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
 # This connector lets you to get authorized access to AWS S3 buckets and objects.
@@ -46,22 +47,8 @@ public isolated client class Client {
         self.secretAccessKey = config.secretAccessKey;
         check verifyCredentials(self.accessKeyId, self.secretAccessKey);  
 
-        http:ClientConfiguration httpClientConfig = {
-            httpVersion: config.httpVersion,
-            http1Settings: {chunking: http:CHUNKING_NEVER},
-            http2Settings: config.http2Settings,
-            timeout: config.timeout,
-            forwarded: config.forwarded,
-            poolConfig: config.poolConfig,
-            cache: config.cache,
-            compression: config.compression,
-            circuitBreaker: config.circuitBreaker,
-            retryConfig: config.retryConfig,
-            responseLimits: config.responseLimits,
-            secureSocket: config.secureSocket,
-            proxy: config.proxy,
-            validation: config.validation
-        };
+        http:ClientConfiguration httpClientConfig = check config:constructHTTPClientConfig(config);
+        httpClientConfig.http1Settings = {chunking: http:CHUNKING_NEVER};
         self.amazonS3  = check new(baseURL, httpClientConfig); 
     }
 
