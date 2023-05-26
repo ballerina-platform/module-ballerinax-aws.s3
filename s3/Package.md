@@ -8,7 +8,7 @@ The `ballerinax/aws.s3` is a [Ballerina](https://ballerina.io/) connector for AW
 ### Compatibility
 |                    | Version            |  
 |--------------------|--------------------|
-| Ballerina Language | Swan Lake 2201.3.0 |
+| Ballerina Language | Swan Lake 2201.4.1 |
 | Amazon S3 API      | 2006-03-01         |
 
 ## Report issues
