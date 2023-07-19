@@ -22,17 +22,16 @@ jobs:
       - name: Ballerina Test
         uses: ballerina-platform/ballerina-action/@nightly
         with:
-          args: test --test-report --code-coverage --coverage-format=xml ./s3
+          args: test --test-report --code-coverage --coverage-format=xml
         env:
           ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           REGION: ${{ secrets.REGION }}
           BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          WORKING_DIR: ./s3
 
-      # Read the ballerina test results
-            - name: Upload coverage reports to Codecov
-              uses: codecov/codecov-action@v3
-          echo "Code Coverage Percentage : ${{fromJson(steps.test_results.outputs.testResultsJson).coveragePercentage}}"
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
 
       - name: Alert notifier on failure
         if: failure() && (github.event.action == 'check_connector_for_breaking_changes')

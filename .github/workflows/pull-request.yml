@@ -14,15 +14,19 @@ jobs:
               with:
                   args:
                       pack
+              env:
+                  WORKING_DIR: ./s3
             - name: Ballerina Test
               uses: ballerina-platform/ballerina-action/@nightly
               with:
                   args:
-                      test --test-report --code-coverage --coverage-format=xml ./s3
+                      test --test-report --code-coverage --coverage-format=xml
               env:
-                  CLIENT_ID: ${{ secrets.CLIENT_ID }}
-                  CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-                  REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+                  ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+                  SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+                  REGION: ${{ secrets.REGION }}
+                  BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+                  WORKING_DIR: ./s3
 
             - name: Upload coverage reports to Codecov
               uses: codecov/codecov-action@v3
