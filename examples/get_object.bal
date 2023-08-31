@@ -1,6 +1,5 @@
 import ballerina/io;
 import ballerina/log;
-import ballerina/lang.'string as strings;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;

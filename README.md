@@ -24,11 +24,11 @@ For more information about configuration and operations, go to the module.
 Execute the commands below to build from the source:
 * To build the package:
    ```   
-   bal pack ./s3
+   bal build ./ballerina
    ```
 * To run the tests after build:
    ```
-   bal test ./s3
+   bal test ./ballerina
    ```
 ## Contributing to Ballerina
  

@@ -42,4 +42,4 @@ Following is an example on how to create a bucket using the connector.
     ```
 2. Use `bal run` command to compile and run the Ballerina program.
 
-**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/samples)**
+**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples)**
