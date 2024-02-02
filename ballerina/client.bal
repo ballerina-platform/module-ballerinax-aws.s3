@@ -165,7 +165,7 @@ public isolated client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
-        if (httpResponse.statusCode == http:STATUS_OK) {
+        if (httpResponse.statusCode == http:STATUS_OK || (httpResponse.statusCode == http:STATUS_PARTIAL_CONTENT && objectRetrievalHeaders?.range != ())) {
             if byteArraySize is int {
                 return httpResponse.getByteStream(byteArraySize);
             }
