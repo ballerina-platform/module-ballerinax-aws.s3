@@ -264,14 +264,16 @@ public isolated client class Client {
     
     # Generates a presigned URL for the object.
     #
-    # + bucketName - The name of the bucket
-    # + objectName - The name of the object
-    # + expirationTime - The time until the presigned URL is valid
-    # + httpMethod - The HTTP method to be used, either GET or PUT
+    # + bucketName - The name of the bucket  
+    # + objectName - The name of the object  
+    # + expirationTime - The time until the presigned URL is valid  
+    # + httpMethod - The HTTP method to be used, either GET or PUT  
+    # + partNo - The part number of the object, when uploading multipart objects
+    # + uploadId - The upload ID of the multipart upload
     # + return - If success, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
-    remote isolated function createPresignedURL(string bucketName, string objectName, string expirationTime, string httpMethod) returns string|error? {
-        string canonicalQueryString = "";
+    remote isolated function createPresignedURL(string bucketName, string objectName, string expirationTime, string httpMethod, int partNo=0, string uploadId="") returns string|error? {
+
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
         var result = generateDateString();
         if (result is [string, string]) {
@@ -281,42 +283,29 @@ public isolated client class Client {
         }
 
         string canonicalURI = "/" + objectName;
-        map<string> queryParams = {
-            "X-Amz-Algorithm": AWS4_HMAC_SHA256,
-            "X-Amz-Content-Sha256": UNSIGNED_PAYLOAD,
-            "X-Amz-Credential": self.accessKeyId + "/" + shortDateStr + "/" + self.region + "/" + SERVICE_NAME + "/" + TERMINATION_STRING,
-            "X-Amz-Date": amzDateStr,
-            "X-Amz-Expires": expirationTime,
-            "X-Amz-SignedHeaders": "host"
-        };
-        if (canonicalURI is string) {
-            // Generate canonical query string.
-            if (queryParams is map<string> && queryParams.length() > 0) {
-                string|error canonicalQuery = generateCanonicalQueryString(queryParams);
-                if (canonicalQuery is string) {
-                    canonicalQueryString = canonicalQuery;
-                } else {
-                    return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
-                }
-            }
-            // Replace '/' with '%2F' in the canonical query string.
-            string:RegExp r = re `/`;
-
-            canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
-
-            string canonicalHeaders = "host:" + bucketName + "." + AMAZON_AWS_HOST;
-            string signedHeaders = "host";
-            string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
-
-            // Generate the string to sign
-            string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
-
-            string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
-            signedHeaders, stringToSign);
-
-            string url = HTTPS + bucketName + "." + AMAZON_AWS_HOST + "/" + objectName + "?" + canonicalQueryString + "&X-Amz-Signature=" + signature;
-            return url;
+     
+        string canonicalQueryString = "X-Amz-Algorithm=" + AWS4_HMAC_SHA256 + "&X-Amz-Content-Sha256=" + UNSIGNED_PAYLOAD + "&X-Amz-Credential=" + self.accessKeyId + "/" + shortDateStr + "/" + self.region + "/" + SERVICE_NAME + "/" + TERMINATION_STRING + "&X-Amz-Date=" + amzDateStr + "&X-Amz-Expires=" + expirationTime + "&X-Amz-SignedHeaders=host";
+        if (partNo != 0 && uploadId != "" && httpMethod == "PUT") {
+            canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
         }
+      
+            // Replace '/' with '%2F' in the canonical query string.
+        string:RegExp r = re `/`;
+
+        canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
+
+        string canonicalHeaders = "host:" + bucketName + "." + AMAZON_AWS_HOST;
+        string signedHeaders = "host";
+        string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
+
+        // Generate the string to sign
+        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
+
+        string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
+        signedHeaders, stringToSign);
+
+        string url = HTTPS + bucketName + "." + AMAZON_AWS_HOST + "/" + objectName + "?" + canonicalQueryString + "&X-Amz-Signature=" + signature;
+        return url;
     }
 }
 
