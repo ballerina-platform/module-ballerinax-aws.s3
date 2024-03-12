@@ -95,10 +95,27 @@ function testCreatePresignedURLGET() returns error? {
         if (response is error) {
             test:assertFail(response.toString());
         } else if (response is string) {
-            io:println(response);
             http:Client cl = check new(response);
             http:Response a = check cl->get("");
-            io:println(a.getTextPayload());
+            test:assertEquals(a.statusCode, 200, "Failed to create presigned URL");
+        } else {
+            test:assertFail();
+        }
+    }
+}
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedURLPUT() returns error? {
+    log:printInfo("amazonS3Client->createPresignedURLPUT()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName,"3600","PUT");
+        if (response is error) {
+            test:assertFail(response.toString());
+        } else if (response is string) {
+            http:Client cl = check new(response);
+            http:Response a = check cl->put("", content);
             test:assertEquals(a.statusCode, 200, "Failed to create presigned URL");
         } else {
             test:assertFail();
