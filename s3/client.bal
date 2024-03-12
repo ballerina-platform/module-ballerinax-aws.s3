@@ -281,15 +281,31 @@ public isolated client class Client {
         } else {
             return error("Error occurred while generating date string", result);
         }
+        map<string> queryParams = {
+            ["X-Amz-Algorithm"]: AWS4_HMAC_SHA256,
+            ["X-Amz-Credential"]: self.accessKeyId + "/" + shortDateStr + "/" + self.region + "/" + SERVICE_NAME + "/" + TERMINATION_STRING,
+            ["X-Amz-Date"]: amzDateStr,
+            ["X-Amz-Expires"]: expirationTime,
+            ["X-Amz-SignedHeaders"]: "host"
+        };
 
         string canonicalURI = "/" + objectName;
-     
-        string canonicalQueryString = "X-Amz-Algorithm=" + AWS4_HMAC_SHA256 + "&X-Amz-Content-Sha256=" + UNSIGNED_PAYLOAD + "&X-Amz-Credential=" + self.accessKeyId + "/" + shortDateStr + "/" + self.region + "/" + SERVICE_NAME + "/" + TERMINATION_STRING + "&X-Amz-Date=" + amzDateStr + "&X-Amz-Expires=" + expirationTime + "&X-Amz-SignedHeaders=host";
+        string canonicalQueryString=EMPTY_STRING;
+        
+        if (queryParams is map<string> && queryParams.length() > 0) {
+            string|error canonicalQuery = generateCanonicalQueryString(queryParams);
+            if (canonicalQuery is string) {
+                canonicalQueryString = canonicalQuery;
+            } else {
+                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+            }
+        }
+
         if (partNo != 0 && uploadId != "" && httpMethod == "PUT") {
             canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
         }
-      
-            // Replace '/' with '%2F' in the canonical query string.
+
+        // Replace '/' with '%2F' in the canonical query string.
         string:RegExp r = re `/`;
         canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
 
@@ -304,6 +320,7 @@ public isolated client class Client {
         signedHeaders, stringToSign);
 
         string url = HTTPS +  bucketName + ".s3." + self.region + ".amazonaws.com" + "/" + objectName + "?" + canonicalQueryString + "&X-Amz-Signature=" + signature;
+        
         return url;
     }
 }
