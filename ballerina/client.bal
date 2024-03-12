@@ -286,10 +286,9 @@ public isolated client class Client {
       
             // Replace '/' with '%2F' in the canonical query string.
         string:RegExp r = re `/`;
-
         canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
 
-        string canonicalHeaders = "host:" + bucketName + "." + AMAZON_AWS_HOST;
+        string canonicalHeaders = "host:" + bucketName + ".s3." + self.region + ".amazonaws.com";
         string signedHeaders = "host";
         string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
 
@@ -299,7 +298,7 @@ public isolated client class Client {
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
         signedHeaders, stringToSign);
 
-        string url = HTTPS + bucketName + "." + AMAZON_AWS_HOST + "/" + objectName + "?" + canonicalQueryString + "&X-Amz-Signature=" + signature;
+        string url = HTTPS +  bucketName + ".s3." + self.region + ".amazonaws.com" + "/" + objectName + "?" + canonicalQueryString + "&X-Amz-Signature=" + signature;
         return url;
     }
 }
