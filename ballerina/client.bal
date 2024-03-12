@@ -267,7 +267,12 @@ public isolated client class Client {
     # + uploadId - The upload ID of the multipart upload
     # + return - If success, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
-    remote isolated function createPresignedURL(string bucketName, string objectName, string expirationTime, string httpMethod, int partNo=0, string uploadId="") returns string|error? {
+    remote isolated function createPresignedURL(@display {label: "Bucket Name"} string bucketName,
+    @display {label: "Object Name"} string objectName,
+    @display {label: "Expiration Time"} string expirationTime, 
+    @display {label: "HTTP Method"} string httpMethod, 
+    @display {label: "Part Number"} int partNo=0,
+    @display {label: "Upload ID"} string uploadId="") returns string|error? {
 
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
         var result = generateDateString();
