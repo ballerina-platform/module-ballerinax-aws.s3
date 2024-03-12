@@ -19,6 +19,7 @@
 import ballerina/io;
 import ballerina/log;
 import ballerina/test;
+import ballerina/http;
 import ballerina/os;
 
 configurable string testBucketName = os:getEnv("BUCKET_NAME");
@@ -83,6 +84,28 @@ function testCreateObject() {
         test:assertFail(amazonS3Client.toString());
     }
 }
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedURLGET() returns error? {
+    log:printInfo("amazonS3Client->createPresignedURLGET()");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName,"3600","GET");
+        if (response is error) {
+            test:assertFail(response.toString());
+        } else if (response is string) {
+            io:println(response);
+            http:Client cl = check new(response);
+            http:Response a = check cl->get("");
+            io:println(a.getTextPayload());
+            test:assertEquals(a.statusCode, 200, "Failed to create presigned URL");
+        } else {
+            test:assertFail();
+        }
+    }
+}
+
 
 @test:Config {
     dependsOn: [testCreateBucket]
