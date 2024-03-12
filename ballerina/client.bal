@@ -276,7 +276,7 @@ public isolated client class Client {
 
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
         var result = generateDateString();
-        if (result is [string, string]) {
+        if result is [string, string] {
             [amzDateStr, shortDateStr] = result;
         } else {
             return error("Error occurred while generating date string", result);
@@ -290,7 +290,7 @@ public isolated client class Client {
         };
 
         string canonicalURI = "/" + objectName;
-        string canonicalQueryString=EMPTY_STRING;
+        string canonicalQueryString = EMPTY_STRING;
         
         if (queryParams is map<string> && queryParams.length() > 0) {
             string|error canonicalQuery = generateCanonicalQueryString(queryParams);
@@ -315,7 +315,6 @@ public isolated client class Client {
 
         // Generate the string to sign
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
-
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
         signedHeaders, stringToSign);
 
