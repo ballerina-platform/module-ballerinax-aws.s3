@@ -16,11 +16,11 @@
 // under the License.
 //
 
+import ballerina/http;
 import ballerina/io;
 import ballerina/log;
-import ballerina/test;
-import ballerina/http;
 import ballerina/os;
+import ballerina/test;
 
 configurable string testBucketName = os:getEnv("BUCKET_NAME");
 configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
@@ -91,18 +91,19 @@ function testCreatePresignedURLGET() returns error? {
     log:printInfo("amazonS3Client->createPresignedURLGET()");
     Client|error amazonS3Client = new(amazonS3Config);
     if amazonS3Client is Client {
-        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName,"3600","GET");
-        if response is error {
-            test:assertFail(response.toString());
-        } else if response is string {
+        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName, GET, 3600);
+        if response is string {
             http:Client cl = check new(response);
             http:Response a = check cl->get("");
             test:assertEquals(a.statusCode, 200, "Failed to create presigned URL");
-        } else {
-            test:assertFail();
+        } else if response is error {
+            test:assertFail("Failed to create presigned URL");
+        }
+    } else {
+        test:assertFail(amazonS3Client.toString());
         }
     }
-}
+
 @test:Config {
     dependsOn: [testGetObject]
 }
@@ -110,16 +111,16 @@ function testCreatePresignedURLPUT() returns error? {
     log:printInfo("amazonS3Client->createPresignedURLPUT()");
     Client|error amazonS3Client = new(amazonS3Config);
     if amazonS3Client is Client {
-        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName,"3600","PUT");
-        if response is error {
-            test:assertFail(response.toString());
-        } else if response is string {
+        string|error? response = amazonS3Client->createPresignedURL(testBucketName, fileName,PUT, 3600);
+         if response is string {
             http:Client cl = check new(response);
             http:Response a = check cl->put("", content);
             test:assertEquals(a.statusCode, 200, "Failed to create presigned URL");
         } else {
-            test:assertFail();
+            test:assertFail("Failed to create presigned URL");
         }
+    } else {
+        test:assertFail(amazonS3Client.toString());
     }
 }
 
