@@ -288,18 +288,17 @@ public isolated client class Client {
             [X_AMZ_CREDENTIAL] : string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${TERMINATION_STRING}`,
             [X_AMZ_DATE] : amzDateStr,
             [X_AMZ_EXPIRES] : expirationTime.toString(),
-            [X_AMZ_SIGNED_HEADERS] : HOST
+            [X_AMZ_SIGNED_HEADERS] : HOST_LOWERCASE
         };
 
         string canonicalURI = string `/${objectName}`;
         string canonicalQueryString = EMPTY_STRING;
 
         string|error canonicalQuery = generateCanonicalQueryString(queryParams);
-        if canonicalQuery is string {
-            canonicalQueryString = canonicalQuery;
-        } else {
-            return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
-        }
+        if canonicalQuery is error {
+                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+        } 
+        canonicalQueryString = canonicalQuery;
 
         if partNo != 0 && uploadId != () && httpMethod == PUT {
             canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
@@ -307,15 +306,16 @@ public isolated client class Client {
         // Replace '/' with '%2F' in the canonical query string.
         string:RegExp r = re `/`;
         canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
-        string canonicalHeaders = string `${HOST}:${bucketName}.${self.amazonHost}`;
-        string signedHeaders = HOST;
+        string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
+        string signedHeaders = HOST_LOWERCASE;
         string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
 
         // Generate the string to sign
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
         signedHeaders, stringToSign);
-
+        io:print("sign to sign: ", stringToSign);
+        io:print("canonical request: ", canonicalRequest);
         return string `${HTTPS}${bucketName}.${self.amazonHost}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE}=${signature}`;
     }
 }
