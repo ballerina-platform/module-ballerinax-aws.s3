@@ -190,10 +190,10 @@ isolated function generateCanonicalHeaders(map<string> headers, http:Request? re
 
 # Function to generate signing key.
 #
-# + secretAccessKey - Value of the secret key.
+# + secretAccessKey - Value of the secret key
 # + shortDateStr - shortDateStr Parameter Description
-# + region - Endpoint region.
-# + return - Signing key.
+# + region - Endpoint region
+# + return - Signing key
 isolated function generateSigningKey(string secretAccessKey, string shortDateStr, string region) returns byte[]|error {
     string signValue = AWS4 + secretAccessKey;
     byte[] dateKey = check crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
@@ -222,15 +222,15 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
     return authHeader;
 }
 
-# Function to construct signature for presigned URLs
+# Function to construct signature for presigned URLs.
 #
-# + accessKeyId - Value of the access key.
-# + secretAccessKey - Value of the secret key.
+# + accessKeyId - Value of the access key
+# + secretAccessKey - Value of the secret key
 # + shortDateStr - shortDateStr Parameter Description  
-# + region - Endpoint region.
-# + signedHeaders - Signed headers.
+# + region - Endpoint region
+# + signedHeaders - Signed headers
 # + stringToSign - stringToSign Parameter Description
-# + return - Signature for presigned URLs.
+# + return - Signature for presigned URLs
 isolated function constructPresignSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
         string signedHeaders, string stringToSign) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
