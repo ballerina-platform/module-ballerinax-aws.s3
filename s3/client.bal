@@ -276,37 +276,36 @@ public isolated client class Client {
     @display {label: "Object Name"} string objectName,
     @display {label: "Expiration Time"} string expirationTime, 
     @display {label: "HTTP Method"} string httpMethod, 
-    @display {label: "Part Number"} int partNo=0,
-    @display {label: "Upload ID"} string uploadId="") returns string|error? {
+    @display {label: "Part Number"} int partNo = 0,
+    @display {label: "Upload ID"} string? uploadId = ()) returns string|error? {
 
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
         var result = generateDateString();
-        if result is [string, string] {
-            [amzDateStr, shortDateStr] = result;
-        } else {
+        if result is error {
             return error("Error occurred while generating date string", result);
         }
+        [amzDateStr, shortDateStr] = result;
         map<string> queryParams = {
             ["X-Amz-Algorithm"]: AWS4_HMAC_SHA256,
-            ["X-Amz-Credential"]: self.accessKeyId + "/" + shortDateStr + "/" + self.region + "/" + SERVICE_NAME + "/" + TERMINATION_STRING,
+            ["X-Amz-Credential"]: string `${self.accessKeyId}/${shortDateStr}/${self.region}/SERVICE_NAME/TERMINATION_STRING`,
             ["X-Amz-Date"]: amzDateStr,
             ["X-Amz-Expires"]: expirationTime,
             ["X-Amz-SignedHeaders"]: "host"
         };
 
-        string canonicalURI = "/" + objectName;
+        string canonicalURI = string `/${objectName};
         string canonicalQueryString = EMPTY_STRING;
         
-        if (queryParams is map<string> && queryParams.length() > 0) {
+        if queryParams is map<string> && queryParams.length() > 0 {
             string|error canonicalQuery = generateCanonicalQueryString(queryParams);
-            if (canonicalQuery is string) {
+            if canonicalQuery is string {
                 canonicalQueryString = canonicalQuery;
             } else {
                 return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
             }
         }
 
-        if (partNo != 0 && uploadId != "" && httpMethod == "PUT") {
+        if partNo != 0 && uploadId != "" && httpMethod == "PUT" {
             canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
         }
 
