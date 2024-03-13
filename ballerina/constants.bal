@@ -36,6 +36,7 @@ const string CONTENT_TYPE = "Content-Type";
 const string X_AMZ_CONTENT_SHA256 = "X-Amz-Content-Sha256";
 const string X_AMZ_DATE = "X-Amz-Date";
 const string HOST = "Host";
+const string HOST_LOWERCASE = "host";
 const string X_AMZ_ACL = "x-amz-acl";
 const string X_AMZ_MFA = "x-amz-mfa";
 const string CACHE_CONTROL = "Cache-Control";
