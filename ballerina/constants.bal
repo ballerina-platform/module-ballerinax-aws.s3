@@ -51,6 +51,12 @@ const string IF_MATCH = "If-Match";
 const string IF_NONE_MATCH = "If-None-Match";
 const string RANGE = "Range";
 const string AUTHORIZATION= "Authorization";
+const string X_AMZ_EXPIRES = "X-Amz-Expires";
+const string X_AMZ_ALGORITHM = "X-Amz-Algorithm";
+const string X_AMZ_CREDENTIAL = "X-Amz-Credential";
+const string X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders";
+const string X_AMZ_SIGNATURE = "X-Amz-Signature";
+
 
 // HTTP verbs.
 const string GET = "GET";
