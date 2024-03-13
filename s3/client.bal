@@ -314,8 +314,6 @@ public isolated client class Client {
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
         signedHeaders, stringToSign);
-        io:print("sign to sign: ", stringToSign);
-        io:print("canonical request: ", canonicalRequest);
         return string `${HTTPS}${bucketName}.${self.amazonHost}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE}=${signature}`;
     }
 }
