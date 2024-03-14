@@ -305,7 +305,7 @@ public isolated client class Client {
         }
         // Replace '/' with '%2F' in the canonical query string.
         string:RegExp r = re `/`;
-        canonicalQueryString = r.replaceAll(canonicalQueryString, "%2F");
+        canonicalQueryString = re `/`.replaceAll(canonicalQueryString, "%2F");
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
         string signedHeaders = HOST_LOWERCASE;
         string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;

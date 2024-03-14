@@ -101,8 +101,8 @@ function testCreatePresignedURLGET() returns error? {
         }
     } else {
         test:assertFail(amazonS3Client.toString());
-        }
     }
+}
 
 @test:Config {
     dependsOn: [testGetObject]
@@ -123,7 +123,6 @@ function testCreatePresignedURLPUT() returns error? {
         test:assertFail(amazonS3Client.toString());
     }
 }
-
 
 @test:Config {
     dependsOn: [testCreateBucket]
