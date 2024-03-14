@@ -58,7 +58,6 @@ const string X_AMZ_CREDENTIAL = "X-Amz-Credential";
 const string X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders";
 const string X_AMZ_SIGNATURE = "X-Amz-Signature";
 
-
 // HTTP verbs.
 const string GET = "GET";
 const string PUT = "PUT";
