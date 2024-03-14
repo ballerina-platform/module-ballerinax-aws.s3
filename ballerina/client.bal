@@ -299,7 +299,6 @@ public isolated client class Client {
             canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
         }
         // Replace '/' with '%2F' in the canonical query string.
-        string:RegExp r = re `/`;
         canonicalQueryString = re `/`.replaceAll(canonicalQueryString, "%2F");
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
         string signedHeaders = HOST_LOWERCASE;
