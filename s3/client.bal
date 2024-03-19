@@ -40,7 +40,7 @@ public isolated client class Client {
     public isolated function init(ConnectionConfig config) returns error? {
         self.region = (config?.region is string) ? <string>(config?.region) : DEFAULT_REGION;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
-            SERVICE_NAME + "." + self.region) : AMAZON_AWS_HOST;
+            string `${SERVICE_NAME}.${self.region}`) : AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
         self.accessKeyId = config.accessKeyId;
         self.secretAccessKey = config.secretAccessKey;
@@ -61,7 +61,7 @@ public isolated client class Client {
             requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(SLASH, requestHeaders);
         xml xmlPayload = check httpResponse.getXmlPayload();
-        if (httpResponse.statusCode == http:STATUS_OK) {
+        if httpResponse.statusCode == http:STATUS_OK {
             return getBucketsList(xmlPayload);
         }
         return error(xmlPayload.toString());
@@ -79,10 +79,10 @@ public isolated client class Client {
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        if (cannedACL != ()) {
+        if cannedACL != () {
             requestHeaders[X_AMZ_ACL] = cannedACL.toString();
         }
-        if (self.region != DEFAULT_REGION) {
+        if self.region != DEFAULT_REGION {
             xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
                                         <LocationConstraint>${self.region}</LocationConstraint> 
                                 </CreateBucketConfiguration>`;
@@ -135,7 +135,7 @@ public isolated client class Client {
         requestURI = string `${requestURI}${queryParamsStr}`;
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
         xml xmlPayload = check httpResponse.getXmlPayload();
-        if (httpResponse.statusCode == http:STATUS_OK) {
+        if httpResponse.statusCode == http:STATUS_OK {
             return getS3ObjectsList(xmlPayload);
         }
         return error(xmlPayload.toString());
@@ -164,7 +164,7 @@ public isolated client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
-        if (httpResponse.statusCode == http:STATUS_OK || (httpResponse.statusCode == http:STATUS_PARTIAL_CONTENT && objectRetrievalHeaders?.range != ())) {
+        if httpResponse.statusCode == http:STATUS_OK || httpResponse.statusCode == http:STATUS_PARTIAL_CONTENT && objectRetrievalHeaders?.range != () {
             if byteArraySize is int {
                 return httpResponse.getByteStream(byteArraySize);
             }
@@ -232,7 +232,7 @@ public isolated client class Client {
         string requestURI = string `/${bucketName}/${objectName}`;
 
         // Append query parameter(versionId).
-        if (versionId is string) {
+        if versionId is string {
             queryParamsStr = string `${queryParamsStr}?versionId=${versionId}`;
             queryParamsMap["versionId"] = versionId;
         }
@@ -272,11 +272,11 @@ public isolated client class Client {
     # + return - If success, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
     remote isolated function createPresignedURL(@display {label: "Bucket Name"} string bucketName,
-        @display {label: "Object Name"} string objectName,
-        @display {label: "HTTP Method"} string httpMethod,
-        @display {label: "Expiration Time"} int expirationTime = 3600,
-        @display {label: "Part Number"} int partNo = 0,
-        @display {label: "Upload ID"} string? uploadId = ()) returns string|error? {
+            @display {label: "Object Name"} string objectName,
+            @display {label: "HTTP Method"} string httpMethod,
+            @display {label: "Expiration Time"} int expirationTime = 3600,
+            @display {label: "Part Number"} int partNo = 0,
+            @display {label: "Upload ID"} string? uploadId = ()) returns string|error? {
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
         [string, string]|error result = generateDateString();
         if result is error {
@@ -296,8 +296,8 @@ public isolated client class Client {
 
         string|error canonicalQuery = generateCanonicalQueryString(queryParams);
         if canonicalQuery is error {
-                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
-        } 
+            return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+        }
         canonicalQueryString = canonicalQuery;
 
         if partNo != 0 && uploadId != () && httpMethod == PUT {
@@ -332,7 +332,7 @@ isolated function setDefaultHeaders(string amazonHost) returns map<string> {
 #
 # + return - An error on failure or else `()`
 isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
-    if ((accessKeyId == "") || (secretAccessKey == "")) {
+    if accessKeyId == "" || secretAccessKey == "" {
         return error(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }
