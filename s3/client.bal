@@ -14,6 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 //
+
 import ballerina/http;
 import ballerina/io;
 import ballerina/regex;
@@ -104,11 +105,11 @@ public isolated client class Client {
     # + prefix - The prefix of the objects to be listed. If unspecified, all objects are listed
     # + startAfter - Object key from which to begin listing
     # + fetchOwner - Set to true, to retrieve the owner information in the response. By default the API does not return
-    # the Owner information in the response
+    #                the Owner information in the response
     # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element 
-    # value is true), the response also includes the NextContinuationToken element. 
-    # To list the next set of objects, you can use the NextContinuationToken element in the next 
-    # request as the continuation-token
+    #                       value is true), the response also includes the NextContinuationToken element. 
+    #                       To list the next set of objects, you can use the NextContinuationToken element in the next 
+    #                       request as the continuation-token
     # + return - If success, list of S3 objects, else an error
     @display {label: "List Objects"}
     remote isolated function listObjects(@display {label: "Bucket Name"} string bucketName,
@@ -280,12 +281,12 @@ public isolated client class Client {
             @display {label: "Upload ID"} string? uploadId = ())
         returns @tainted string|error {
 
-        [string, string] [amzDateStr, shortDateStr] = ["", ""];
         [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
         map<string> queryParams = {
             [X_AMZ_ALGORITHM] : AWS4_HMAC_SHA256,
-            [X_AMZ_CREDENTIAL] : string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${TERMINATION_STRING}`,
+            [X_AMZ_CREDENTIAL] : string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/
+                ${TERMINATION_STRING}`,
             [X_AMZ_DATE] : amzDateStr,
             [X_AMZ_EXPIRES] : expirationTime.toString(),
             [X_AMZ_SIGNED_HEADERS] : HOST_LOWERCASE
@@ -307,12 +308,13 @@ public isolated client class Client {
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
         string signedHeaders = HOST_LOWERCASE;
         string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${
-                        canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
+            canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
 
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
-        string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
-        signedHeaders, stringToSign);
-        return string `${HTTPS}${bucketName}.${self.amazonHost}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE}=${signature}`;
+        string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, 
+            self.region, signedHeaders, stringToSign);
+        return string `${HTTPS}${bucketName}.${self.amazonHost}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE
+            }=${signature}`;
     }
 }
 
