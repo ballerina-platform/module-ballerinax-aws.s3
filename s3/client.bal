@@ -271,18 +271,19 @@ public isolated client class Client {
     # + uploadId - The upload ID of the multipart upload
     # + return - If success, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
-    remote isolated function createPresignedURL(@display {label: "Bucket Name"} string bucketName,
+    remote isolated function createPresignedURL(
+            @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
             @display {label: "HTTP Method"} string httpMethod,
             @display {label: "Expiration Time"} int expirationTime = 3600,
             @display {label: "Part Number"} int partNo = 0,
-            @display {label: "Upload ID"} string? uploadId = ()) returns string|error? {
+            @display {label: "Upload ID"} string? uploadId = ())
+        returns @tainted string|error {
+
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
-        [string, string]|error result = generateDateString();
-        if result is error {
-            return error("Error occurred while generating date string", result);
-        }
+        [string, string] result = check generateDateString();
         [amzDateStr, shortDateStr] = result;
+
         map<string> queryParams = {
             [X_AMZ_ALGORITHM] : AWS4_HMAC_SHA256,
             [X_AMZ_CREDENTIAL] : string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${TERMINATION_STRING}`,
@@ -303,13 +304,11 @@ public isolated client class Client {
         if partNo != 0 && uploadId != () && httpMethod == PUT {
             canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
         }
-        // Replace '/' with '%2F' in the canonical query string.
         canonicalQueryString = re `/`.replaceAll(canonicalQueryString, "%2F");
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
         string signedHeaders = HOST_LOWERCASE;
         string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
 
-        // Generate the string to sign
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
         signedHeaders, stringToSign);
