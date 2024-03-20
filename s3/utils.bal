@@ -199,7 +199,7 @@ isolated function generateSigningKey(string secretAccessKey, string shortDateStr
     byte[] dateKey = check crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
     byte[] regionKey = check crypto:hmacSha256(region.toBytes(), dateKey);
     byte[] serviceKey = check crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
-    return check crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
+    return crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 }
 
 # Funtion to construct authorization header string.
