@@ -276,8 +276,7 @@ public isolated client class Client {
         returns @tainted string|error {
 
         [string, string] [amzDateStr, shortDateStr] = ["", ""];
-        [string, string] result = check generateDateString();
-        [amzDateStr, shortDateStr] = result;
+        [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
         map<string> queryParams = {
             [X_AMZ_ALGORITHM] : AWS4_HMAC_SHA256,
@@ -302,7 +301,8 @@ public isolated client class Client {
         canonicalQueryString = re `/`.replaceAll(canonicalQueryString, "%2F");
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
         string signedHeaders = HOST_LOWERCASE;
-        string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
+        string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}${
+                        canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
 
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
         string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, self.region,
