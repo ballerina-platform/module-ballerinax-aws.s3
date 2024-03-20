@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 //
+
 import ballerina/http;
 import ballerina/io;
 import ballerina/log;
@@ -34,10 +35,10 @@ ConnectionConfig amazonS3Config = {
     region: region
 };
 
-@test:Config {}
+@test:Config{}
 function testCreateBucket() {
     log:printInfo("amazonS3Client->createBucket()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         CannedACL cannedACL = ACL_PRIVATE;
         error? response = amazonS3Client->createBucket(testBucketName, cannedACL);
@@ -54,9 +55,9 @@ function testCreateBucket() {
 }
 function testListBuckets() {
     log:printInfo("amazonS3Client->listBuckets()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        Bucket[]|error response = amazonS3Client->listBuckets();
+        Bucket[]|error response =  amazonS3Client->listBuckets();
         if (response is error) {
             test:assertFail(response.toString());
         } else {
@@ -73,7 +74,7 @@ function testListBuckets() {
 }
 function testCreateObject() {
     log:printInfo("amazonS3Client->createObject()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client->createObject(testBucketName, fileName, content);
         if (response is error) {
@@ -127,9 +128,9 @@ function testGetObject() returns error? {
 }
 function testListObjects() {
     log:printInfo("amazonS3Client->listObjects()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        S3Object[]|error response = amazonS3Client->listObjects(testBucketName, fetchOwner = true);
+        S3Object[]|error response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
         if (response is error) {
             test:assertFail(response.toString());
         } else {
@@ -145,9 +146,9 @@ function testListObjects() {
 }
 function testDeleteObject() {
     log:printInfo("amazonS3Client->deleteObject()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client->deleteObject(testBucketName, fileName);
+        error? response = amazonS3Client -> deleteObject(testBucketName, fileName);
         if (response is error) {
             test:assertFail(response.toString());
         }
@@ -159,9 +160,9 @@ function testDeleteObject() {
 @test:AfterSuite {}
 function testDeleteBucket() {
     log:printInfo("amazonS3Client->deleteBucket()");
-    Client|error amazonS3Client = new (amazonS3Config);
+    Client|error amazonS3Client = new(amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client->deleteBucket(testBucketName);
+        error? response = amazonS3Client -> deleteBucket(testBucketName);
         if (response is error) {
             test:assertFail(response.toString());
         }
