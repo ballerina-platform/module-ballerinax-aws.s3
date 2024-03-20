@@ -261,7 +261,7 @@ public isolated client class Client {
     #
     # + bucketName - The name of the bucket  
     # + objectName - The name of the object  
-    # + expirationTime - The time until the presigned URL is valid  
+    # + expirationTime - The time until the presigned URL is valid in seconds
     # + httpMethod - The HTTP method to be used, either GET or PUT  
     # + partNo - The part number of the object, when uploading multipart objects
     # + uploadId - The upload ID of the multipart upload
