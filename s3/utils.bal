@@ -22,6 +22,7 @@ import ballerina/lang.array;
 import ballerina/regex;
 import ballerina/time;
 import ballerina/url;
+import ballerina/xmldata;
 
 isolated function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
                             requestURI, string payload, map<string> headers, http:Request? request = (),
@@ -403,7 +404,11 @@ isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPa
 isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
-        xml xmlPayload = check httpResponse.getXmlPayload();
+        string stringPayload = check httpResponse.getTextPayload();
+        xml? xmlPayload = check xmldata:fromJson(stringPayload);
+        if (xmlPayload is ()) {
+            return error("Error occurred while parsing the response payload as XML");
+        }
         return error(xmlPayload.toString());
     }
 }

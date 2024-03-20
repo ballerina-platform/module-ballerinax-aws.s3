@@ -19,6 +19,7 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/regex;
 import ballerinax/'client.config;
+import ballerina/xmldata;
 
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
 # This connector lets you to get authorized access to AWS S3 buckets and objects.
@@ -61,7 +62,11 @@ public isolated client class Client {
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
             requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(SLASH, requestHeaders);
-        xml xmlPayload = check httpResponse.getXmlPayload();
+        string stringPayload = check httpResponse.getTextPayload();
+        xml? xmlPayload = check xmldata:fromJson(stringPayload);
+        if (xmlPayload is ()) {
+            return error("Error occurred while parsing the response payload as XML");
+        }
         if (httpResponse.statusCode == http:STATUS_OK) {
             return getBucketsList(xmlPayload);
         }
@@ -135,7 +140,11 @@ public isolated client class Client {
             requestHeaders, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
-        xml xmlPayload = check httpResponse.getXmlPayload();
+        string stringPayload = check httpResponse.getTextPayload();
+        xml? xmlPayload = check xmldata:fromJson(stringPayload);
+        if (xmlPayload is ()) {
+            return error("Error occurred while parsing the response payload as XML");
+        }
         if (httpResponse.statusCode == http:STATUS_OK) {
             return getS3ObjectsList(xmlPayload);
         }
@@ -171,7 +180,11 @@ public isolated client class Client {
             }
             return httpResponse.getByteStream();
         } else {
-            xml xmlPayload = check httpResponse.getXmlPayload();
+            string stringPayload = check httpResponse.getTextPayload();
+            xml? xmlPayload = check xmldata:fromJson(stringPayload);
+            if (xmlPayload is ()) {
+                return error("Error occurred while parsing the response payload as XML");
+            }
             return error(xmlPayload.toString());
         }
     }
@@ -383,11 +396,15 @@ public isolated client class Client {
         requestURI = string `${requestURI}${queryParamStr}`;
         http:Response httpResponse = check self.amazonS3->post(requestURI, request);
 
-        xml XMLPayload = check httpResponse.getXmlPayload();
+        string stringPayload = check httpResponse.getTextPayload();
+        xml? xmlPayload = check xmldata:fromJson(stringPayload);
+        if (xmlPayload is ()) {
+            return error("Error occurred while parsing the response payload as XML");
+        }
         if httpResponse.statusCode == http:STATUS_OK {
-            return getUploadId(XMLPayload);
+            return getUploadId(xmlPayload);
         } else {
-            return error(XMLPayload.toString());
+            return error(xmlPayload.toString());
         }
     }
     
@@ -441,8 +458,12 @@ public isolated client class Client {
             string ETag = check httpResponse.getHeader("ETag");
             return {partNumber, ETag};
         } else {
-            xml XMLPayload = check httpResponse.getXmlPayload();
-            return error(XMLPayload.toString());
+            string stringPayload = check httpResponse.getTextPayload();
+            xml? xmlPayload = check xmldata:fromJson(stringPayload);
+            if (xmlPayload is ()) {
+                return error("Error occurred while parsing the response payload as XML");
+            }
+            return error(xmlPayload.toString());
         }
     }
 
