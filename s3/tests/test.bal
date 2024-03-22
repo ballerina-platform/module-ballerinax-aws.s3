@@ -88,11 +88,11 @@ function testCreateObject() {
 @test:Config {
     dependsOn: [testGetObject]
 }
-function testCreatePresignedURLGET() returns error? {
-    log:printInfo("amazonS3Client->createPresignedURL() GET");
+function testCreatePresignedUrlGet() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() GET");
     Client amazonS3Client = check new (amazonS3Config);
-    string response = check amazonS3Client->createPresignedURL(testBucketName, fileName, GET, 3600);
-    http:Client httpClient = check new (response);
+    string url = check amazonS3Client->createPresignedUrl(testBucketName, fileName, GET, 3600);
+    http:Client httpClient = check new (url);
     http:Response httpResponse = check httpClient->get(EMPTY_STRING);
     test:assertEquals(httpResponse.statusCode, 200, "Failed to create presigned URL");
 }
@@ -100,11 +100,11 @@ function testCreatePresignedURLGET() returns error? {
 @test:Config {
     dependsOn: [testGetObject]
 }
-function testCreatePresignedURLPUT() returns error? {
-    log:printInfo("amazonS3Client->createPresignedURL() PUT");
+function testCreatePresignedUrlPut() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() PUT");
     Client amazonS3Client = check new (amazonS3Config);
-    string response = check amazonS3Client->createPresignedURL(testBucketName, fileName, PUT, 3600);
-    http:Client httpClient = check new (response);
+    string url = check amazonS3Client->createPresignedUrl(testBucketName, fileName, PUT, 3600);
+    http:Client httpClient = check new (url);
     http:Response httpResponse = check httpClient->put(EMPTY_STRING, content);
     test:assertEquals(httpResponse.statusCode, 200, "Failed to create presigned URL");
 }
