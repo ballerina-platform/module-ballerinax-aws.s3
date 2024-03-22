@@ -213,7 +213,6 @@ isolated function generateSigningKey(string secretAccessKey, string shortDateStr
 # + return - Authorization header string value.
 isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
         string signedHeaders, string stringToSign) returns string|error {
-
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
@@ -226,13 +225,13 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 #
 # + accessKeyId - Value of the access key
 # + secretAccessKey - Value of the secret key
-# + shortDateStr - shortDateStr Parameter Description  
+# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format
 # + region - Endpoint region
 # + signedHeaders - Signed headers
-# + stringToSign - stringToSign Parameter Description
-# + return - Signature for presigned URLs
-isolated function constructPresignSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
-        string signedHeaders, string stringToSign) returns string|error {
+# + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
+# + return - Signature used for authentication
+isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
+        string region, string signedHeaders, string stringToSign) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     return encodedStr.toLowerAscii();

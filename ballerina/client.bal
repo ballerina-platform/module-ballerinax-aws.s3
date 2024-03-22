@@ -265,16 +265,16 @@ public isolated client class Client {
     # + httpMethod - The HTTP method to be used, either GET or PUT  
     # + partNo - The part number of the object, when uploading multipart objects
     # + uploadId - The upload ID of the multipart upload
-    # + return - If success, a presigned URL, else an error
+    # + return - If successful, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
-    remote isolated function createPresignedURL(
+    remote isolated function createPresignedUrl(
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
             @display {label: "HTTP Method"} GET|PUT httpMethod,
             @display {label: "Expiration Time"} int expires = 3600,
             @display {label: "Part Number"} int partNo = 0,
             @display {label: "Upload ID"} string? uploadId = ())
-        returns @tainted string|error {
+        returns string|error {
 
         [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
@@ -287,10 +287,9 @@ public isolated client class Client {
             [X_AMZ_SIGNED_HEADERS] : HOST_LOWERCASE
         };
 
-        string canonicalURI = string `/${objectName}`;
         string|error canonicalQuery = generateCanonicalQueryString(queryParams);
         if canonicalQuery is error {
-                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+            return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
         } 
 
         if partNo != 0 && uploadId != () && httpMethod == PUT {
@@ -298,13 +297,11 @@ public isolated client class Client {
         }
         canonicalQuery = re `/`.replaceAll(check canonicalQuery, "%2F");
         string canonicalHeaders = string `${HOST_LOWERCASE}:${bucketName}.${self.amazonHost}`;
-        string signedHeaders = HOST_LOWERCASE;
-        string canonicalRequest = string `${httpMethod}${"\n"}${canonicalURI}${"\n"}${check canonicalQuery}${"\n"}${
-            canonicalHeaders}${"\n"}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
-
+        string canonicalRequest = string `${httpMethod}${"\n"}${string `/${objectName}`}${"\n"}${check canonicalQuery}${
+            "\n"}${canonicalHeaders}${"\n"}${"\n"}${HOST_LOWERCASE}${"\n"}${UNSIGNED_PAYLOAD}`;
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
-        string signature = check constructPresignSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, 
-            self.region, signedHeaders, stringToSign);
+        string signature = check constructPresignedUrlSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, 
+            self.region, HOST_LOWERCASE, stringToSign);
         return string `${HTTPS}${bucketName}.${self.amazonHost}/${objectName}?${check canonicalQuery}&${X_AMZ_SIGNATURE
             }=${signature}`;
     }
