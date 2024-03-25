@@ -231,7 +231,7 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 # + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
 # + return - Signature used for authentication
 isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
-        string region, string signedHeaders, string stringToSign) returns string|error {
+        string region, string stringToSign) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     return encodedStr.toLowerAscii();
