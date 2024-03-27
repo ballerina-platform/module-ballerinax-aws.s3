@@ -266,37 +266,45 @@ public isolated client class Client {
     #
     # + bucketName - The name of the bucket  
     # + objectName - The name of the object  
-    # + httpMethod - The HTTP method to be used, either GET or PUT  
+    # + action -   The HTTP method or the HTTP method with respective headers(objectCreationHeaders or objectRetrievalHeaders)
     # + expires - The time period for which the presigned URL is valid, in seconds  
     # + partNo - The part number of the object, when uploading multipart objects  
-    # + uploadId - The upload ID of the multipart upload  
-    # + objectCreationHeaders - Optional headers for GET http method 
-    # + objectRetrievalHeaders - Optional headers for PUT http method 
+    # + uploadId - The upload ID of the multipart upload
     # + return - If successful, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
     remote isolated function createPresignedUrl(
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
-            @display {label: "HTTP Method"} GET|PUT httpMethod,
+            @display {label: "HTTP Method and Optional Headers"} GET|PUT|GetHeaders|PutHeaders action,
             @display {label: "Expiration Time"} int expires = 1800,
-            @display {label: "Object Creation Headers"} ObjectCreationHeaders? objectCreationHeaders = (),
-            @display {label : "Object Retrieval Headers"} ObjectRetrievalHeaders? objectRetrievalHeaders = (),
             @display {label: "Part Number"} int? partNo = (),
             @display {label: "Upload ID"} string? uploadId = ())
         returns string|error {
+        
+        if (expires < 0) {
+            return error(EXPIRATION_TIME_ERROR_MSG);
+        }
+        if objectName == "" {
+            return error(OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == "" {
+            return error(BUCKET_NAME_ERROR_MSG);
+        }
 
         [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
         map<string> requestHeaders = {
             [HOST] : string `${self.amazonHost}`
         };
+    
+        GET|PUT httpMethod = action is GET|PUT ? action : action.method;
         
-        if (httpMethod == PUT) {
-            populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
-        } else {
-            populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
+        if action is PutHeaders{
+            populateCreateObjectHeaders(requestHeaders, action.headers);
+        } else if action is GetHeaders {
+            populateGetObjectHeaders(requestHeaders, action.headers);
         }
-        
+
         [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(requestHeaders, ());
 
         map<string> queryParams = {
