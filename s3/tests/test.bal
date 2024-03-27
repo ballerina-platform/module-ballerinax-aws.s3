@@ -122,6 +122,29 @@ function testCreateObjectWithMetadata() returns error? {
     _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
 }
 
+@test:Config {   
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedUrlWithInvalidObjectName() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() with invalid object name");
+    Client amazonS3Client = check new (amazonS3Config);
+    string|error url =  amazonS3Client->createPresignedUrl(testBucketName, EMPTY_STRING, GET, 3600);
+    if (url is string) {
+        test:assertFail("Expected an error but got a URL");
+    }
+}
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedUrlWithInvalidBucketName() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() with invalid bucket name");
+    Client amazonS3Client = check new (amazonS3Config);
+    string|error url =  amazonS3Client->createPresignedUrl(EMPTY_STRING, fileName, GET, 3600);
+    if (url is string) {
+        test:assertFail("Expected an error but got a URL");
+    }
+}
+
 @test:Config {
     dependsOn: [testCreateObject]
 }
