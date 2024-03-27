@@ -85,6 +85,26 @@ function testCreateObject() {
 }
 
 @test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testCreateObjectWithMetadata() {
+    log:printInfo("amazonS3Client->createObject()");
+    map<string> metadata = {
+        "Description" : "This is a text file",
+        "Language" : "English"
+    };
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        error? response = amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
+        if (response is error) {
+            test:assertFail(response.toString());
+        }
+    } else {
+        test:assertFail(amazonS3Client.toString());
+    }
+}
+
+@test:Config {
     dependsOn: [testCreateObject]
 }
 function testGetObject() returns error? {
