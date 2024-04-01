@@ -66,6 +66,10 @@ const string TRUE = "TRUE";
 const string FALSE = "FALSE";
 const string HTTPS = "https://";
 
+//Presigned URL actions
+public const string CREATE = "create";
+public const string RETRIEVE = "retrieve";
+
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
 const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";

@@ -223,11 +223,10 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 
 # Function to construct signature for presigned URLs.
 #
-# + accessKeyId - Value of the access key
-# + secretAccessKey - Value of the secret key
-# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format
-# + region - Endpoint region
-# + signedHeaders - Signed headers
+# + accessKeyId - Value of the access key  
+# + secretAccessKey - Value of the secret key  
+# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format  
+# + region - Endpoint region  
 # + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
 # + return - Signature used for authentication
 isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
