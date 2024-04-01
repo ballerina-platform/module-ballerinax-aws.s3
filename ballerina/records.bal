@@ -124,21 +124,3 @@ public type ObjectCreationHeaders record {
     @display {label: "Expiry Time"}
     string expires?;
 };
-
-# Define record for PUT method together with ObjectCreationHeaders.
-#
-# + method - HTTP method
-# + headers - ObjectCreationHeaders
-public type PutHeaders record {
-    PUT method = PUT;
-    ObjectCreationHeaders headers;
-};
-
-# Define record for GET method together with ObjectRetrievalHeaders.
-#
-# + method - HTTP method
-# + headers - ObjectRetrievalHeaders
-public type GetHeaders record {
-    GET method = GET;
-    ObjectRetrievalHeaders headers;
-};
