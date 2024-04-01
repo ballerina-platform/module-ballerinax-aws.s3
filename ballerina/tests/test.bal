@@ -115,9 +115,9 @@ function testCreatePresignedUrlPut() returns error? {
 function testCreatePresignedUrlWithInvalidObjectName() returns error? {
     log:printInfo("amazonS3Client->createPresignedUrl() with invalid object name");
     Client amazonS3Client = check new (amazonS3Config);
-    string|error url =  amazonS3Client->createPresignedUrl(testBucketName, EMPTY_STRING, RETRIEVE, 3600);
+    string|error url = amazonS3Client->createPresignedUrl(testBucketName, EMPTY_STRING, RETRIEVE, 3600);
     test:assertTrue(url is error, msg = "Expected an error but got a URL");
-    test:assertEquals((<error>url).message(), OBJECT_NAME_ERROR_MSG);
+    test:assertEquals((<error>url).message(), EMPTY_OBJECT_NAME_ERROR_MSG);
 }
 
 @test:Config {
@@ -127,9 +127,9 @@ function testCreatePresignedUrlWithInvalidObjectName() returns error? {
 function testCreatePresignedUrlWithInvalidBucketName() returns error? {
     log:printInfo("amazonS3Client->createPresignedUrl() with invalid bucket name");
     Client amazonS3Client = check new (amazonS3Config);
-    string|error url =  amazonS3Client->createPresignedUrl(EMPTY_STRING, fileName, RETRIEVE, 3600);
+    string|error url = amazonS3Client->createPresignedUrl(EMPTY_STRING, fileName, RETRIEVE, 3600);
     test:assertTrue(url is error, msg = "Expected an error but got a URL");
-    test:assertEquals((<error>url).message(), BUCKET_NAME_ERROR_MSG);
+    test:assertEquals((<error>url).message(), EMPTY_BUCKET_NAME_ERROR_MSG);
 }
 
 @test:Config {

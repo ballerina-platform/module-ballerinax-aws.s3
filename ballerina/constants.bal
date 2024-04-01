@@ -66,10 +66,6 @@ const string TRUE = "TRUE";
 const string FALSE = "FALSE";
 const string HTTPS = "https://";
 
-//Presigned URL actions
-public const string CREATE = "create";
-public const string RETRIEVE = "retrieve";
-
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
 const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";
@@ -81,6 +77,12 @@ const string CANONICAL_URI_GENERATION_ERROR_MSG = "Error occured while generatin
 const string CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG = "Error occured while generating canonical query string.";
 const string XML_EXTRACTION_ERROR_MSG = "Error occurred while accessing the XML payload from the http response.";
 const string BINARY_CONTENT_EXTRACTION_ERROR_MSG = "Error occured while accessing binary content from the http response";
-const string EXPIRATION_TIME_ERROR_MSG = "Invalid expiration time. Expiration time should be a positive integer.";
-const string OBJECT_NAME_ERROR_MSG = "Invalid object name. Object name should not be empty.";
-const string BUCKET_NAME_ERROR_MSG = "Invalid bucket name. Bucket name should not be empty.";
+const EXPIRATION_TIME_ERROR_MSG = "Invalid expiration time. Expiration time should be a positive integer.";
+const EMPTY_OBJECT_NAME_ERROR_MSG = "Invalid object name. Object name should not be empty.";
+const EMPTY_BUCKET_NAME_ERROR_MSG = "Invalid bucket name. Bucket name should not be empty.";
+
+# Represents `CREATE` or `RETRIEVE` actions
+public enum ObjectActions {
+    CREATE = "create",
+    RETRIEVE = "retrieve"
+};
