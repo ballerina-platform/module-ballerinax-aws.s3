@@ -277,7 +277,7 @@ public isolated client class Client {
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
             @display {label: "Object retrieval or creation indication with optional headers"} 
-                CREATE|RETRIEVE|ObjectCreationHeaders|ObjectRetrievalHeaders action,
+                ObjectActions|ObjectCreationHeaders|ObjectRetrievalHeaders action,
             @display {label: "Expiration Time"} int expires = 1800,
             @display {label: "Part Number"} int? partNo = (),
             @display {label: "Upload ID"} string? uploadId = ())
@@ -287,16 +287,16 @@ public isolated client class Client {
             return error(EXPIRATION_TIME_ERROR_MSG);
         }
         if objectName == EMPTY_STRING {
-            return error(OBJECT_NAME_ERROR_MSG);
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
         }
         if bucketName == EMPTY_STRING {
-            return error(BUCKET_NAME_ERROR_MSG);
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
         }
 
         [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
         map<string> requestHeaders = {
-            [HOST] : string `${self.amazonHost}`
+            [HOST] : self.amazonHost
         };
 
         GET|PUT httpMethod;
@@ -315,12 +315,12 @@ public isolated client class Client {
         [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(requestHeaders, ());
 
         map<string> queryParams = {
-            [X_AMZ_ALGORITHM] : AWS4_HMAC_SHA256,
-            [X_AMZ_CREDENTIAL] : string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${
+            [X_AMZ_ALGORITHM]: AWS4_HMAC_SHA256,
+            [X_AMZ_CREDENTIAL]: string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${
                 TERMINATION_STRING}`,
-            [X_AMZ_DATE] : amzDateStr,
-            [X_AMZ_EXPIRES] : expires.toString(),
-            [X_AMZ_SIGNED_HEADERS] : signedHeaders
+            [X_AMZ_DATE]: amzDateStr,
+            [X_AMZ_EXPIRES]: expires.toString(),
+            [X_AMZ_SIGNED_HEADERS]: signedHeaders
         };
 
         string|error canonicalQuery = generateCanonicalQueryString(queryParams);
