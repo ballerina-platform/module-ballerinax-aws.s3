@@ -108,6 +108,7 @@ public type ObjectRetrievalHeaders record {
 # + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers)
 # + expect - When your application uses 100-continue, it does not send the request body until it receives an acknowledgment.The date and time at which the object is no longer able to be cached
 # + expires - The date and time at which the object is no longer cacheable
+# + contentType - The MIME type of the content
 public type ObjectCreationHeaders record {
     @display {label: "Cache Control"}
     string cacheControl?;
@@ -123,4 +124,6 @@ public type ObjectCreationHeaders record {
     string expect?;
     @display {label: "Expiry Time"}
     string expires?;
+    @display {label: "Content Type"}
+    string contentType?;
 };
