@@ -241,6 +241,9 @@ isolated function populateCreateObjectHeaders(map<string> requestHeaders, Object
         if (objectCreationHeaders?.expires != ()) {
             requestHeaders[EXPIRES] = <string>objectCreationHeaders?.expires;
         }
+        if (objectCreationHeaders?.contentType != ()) {
+            requestHeaders[CONTENT_TYPE] = <string>objectCreationHeaders?.contentType;
+        }
     }
 }
 
