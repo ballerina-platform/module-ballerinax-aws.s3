@@ -36,7 +36,6 @@ const string CONTENT_TYPE = "Content-Type";
 const string X_AMZ_CONTENT_SHA256 = "X-Amz-Content-Sha256";
 const string X_AMZ_DATE = "X-Amz-Date";
 const string HOST = "Host";
-const string HOST_LOWERCASE = "host";
 const string X_AMZ_ACL = "x-amz-acl";
 const string X_AMZ_MFA = "x-amz-mfa";
 const string CACHE_CONTROL = "Cache-Control";
@@ -52,11 +51,11 @@ const string IF_MATCH = "If-Match";
 const string IF_NONE_MATCH = "If-None-Match";
 const string RANGE = "Range";
 const string AUTHORIZATION= "Authorization";
-const string X_AMZ_EXPIRES = "X-Amz-Expires";
-const string X_AMZ_ALGORITHM = "X-Amz-Algorithm";
-const string X_AMZ_CREDENTIAL = "X-Amz-Credential";
-const string X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders";
-const string X_AMZ_SIGNATURE = "X-Amz-Signature";
+const X_AMZ_EXPIRES = "X-Amz-Expires";
+const X_AMZ_ALGORITHM = "X-Amz-Algorithm";
+const X_AMZ_CREDENTIAL = "X-Amz-Credential";
+const X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders";
+const X_AMZ_SIGNATURE = "X-Amz-Signature";
 
 // HTTP verbs.
 const string GET = "GET";
@@ -81,8 +80,10 @@ const EXPIRATION_TIME_ERROR_MSG = "Invalid expiration time. Expiration time shou
 const EMPTY_OBJECT_NAME_ERROR_MSG = "Invalid object name. Object name should not be empty.";
 const EMPTY_BUCKET_NAME_ERROR_MSG = "Invalid bucket name. Bucket name should not be empty.";
 
-# Represents `CREATE` or `RETRIEVE` actions
-public enum ObjectActions {
-    CREATE = "create",
-    RETRIEVE = "retrieve"
+# The action to be carried out on the object.
+# 'CREATE' - Create a new object.
+# 'RETRIEVE' - Retrieve an existing object.
+public enum ObjectAction{
+    CREATE,
+    RETRIEVE
 };
