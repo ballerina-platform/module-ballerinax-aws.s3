@@ -241,6 +241,19 @@ isolated function populateCreateObjectHeaders(map<string> requestHeaders, Object
         if (objectCreationHeaders?.expires != ()) {
             requestHeaders[EXPIRES] = <string>objectCreationHeaders?.expires;
         }
+        if (objectCreationHeaders?.contentType != ()) {
+            requestHeaders[CONTENT_TYPE] = <string>objectCreationHeaders?.contentType;
+        }
+    }
+}
+
+# Function to populate createObject optional user-defined metadata headers.
+#
+# + requestHeaders - Request headers map.
+# + userMetadataHeaders - Map containing user-defined metadata.
+isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders){
+    foreach string metadataKey in userMetadataHeaders.keys() {
+        requestHeaders[string `x-amz-meta-${metadataKey.toLowerAscii()}`] = userMetadataHeaders.get(metadataKey);
     }
 }
 
