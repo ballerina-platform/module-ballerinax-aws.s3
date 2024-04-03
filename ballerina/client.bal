@@ -183,14 +183,16 @@ public isolated client class Client {
     # + payload - The file content that needed to be added to the bucket
     # + cannedACL - The access control list of the new object
     # + objectCreationHeaders - Optional headers for the `createObject` function
+    # + userMetadataHeaders - Optional headers to add user-defined metadata
     # + return - An error on failure or else `()`
     @display {label: "Create Object"}
     remote isolated function createObject(@display {label: "Bucket Name"} string bucketName,
                                     @display {label: "Object Name"} string objectName,
                                     @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
                                     @display {label: "Grant"} CannedACL? cannedACL = (),
-                                    @display {label: "Object Creation Headers"} ObjectCreationHeaders?
-                                    objectCreationHeaders = ()) returns @tainted error? {
+                                    @display {label: "Object Creation Headers"} ObjectCreationHeaders? objectCreationHeaders = (), 
+                                    @display {label: "User Metadata Headers"} map<string> userMetadataHeaders = {}) 
+                                    returns error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
@@ -204,6 +206,9 @@ public isolated client class Client {
         
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
+
+        // Add user-defined metadata headers.
+        populateUserMetadataHeaders(requestHeaders, userMetadataHeaders);
         
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
             requestHeaders, request);

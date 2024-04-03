@@ -133,6 +133,19 @@ function testCreatePresignedUrlWithInvalidBucketName() returns error? {
 }
 
 @test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testCreateObjectWithMetadata() returns error? {
+    map<string> metadata = {
+        "Description" : "This is a text file",
+        "Language" : "English"
+    };
+    
+    Client amazonS3Client = check new(amazonS3Config);
+    _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
+}
+
+@test:Config {
     dependsOn: [testCreateObject]
 }
 function testGetObject() returns error? {
