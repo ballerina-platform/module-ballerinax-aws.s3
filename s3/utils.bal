@@ -253,7 +253,7 @@ isolated function populateCreateObjectHeaders(map<string> requestHeaders, Object
 # + userMetadataHeaders - Map containing user-defined metadata.
 isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders){
     foreach string metadataKey in userMetadataHeaders.keys() {
-        requestHeaders["x-amz-meta-" + metadataKey.toLowerAscii()] = userMetadataHeaders[metadataKey] ?: "";
+        requestHeaders[string `x-amz-meta-${metadataKey.toLowerAscii()}`] = userMetadataHeaders.get(metadataKey);
     }
 }
 
