@@ -266,8 +266,8 @@ public isolated client class Client {
     #
     # + bucketName - The name of the bucket  
     # + objectName - The name of the object  
-    # + action - The HTTP method (`retrieve` for object retrieval or `create` for object creation) or the relevant 
-    #            headers for object retrieval or creation
+    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation) 
+    #            or the relevant headers for object retrieval or creation
     # + expires - The time period for which the presigned URL is valid, in seconds  
     # + partNo - The part number of the object, when uploading multipart objects  
     # + uploadId - The upload ID of the multipart upload
@@ -277,7 +277,7 @@ public isolated client class Client {
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
             @display {label: "Object retrieval or creation indication with optional headers"} 
-                ObjectActions|ObjectCreationHeaders|ObjectRetrievalHeaders action,
+                ObjectAction|ObjectCreationHeaders|ObjectRetrievalHeaders action,
             @display {label: "Expiration Time"} int expires = 1800,
             @display {label: "Part Number"} int? partNo = (),
             @display {label: "Upload ID"} string? uploadId = ())
