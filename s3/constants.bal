@@ -81,9 +81,9 @@ const EMPTY_OBJECT_NAME_ERROR_MSG = "Invalid object name. Object name should not
 const EMPTY_BUCKET_NAME_ERROR_MSG = "Invalid bucket name. Bucket name should not be empty.";
 
 # The action to be carried out on the object.
-# 'CREATE' - Create a new object.
-# 'RETRIEVE' - Retrieve an existing object.
-public enum ObjectAction{
+# 'CREATE' - Create a new object
+# 'RETRIEVE' - Retrieve an existing object
+public enum ObjectAction {
     CREATE,
     RETRIEVE
 };
