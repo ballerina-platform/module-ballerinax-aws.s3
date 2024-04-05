@@ -16,10 +16,11 @@
 // under the License.
 //
 
+import ballerina/http;
 import ballerina/io;
 import ballerina/log;
-import ballerina/test;
 import ballerina/os;
+import ballerina/test;
 
 configurable string testBucketName = os:getEnv("BUCKET_NAME");
 configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
@@ -82,6 +83,53 @@ function testCreateObject() {
     } else {
         test:assertFail(amazonS3Client.toString());
     }
+}
+
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedUrlGet() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() RETRIEVE");
+    Client amazonS3Client = check new (amazonS3Config);
+    string url = check amazonS3Client->createPresignedUrl(testBucketName, fileName, RETRIEVE, 3600);
+    http:Client httpClient = check new (url);
+    http:Response httpResponse = check httpClient->get(EMPTY_STRING);
+    test:assertEquals(httpResponse.statusCode, 200, "Failed to create presigned URL");
+}
+
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedUrlPut() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() CREATE");
+    Client amazonS3Client = check new (amazonS3Config);
+    string url = check amazonS3Client->createPresignedUrl(testBucketName, fileName, CREATE, 3600);
+    http:Client httpClient = check new (url);
+    http:Response httpResponse = check httpClient->put(EMPTY_STRING, content);
+    test:assertEquals(httpResponse.statusCode, 200, "Failed to create presigned URL");
+}
+
+@test:Config {
+    dependsOn: [testGetObject]
+}
+function testCreatePresignedUrlWithInvalidObjectName() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() with invalid object name");
+    Client amazonS3Client = check new (amazonS3Config);
+    string|error url = amazonS3Client->createPresignedUrl(testBucketName, EMPTY_STRING, RETRIEVE, 3600);
+    test:assertTrue(url is error, msg = "Expected an error but got a URL");
+    test:assertEquals((<error>url).message(), EMPTY_OBJECT_NAME_ERROR_MSG);
+}
+
+@test:Config {
+    dependsOn: [testGetObject]
+}
+
+function testCreatePresignedUrlWithInvalidBucketName() returns error? {
+    log:printInfo("amazonS3Client->createPresignedUrl() with invalid bucket name");
+    Client amazonS3Client = check new (amazonS3Config);
+    string|error url = amazonS3Client->createPresignedUrl(EMPTY_STRING, fileName, RETRIEVE, 3600);
+    test:assertTrue(url is error, msg = "Expected an error but got a URL");
+    test:assertEquals((<error>url).message(), EMPTY_BUCKET_NAME_ERROR_MSG);
 }
 
 @test:Config {

@@ -188,6 +188,20 @@ isolated function generateCanonicalHeaders(map<string> headers, http:Request? re
     return [canonicalHeaders, signedHeaders];
 }
 
+# Function to generate signing key.
+#
+# + secretAccessKey - Value of the secret key
+# + shortDateStr - shortDateStr Parameter Description
+# + region - Endpoint region
+# + return - Signing key
+isolated function generateSigningKey(string secretAccessKey, string shortDateStr, string region) returns byte[]|error {
+    string signValue = AWS4 + secretAccessKey;
+    byte[] dateKey = check crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
+    byte[] regionKey = check crypto:hmacSha256(region.toBytes(), dateKey);
+    byte[] serviceKey = check crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
+    return crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
+}
+
 # Funtion to construct authorization header string.
 #
 # + accessKeyId - Value of the access key.
@@ -198,19 +212,28 @@ isolated function generateCanonicalHeaders(map<string> headers, http:Request? re
 # + stringToSign - stringToSign Parameter Description
 # + return - Authorization header string value.
 isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
-                                string signedHeaders, string stringToSign) returns string|error {
-    string signValue = AWS4 + secretAccessKey;
-    byte[] dateKey =  check crypto:hmacSha256(shortDateStr.toBytes(), signValue.toBytes());
-    byte[] regionKey = check crypto:hmacSha256(region.toBytes(), dateKey);
-    byte[] serviceKey = check crypto:hmacSha256(SERVICE_NAME.toBytes(), regionKey);
-    byte[] signingKey = check  crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
-
-    string encodedStr = array:toBase16(check  crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+        string signedHeaders, string stringToSign) returns string|error {
+    byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
+    string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
     string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
-
     return authHeader;
+}
+
+# Function to construct signature for presigned URLs.
+#
+# + accessKeyId - Value of the access key  
+# + secretAccessKey - Value of the secret key  
+# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format  
+# + region - Endpoint region  
+# + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
+# + return - Signature used for authentication
+isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
+        string region, string stringToSign) returns string|error {
+    byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
+    string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
+    return encodedStr.toLowerAscii();
 }
 
 # Function to populate createObject optional headers.
