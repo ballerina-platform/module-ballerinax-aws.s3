@@ -468,7 +468,7 @@ public isolated client class Client {
         if bucketName == EMPTY_STRING {
             return error(EMPTY_BUCKET_NAME_ERROR_MSG);
         }
-        
+
         http:Request request = new;
 
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -490,6 +490,43 @@ public isolated client class Client {
         request.setPayload(payload);
 
         http:Response httpResponse = check self.amazonS3->post(requestURI, request);
+        return handleHttpResponse(httpResponse);
+    }
+
+    # Aborts a multipart upload.
+    #
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket 
+    # + uploadId - The upload ID of the multipart upload
+    # + return - An error on failure or else `()`
+    remote isolated function abortMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Upload ID"} string uploadId            
+        ) returns @tainted error? {
+        
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        map<string> queryParamsMap = {
+            "uploadId": uploadId
+        };
+
+        string queryParamStr = string `?uploadId=${uploadId}`;
+        http:Request request = new;
+
+        string requestURI = string `/${bucketName}/${objectName}`;
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI, 
+            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
+        requestURI = string `${requestURI}${queryParamStr}`;
+
+        http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
         return handleHttpResponse(httpResponse);
     }
 }
