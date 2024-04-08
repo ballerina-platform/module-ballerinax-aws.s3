@@ -51,3 +51,7 @@ isolated function getS3ObjectsList(xml response) returns S3Object[] {
     }
     return s3Objects;
 }
+
+isolated function getUploadId(xml response) returns string {
+    return (response/<UploadId>/*).toString();
+}

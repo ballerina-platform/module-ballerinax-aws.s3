@@ -145,3 +145,27 @@ public type GetHeaders record {
     GET method = GET;
     ObjectRetrievalHeaders headers;
 };
+
+# Represents the optional headers specific to CreateMultipartUpload function. 
+#
+# + cacheControl - Can be used to specify caching behavior along the request/reply chain
+# + contentDisposition - Specifies presentational information for the object
+# + contentEncoding - Specifies what content encodings have been applied to the object and thus what decoding mechanisms
+#                     must be applied to obtain the media-type referenced by the Content-Type header field
+# + contentLanguage - The language the content is in
+# + contentType - The MIME type of the content
+# + expires - The date and time at which the object is no longer cacheable
+public type MultipartUploadHeaders record {
+    @display {label: "Cache Control"}
+    string cacheControl?;
+    @display {label: "Content Disposition"}
+    string contentDisposition?;
+    @display {label: "Content Encoding"}
+    string contentEncoding?;
+    @display {label: "Content Language"}
+    string contentLanguage?;
+    @display {label: "Content Type"}
+    string contentType?;
+    @display {label: "Expires"}
+    string expires?;
+};

@@ -341,6 +341,50 @@ public isolated client class Client {
         return string `${HTTPS}${self.amazonHost}/${bucketName}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE
             }=${signature}`;
     }
+
+    # Initiates a multipart upload and returns an upload ID.
+    #
+    # + objectName - The name of the object  
+    # + bucketName - The name of the bucket  
+    # + cannedACL - The access control list of the new object
+    # + multipartUploadHeaders - Optional headers for multipart uploads
+    # + return - If success, the upload ID, else an error
+    remote isolated function createMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Grant"} CannedACL? cannedACL = (),
+            @display {label: "Multipart Upload Headers"} MultipartUploadHeaders? multipartUploadHeaders = ()
+            ) returns string|error {
+
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        http:Request request = new;
+        
+        string requestURI = string `/${bucketName}/${objectName}`;
+        string queryParamStr = string `?uploads`;
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+        if cannedACL != () {
+            requestHeaders[X_AMZ_ACL] = cannedACL.toString();
+        }
+        populateMultipartUploadHeaders(requestHeaders, multipartUploadHeaders);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, request, queryParams = {"uploads": EMPTY_STRING});
+        requestURI = string `${requestURI}${queryParamStr}`;
+        http:Response httpResponse = check self.amazonS3->post(requestURI, request);
+
+        xml XMLPayload = check httpResponse.getXmlPayload();
+        if httpResponse.statusCode == http:STATUS_OK {
+            return getUploadId(XMLPayload);
+        } else {
+            return error(XMLPayload.toString());
+        }
+    }
 }
 
 isolated function setDefaultHeaders(string amazonHost) returns map<string> {
