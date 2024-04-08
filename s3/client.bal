@@ -447,6 +447,51 @@ public isolated client class Client {
             return error(XMLPayload.toString());
         }
     }
+
+    # Completes a multipart upload by assembling previously uploaded parts.
+    #
+    # + objectName - The name of the object  
+    # + bucketName - The name of the bucket
+    # + uploadId - The upload ID of the multipart upload  
+    # + CompletedParts - An array containing the part number and ETag of each uploaded part
+    # + return - An error on failure or else `()`
+    remote isolated function completeMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Upload ID"} string uploadId,
+            @display {label: "Array of Parts"} CompletedPart[] CompletedParts
+            ) returns @tainted error? {
+        
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+        
+        http:Request request = new;
+
+        string requestURI = string `/${bucketName}/${objectName}`;
+        string queryParamStr = string `?uploadId=${uploadId}`;
+        map<string> queryParamsMap = {
+            "uploadId": uploadId
+        };
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, 
+            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
+        requestURI = string `${requestURI}${queryParamStr}`;
+
+        string payload = string `<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`;
+        foreach var part in CompletedParts {
+            payload = string `${payload}<Part><PartNumber>${part.partNumber.toString()}</PartNumber><ETag>${part.ETag}</ETag></Part>`;
+        }
+        payload = string `${payload}</CompleteMultipartUpload>`;
+        request.setPayload(payload);
+
+        http:Response httpResponse = check self.amazonS3->post(requestURI, request);
+        return handleHttpResponse(httpResponse);
+    }
 }
 
 isolated function setDefaultHeaders(string amazonHost) returns map<string> {

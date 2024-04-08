@@ -226,6 +226,34 @@ function testUploadPart() returns error? {
     }
 }
 
+@test:Config {
+    dependsOn: [testUploadPart]
+}
+function testCompleteMultipartUpload() returns error? {
+    log:printInfo("amazonS3Client->completeMultipartUpload()");
+    Client amazonS3Client = check new (amazonS3Config);
+    error? completeMultipartUpload = amazonS3Client->completeMultipartUpload(fileName2, testBucketName, uploadId_, parts);
+    if (completeMultipartUpload is error) {
+        test:assertFail("Failed to complete multipart upload");
+    }
+}
+
+@test:Config {
+    dependsOn: [testCompleteMultipartUpload]
+}
+function testDeleteMultipartUpload() returns error? {
+    log:printInfo("amazonS3Client->deleteObject() for multipart upload");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        error? response = amazonS3Client -> deleteObject(testBucketName, fileName2);
+        if (response is error) {
+            test:assertFail(response.toString());
+        }
+    } else {
+        test:assertFail(amazonS3Client.toString());
+    }
+}
+
 @test:AfterSuite {}
 function testDeleteBucket() {
     log:printInfo("amazonS3Client->deleteBucket()");
