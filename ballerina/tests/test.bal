@@ -201,7 +201,7 @@ function testDeleteObject() {
 function testCreateMultipartUpload() returns error? {
     log:printInfo("amazonS3Client->createMultipartUpload()");
     Client amazonS3Client = check new (amazonS3Config);
-    string|error uploadId = amazonS3Client->createMultipartUpload(fileName, testBucketName);
+    string|error uploadId = amazonS3Client->createMultipartUpload(fileName2, testBucketName);
     if uploadId is error {
         test:assertFail(uploadId.toString());
     } else {
