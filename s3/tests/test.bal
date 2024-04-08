@@ -254,6 +254,19 @@ function testDeleteMultipartUpload() returns error? {
     }
 }
 
+@test:Config {
+    dependsOn: [testListBuckets],
+    before: testCreateMultipartUpload  
+}
+function testAbortFileUpload() returns error? {
+    log:printInfo("amazonS3Client->abortMultipartUpload()");
+    Client amazonS3Client = check new (amazonS3Config);
+    error? response = amazonS3Client->abortMultipartUpload(fileName2, testBucketName, uploadId_);
+    if response is error {
+        test:assertFail(response.toString());
+    }
+}
+
 @test:AfterSuite {}
 function testDeleteBucket() {
     log:printInfo("amazonS3Client->deleteBucket()");
