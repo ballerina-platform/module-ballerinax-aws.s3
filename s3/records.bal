@@ -169,3 +169,24 @@ public type MultipartUploadHeaders record {
     @display {label: "Expires"}
     string expires?;
 };
+
+# Represents the details of a part uploaded through the UploadPart function.
+#
+# + partNumber - The part number of the file part
+# + ETag - The entity tag is a hash of the object. The ETag reflects changes only to the contents of an object, 
+#          not its metadata
+public type CompletedPart record {
+    int partNumber;
+    string ETag;
+};
+
+# Represents the optional headers specific to UploadPart function.
+#
+# + contentLength - The size of the object, in bytes
+# + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers)
+public type UploadPartHeaders record {
+    @display {label: "Content Length"}
+    string contentLength?;
+    @display {label: "Content MD5"}
+    string contentMD5?;
+};
