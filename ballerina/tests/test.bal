@@ -30,6 +30,7 @@ string fileName = "test.txt";
 string fileName2 = "test2.txt";
 string content = "Sample content";
 string uploadId_= "";
+CompletedPart[] parts = [];
 
 ConnectionConfig amazonS3Config = {
     accessKeyId: accessKeyId,
@@ -209,7 +210,63 @@ function testCreateMultipartUpload() returns error? {
         test:assertTrue(uploadId.length() > 0, msg = "Failed to create multipart upload");
     }
 }
-      
+
+@test:Config {
+    dependsOn: [testCreateMultipartUpload]
+}
+function testUploadPart() returns error? {
+    log:printInfo("amazonS3Client->uploadPart()");
+    Client amazonS3Client =check new (amazonS3Config);
+    CompletedPart|error response = amazonS3Client->UploadPart(fileName2, testBucketName, content, uploadId_, 1);
+    if (response is CompletedPart) {
+        parts.push(response);
+        test:assertTrue(response.ETag.length() > 0, msg = "Failed to upload part");
+    } else {
+        test:assertFail(response.toString());
+    }
+}
+
+@test:Config {
+    dependsOn: [testUploadPart]
+}
+function testCompleteMultipartUpload() returns error? {
+    log:printInfo("amazonS3Client->completeMultipartUpload()");
+    Client amazonS3Client = check new (amazonS3Config);
+    error? completeMultipartUpload = amazonS3Client->completeMultipartUpload(fileName2, testBucketName, uploadId_, parts);
+    if (completeMultipartUpload is error) {
+        test:assertFail("Failed to complete multipart upload");
+    }
+}
+
+@test:Config {
+    dependsOn: [testCompleteMultipartUpload]
+}
+function testDeleteMultipartUpload() returns error? {
+    log:printInfo("amazonS3Client->deleteObject() for multipart upload");
+    Client|error amazonS3Client = new(amazonS3Config);
+    if (amazonS3Client is Client) {
+        error? response = amazonS3Client -> deleteObject(testBucketName, fileName2);
+        if (response is error) {
+            test:assertFail(response.toString());
+        }
+    } else {
+        test:assertFail(amazonS3Client.toString());
+    }
+}
+
+@test:Config {
+    dependsOn: [testListBuckets],
+    before: testCreateMultipartUpload  
+}
+function testAbortFileUpload() returns error? {
+    log:printInfo("amazonS3Client->abortMultipartUpload()");
+    Client amazonS3Client = check new (amazonS3Config);
+    error? response = amazonS3Client->abortMultipartUpload(fileName2, testBucketName, uploadId_);
+    if response is error {
+        test:assertFail(response.toString());
+    }
+}
+
 @test:AfterSuite {}
 function testDeleteBucket() {
     log:printInfo("amazonS3Client->deleteBucket()");

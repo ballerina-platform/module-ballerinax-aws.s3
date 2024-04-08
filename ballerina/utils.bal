@@ -379,6 +379,17 @@ isolated function populateMultipartUploadHeaders(
     }
 }
 
+isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPartHeaders? uploadPartHeaders) {
+    if uploadPartHeaders != () {
+        if uploadPartHeaders?.contentMD5 != () {
+            requestHeaders[CONTENT_MD5] = <string>uploadPartHeaders?.contentMD5;
+        }
+        if uploadPartHeaders?.contentLength != () {
+            requestHeaders[CONTENT_LENGTH] = <string>uploadPartHeaders?.contentLength;
+        }     
+    }
+}
+
 isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
