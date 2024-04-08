@@ -27,7 +27,9 @@ configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
 configurable string secretAccessKey = os:getEnv("SECRET_ACCESS_KEY");
 configurable string region = os:getEnv("REGION");
 string fileName = "test.txt";
+string fileName2 = "test2.txt";
 string content = "Sample content";
+string uploadId_= "";
 
 ConnectionConfig amazonS3Config = {
     accessKeyId: accessKeyId,
@@ -193,6 +195,21 @@ function testDeleteObject() {
     }
 }
 
+@test:Config {
+    dependsOn: [testListObjects]
+}
+function testCreateMultipartUpload() returns error? {
+    log:printInfo("amazonS3Client->createMultipartUpload()");
+    Client amazonS3Client = check new (amazonS3Config);
+    string|error uploadId = amazonS3Client->createMultipartUpload(fileName, testBucketName);
+    if uploadId is error {
+        test:assertFail(uploadId.toString());
+    } else {
+        uploadId_ = uploadId;
+        test:assertTrue(uploadId.length() > 0, msg = "Failed to create multipart upload");
+    }
+}
+      
 @test:AfterSuite {}
 function testDeleteBucket() {
     log:printInfo("amazonS3Client->deleteBucket()");

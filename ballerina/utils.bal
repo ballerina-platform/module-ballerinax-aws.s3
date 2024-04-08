@@ -353,6 +353,32 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
     return queryParamsStr;
 }
 
+isolated function populateMultipartUploadHeaders(
+        map<string> requestHeaders,
+        MultipartUploadHeaders? multipartUploadHeaders) {
+    
+    if multipartUploadHeaders != () {
+        if multipartUploadHeaders?.cacheControl != () {
+            requestHeaders[IF_MODIFIED_SINCE] = <string>multipartUploadHeaders?.cacheControl;
+        }
+        if multipartUploadHeaders?.contentDisposition != () {
+            requestHeaders[IF_UNMODIFIED_SINCE] = <string>multipartUploadHeaders?.contentDisposition;
+        }
+        if multipartUploadHeaders?.contentEncoding != () {
+            requestHeaders[IF_MATCH] = <string>multipartUploadHeaders?.contentEncoding;
+        }
+        if multipartUploadHeaders?.contentLanguage != () {
+            requestHeaders[IF_NONE_MATCH] = <string>multipartUploadHeaders?.contentLanguage;
+        }
+        if multipartUploadHeaders?.contentType != () {
+            requestHeaders[RANGE] = <string>multipartUploadHeaders?.contentType;
+        }
+        if multipartUploadHeaders?.expires != () {
+            requestHeaders[RANGE] = <string>multipartUploadHeaders?.expires;
+        }
+    }
+}
+
 isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
