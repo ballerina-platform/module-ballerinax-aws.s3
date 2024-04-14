@@ -356,37 +356,39 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
 isolated function populateMultipartUploadHeaders(
         map<string> requestHeaders,
         MultipartUploadHeaders? multipartUploadHeaders) {
-    
-    if multipartUploadHeaders != () {
-        if multipartUploadHeaders?.cacheControl != () {
-            requestHeaders[IF_MODIFIED_SINCE] = <string>multipartUploadHeaders?.cacheControl;
-        }
-        if multipartUploadHeaders?.contentDisposition != () {
-            requestHeaders[IF_UNMODIFIED_SINCE] = <string>multipartUploadHeaders?.contentDisposition;
-        }
-        if multipartUploadHeaders?.contentEncoding != () {
-            requestHeaders[IF_MATCH] = <string>multipartUploadHeaders?.contentEncoding;
-        }
-        if multipartUploadHeaders?.contentLanguage != () {
-            requestHeaders[IF_NONE_MATCH] = <string>multipartUploadHeaders?.contentLanguage;
-        }
-        if multipartUploadHeaders?.contentType != () {
-            requestHeaders[RANGE] = <string>multipartUploadHeaders?.contentType;
-        }
-        if multipartUploadHeaders?.expires != () {
-            requestHeaders[RANGE] = <string>multipartUploadHeaders?.expires;
-        }
+    if multipartUploadHeaders is () {
+        return;
+    }
+    if multipartUploadHeaders?.cacheControl is string {
+        requestHeaders[IF_MODIFIED_SINCE] = <string>multipartUploadHeaders?.cacheControl;
+    }
+    if multipartUploadHeaders?.contentDisposition is string {
+        requestHeaders[IF_UNMODIFIED_SINCE] = <string>multipartUploadHeaders?.contentDisposition;
+    }
+    if multipartUploadHeaders?.contentEncoding is string {
+        requestHeaders[IF_MATCH] = <string>multipartUploadHeaders?.contentEncoding;
+    }
+    if multipartUploadHeaders?.contentLanguage is string {
+        requestHeaders[IF_NONE_MATCH] = <string>multipartUploadHeaders?.contentLanguage;
+    }
+    if multipartUploadHeaders?.contentType is string {
+        requestHeaders[RANGE] = <string>multipartUploadHeaders?.contentType;
+    }
+    if multipartUploadHeaders?.expires is string {
+        requestHeaders[RANGE] = <string>multipartUploadHeaders?.expires;
     }
 }
 
 isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPartHeaders? uploadPartHeaders) {
-    if uploadPartHeaders != () {
-        if uploadPartHeaders?.contentMD5 != () {
-            requestHeaders[CONTENT_MD5] = <string>uploadPartHeaders?.contentMD5;
-        }
-        if uploadPartHeaders?.contentLength != () {
-            requestHeaders[CONTENT_LENGTH] = <string>uploadPartHeaders?.contentLength;
-        }     
+
+    if uploadPartHeaders is () {
+        return;
+    }
+    if uploadPartHeaders?.contentMD5 is string {
+        requestHeaders[CONTENT_MD5] = <string>uploadPartHeaders?.contentMD5;
+    }
+    if uploadPartHeaders?.contentLength is string {
+        requestHeaders[CONTENT_LENGTH] = <string>uploadPartHeaders?.contentLength;
     }
 }
 
