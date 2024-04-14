@@ -368,8 +368,8 @@ public isolated client class Client {
         string requestURI = string `/${bucketName}/${objectName}`;
         string queryParamStr = string `?uploads`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        if cannedACL != () {
-            requestHeaders[X_AMZ_ACL] = cannedACL.toString();
+        if cannedACL is CannedACL {
+            requestHeaders[X_AMZ_ACL] = cannedACL;
         }
         populateMultipartUploadHeaders(requestHeaders, multipartUploadHeaders);
 
@@ -422,9 +422,7 @@ public isolated client class Client {
 
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
-        if uploadPartHeaders != () {
-            populateUploadPartHeaders(requestHeaders, uploadPartHeaders);
-        }
+        populateUploadPartHeaders(requestHeaders, uploadPartHeaders);
 
         if payload is byte[] {
             request.setBinaryPayload(payload);
@@ -460,7 +458,7 @@ public isolated client class Client {
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Array of Parts"} CompletedPart[] CompletedParts
-            ) returns @tainted error? {
+            ) returns error? {
         
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);

@@ -128,7 +128,7 @@ public type ObjectCreationHeaders record {
     string contentType?;
 };
 
-# Represents the optional headers specific to CreateMultipartUpload function. 
+# Represents the optional headers specific to `CreateMultipartUpload` function. 
 #
 # + cacheControl - Can be used to specify caching behavior along the request/reply chain
 # + contentDisposition - Specifies presentational information for the object
@@ -152,17 +152,19 @@ public type MultipartUploadHeaders record {
     string expires?;
 };
 
-# Represents the details of a part uploaded through the UploadPart function.
+# Represents the details of a part uploaded through the `UploadPart` function.
 #
 # + partNumber - The part number of the file part
 # + ETag - The entity tag is a hash of the object. The ETag reflects changes only to the contents of an object, 
 #          not its metadata
 public type CompletedPart record {
+    @display {label: "Part Number"}
     int partNumber;
+    @display {label: "ETag"}
     string ETag;
 };
 
-# Represents the optional headers specific to UploadPart function.
+# Represents the optional headers specific to `UploadPart` function.
 #
 # + contentLength - The size of the object, in bytes
 # + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers)
