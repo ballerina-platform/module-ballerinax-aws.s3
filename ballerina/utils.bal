@@ -359,27 +359,27 @@ isolated function populateMultipartUploadHeaders(
     if multipartUploadHeaders is () {
         return;
     }
-    var cacheControl = multipartUploadHeaders?.cacheControl;
+    string? cacheControl = multipartUploadHeaders?.cacheControl;
     if cacheControl is string {
         requestHeaders[IF_MODIFIED_SINCE] = cacheControl;
     }
-    var contentDisposition = multipartUploadHeaders?.contentDisposition;
+    string? contentDisposition = multipartUploadHeaders?.contentDisposition;
     if contentDisposition is string {
         requestHeaders[IF_UNMODIFIED_SINCE] = contentDisposition;
     }
-    var contentEncoding = multipartUploadHeaders?.contentEncoding;
+    string? contentEncoding = multipartUploadHeaders?.contentEncoding;
     if contentEncoding is string {
         requestHeaders[IF_MATCH] = contentEncoding;
     }
-    var contentLanguage = multipartUploadHeaders?.contentLanguage;
+    string? contentLanguage = multipartUploadHeaders?.contentLanguage;
     if contentLanguage is string {
         requestHeaders[IF_NONE_MATCH] = contentLanguage;
     }
-    var contentType = multipartUploadHeaders?.contentType;
+    string? contentType = multipartUploadHeaders?.contentType;
     if contentType is string {
         requestHeaders[RANGE] = contentType;
     }
-    var expires = multipartUploadHeaders?.expires;
+    string? expires = multipartUploadHeaders?.expires;
     if expires is string {
         requestHeaders[RANGE] = expires;
     }
@@ -390,11 +390,13 @@ isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPa
     if uploadPartHeaders is () {
         return;
     }
-    if uploadPartHeaders?.contentMD5 is string {
-        requestHeaders[CONTENT_MD5] = <string>uploadPartHeaders?.contentMD5;
+    string? contentMD5 = uploadPartHeaders?.contentMD5;
+    if contentMD5 is string {
+        requestHeaders[CONTENT_MD5] = contentMD5;
     }
-    if uploadPartHeaders?.contentLength is string {
-        requestHeaders[CONTENT_LENGTH] = <string>uploadPartHeaders?.contentLength;
+    string? contentLength = uploadPartHeaders?.contentLength;
+    if contentLength is string {
+        requestHeaders[CONTENT_LENGTH] = contentLength;
     }
 }
 
