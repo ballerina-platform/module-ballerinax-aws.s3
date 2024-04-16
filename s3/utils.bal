@@ -359,23 +359,29 @@ isolated function populateMultipartUploadHeaders(
     if multipartUploadHeaders is () {
         return;
     }
-    if multipartUploadHeaders?.cacheControl is string {
-        requestHeaders[IF_MODIFIED_SINCE] = <string>multipartUploadHeaders?.cacheControl;
+    var cacheControl = multipartUploadHeaders?.cacheControl;
+    if cacheControl is string {
+        requestHeaders[IF_MODIFIED_SINCE] = cacheControl;
     }
-    if multipartUploadHeaders?.contentDisposition is string {
-        requestHeaders[IF_UNMODIFIED_SINCE] = <string>multipartUploadHeaders?.contentDisposition;
+    var contentDisposition = multipartUploadHeaders?.contentDisposition;
+    if contentDisposition is string {
+        requestHeaders[IF_UNMODIFIED_SINCE] = contentDisposition;
     }
-    if multipartUploadHeaders?.contentEncoding is string {
-        requestHeaders[IF_MATCH] = <string>multipartUploadHeaders?.contentEncoding;
+    var contentEncoding = multipartUploadHeaders?.contentEncoding;
+    if contentEncoding is string {
+        requestHeaders[IF_MATCH] = contentEncoding;
     }
-    if multipartUploadHeaders?.contentLanguage is string {
-        requestHeaders[IF_NONE_MATCH] = <string>multipartUploadHeaders?.contentLanguage;
+    var contentLanguage = multipartUploadHeaders?.contentLanguage;
+    if contentLanguage is string {
+        requestHeaders[IF_NONE_MATCH] = contentLanguage;
     }
-    if multipartUploadHeaders?.contentType is string {
-        requestHeaders[RANGE] = <string>multipartUploadHeaders?.contentType;
+    var contentType = multipartUploadHeaders?.contentType;
+    if contentType is string {
+        requestHeaders[RANGE] = contentType;
     }
-    if multipartUploadHeaders?.expires is string {
-        requestHeaders[RANGE] = <string>multipartUploadHeaders?.expires;
+    var expires = multipartUploadHeaders?.expires;
+    if expires is string {
+        requestHeaders[RANGE] = expires;
     }
 }
 

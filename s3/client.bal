@@ -353,8 +353,8 @@ public isolated client class Client {
             @display {label: "Object Name"} string objectName,
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Grant"} CannedACL? cannedACL = (),
-            @display {label: "Multipart Upload Headers"} MultipartUploadHeaders? multipartUploadHeaders = ()
-            ) returns string|error {
+            @display {label: "Multipart Upload Headers"} MultipartUploadHeaders? multipartUploadHeaders = ())
+            returns string|error {
 
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
@@ -401,8 +401,8 @@ public isolated client class Client {
             @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
-            @display {label: "UploadPartHeaders"} UploadPartHeaders? uploadPartHeaders = ()
-        ) returns CompletedPart|error {
+            @display {label: "UploadPartHeaders"} UploadPartHeaders? uploadPartHeaders = ())
+            returns CompletedPart|error {
 
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
@@ -457,8 +457,8 @@ public isolated client class Client {
             @display {label: "Object Name"} string objectName,
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Upload ID"} string uploadId,
-            @display {label: "Array of Parts"} CompletedPart[] CompletedParts
-            ) returns error? {
+            @display {label: "Array of Parts"} CompletedPart[] CompletedParts)
+            returns error? {
         
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
@@ -481,7 +481,7 @@ public isolated client class Client {
         requestURI = string `${requestURI}${queryParamStr}`;
 
         string payload = string `<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`;
-        foreach var part in CompletedParts {
+        foreach CompletedPart part in CompletedParts {
             payload = string `${payload}<Part><PartNumber>${part.partNumber.toString()}</PartNumber><ETag>${part.ETag}</ETag></Part>`;
         }
         payload = string `${payload}</CompleteMultipartUpload>`;
@@ -500,8 +500,8 @@ public isolated client class Client {
     remote isolated function abortMultipartUpload(
             @display {label: "Object Name"} string objectName,
             @display {label: "Bucket Name"} string bucketName,
-            @display {label: "Upload ID"} string uploadId            
-        ) returns @tainted error? {
+            @display {label: "Upload ID"} string uploadId)
+            returns error? {
         
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
