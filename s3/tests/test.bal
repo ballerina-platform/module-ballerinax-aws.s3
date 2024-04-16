@@ -29,7 +29,7 @@ configurable string region = os:getEnv("REGION");
 string fileName = "test.txt";
 string fileName2 = "test2.txt";
 string content = "Sample content";
-string uploadId= "";
+string uploadId = "";
 CompletedPart[] parts = [];
 
 ConnectionConfig amazonS3Config = {
@@ -211,7 +211,7 @@ function testCreateMultipartUpload() returns error? {
 }
 function testUploadPart() returns error? {
     log:printInfo("amazonS3Client->uploadPart()");
-    Client amazonS3Client =check new (amazonS3Config);
+    Client amazonS3Client = check new (amazonS3Config);
     CompletedPart response = check amazonS3Client->UploadPart(fileName2, testBucketName, content, uploadId, 1);
     parts.push(response);
     test:assertTrue(response.ETag.length() > 0, msg = "Failed to upload part");
@@ -231,13 +231,13 @@ function testCompleteMultipartUpload() returns error? {
 }
 function testDeleteMultipartUpload() returns error? {
     log:printInfo("amazonS3Client->deleteObject() for multipart upload");
-    Client amazonS3Client = check new(amazonS3Config);
-    _ = check amazonS3Client -> deleteObject(testBucketName, fileName2);
+    Client amazonS3Client = check new (amazonS3Config);
+    _ = check amazonS3Client->deleteObject(testBucketName, fileName2);
 }
 
 @test:Config {
     dependsOn: [testListBuckets],
-    before: testCreateMultipartUpload  
+    before: testCreateMultipartUpload
 }
 function testAbortFileUpload() returns error? {
     log:printInfo("amazonS3Client->abortMultipartUpload()");
