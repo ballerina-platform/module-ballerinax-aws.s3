@@ -212,7 +212,7 @@ function testCreateMultipartUpload() returns error? {
 function testUploadPart() returns error? {
     log:printInfo("amazonS3Client->uploadPart()");
     Client amazonS3Client = check new (amazonS3Config);
-    CompletedPart response = check amazonS3Client->UploadPart(fileName2, testBucketName, content, uploadId, 1);
+    CompletedPart response = check amazonS3Client->uploadPart(fileName2, testBucketName, content, uploadId, 1);
     parts.push(response);
     test:assertTrue(response.ETag.length() > 0, msg = "Failed to upload part");
 }

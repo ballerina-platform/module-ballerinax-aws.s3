@@ -395,7 +395,7 @@ public isolated client class Client {
     # + partNumber - The part number of the object  
     # + uploadPartHeaders - Optional headers for the upload
     # + return - An error on failure or else `()`
-    remote isolated function UploadPart(
+    remote isolated function uploadPart(
             @display {label: "Object Name"} string objectName,
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
