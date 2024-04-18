@@ -457,7 +457,7 @@ public isolated client class Client {
             @display {label: "Object Name"} string objectName,
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Upload ID"} string uploadId,
-            @display {label: "Array of Parts"} CompletedPart[] CompletedParts)
+            @display {label: "Completed Parts"} CompletedPart[] completedParts)
             returns error? {
         
         if objectName == EMPTY_STRING {
@@ -481,7 +481,7 @@ public isolated client class Client {
         requestURI = string `${requestURI}${queryParamStr}`;
 
         string payload = string `<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`;
-        foreach CompletedPart part in CompletedParts {
+        foreach CompletedPart part in completedParts {
             payload = string `${payload}<Part><PartNumber>${part.partNumber.toString()}</PartNumber><ETag>${part.ETag}</ETag></Part>`;
         }
         payload = string `${payload}</CompleteMultipartUpload>`;
