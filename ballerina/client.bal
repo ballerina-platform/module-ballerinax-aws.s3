@@ -401,7 +401,7 @@ public isolated client class Client {
             @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
-            @display {label: "UploadPartHeaders"} UploadPartHeaders? uploadPartHeaders = ())
+            @display {label: "UploadPart Headers"} UploadPartHeaders? uploadPartHeaders = ())
             returns CompletedPart|error {
 
         if objectName == EMPTY_STRING {
