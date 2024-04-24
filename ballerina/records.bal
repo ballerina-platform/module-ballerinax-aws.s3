@@ -127,3 +127,49 @@ public type ObjectCreationHeaders record {
     @display {label: "Content Type"}
     string contentType?;
 };
+
+# Represents the optional headers specific to `CreateMultipartUpload` function. 
+#
+# + cacheControl - Can be used to specify caching behavior along the request/reply chain
+# + contentDisposition - Specifies presentational information for the object
+# + contentEncoding - Specifies what content encodings have been applied to the object and thus what decoding mechanisms
+#                     must be applied to obtain the media-type referenced by the Content-Type header field
+# + contentLanguage - The language the content is in
+# + contentType - The MIME type of the content
+# + expires - The date and time at which the object is no longer cacheable
+public type MultipartUploadHeaders record {
+    @display {label: "Cache Control"}
+    string cacheControl?;
+    @display {label: "Content Disposition"}
+    string contentDisposition?;
+    @display {label: "Content Encoding"}
+    string contentEncoding?;
+    @display {label: "Content Language"}
+    string contentLanguage?;
+    @display {label: "Content Type"}
+    string contentType?;
+    @display {label: "Expires"}
+    string expires?;
+};
+
+# Represents the details of a part uploaded through the `UploadPart` function.
+#
+# + partNumber - The part number of the file part
+# + ETag - Represents the hash value of the object, which reflects modifications made exclusively to the contents of the object
+public type CompletedPart record {
+    @display {label: "Part Number"}
+    int partNumber;
+    @display {label: "ETag"}
+    string ETag;
+};
+
+# Represents the optional headers specific to `UploadPart` function.
+#
+# + contentLength - The size of the object, in bytes
+# + contentMD5 - The base64-encoded 128-bit MD5 digest of the message (without the headers)
+public type UploadPartHeaders record {
+    @display {label: "Content Length"}
+    string contentLength?;
+    @display {label: "Content MD5"}
+    string contentMD5?;
+};

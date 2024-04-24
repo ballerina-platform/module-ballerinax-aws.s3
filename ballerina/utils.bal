@@ -353,6 +353,53 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
     return queryParamsStr;
 }
 
+isolated function populateMultipartUploadHeaders(
+        map<string> requestHeaders,
+        MultipartUploadHeaders? multipartUploadHeaders) {
+    if multipartUploadHeaders is () {
+        return;
+    }
+    string? cacheControl = multipartUploadHeaders?.cacheControl;
+    if cacheControl is string {
+        requestHeaders[IF_MODIFIED_SINCE] = cacheControl;
+    }
+    string? contentDisposition = multipartUploadHeaders?.contentDisposition;
+    if contentDisposition is string {
+        requestHeaders[IF_UNMODIFIED_SINCE] = contentDisposition;
+    }
+    string? contentEncoding = multipartUploadHeaders?.contentEncoding;
+    if contentEncoding is string {
+        requestHeaders[IF_MATCH] = contentEncoding;
+    }
+    string? contentLanguage = multipartUploadHeaders?.contentLanguage;
+    if contentLanguage is string {
+        requestHeaders[IF_NONE_MATCH] = contentLanguage;
+    }
+    string? contentType = multipartUploadHeaders?.contentType;
+    if contentType is string {
+        requestHeaders[RANGE] = contentType;
+    }
+    string? expires = multipartUploadHeaders?.expires;
+    if expires is string {
+        requestHeaders[RANGE] = expires;
+    }
+}
+
+isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPartHeaders? uploadPartHeaders) {
+
+    if uploadPartHeaders is () {
+        return;
+    }
+    string? contentMD5 = uploadPartHeaders?.contentMD5;
+    if contentMD5 is string {
+        requestHeaders[CONTENT_MD5] = contentMD5;
+    }
+    string? contentLength = uploadPartHeaders?.contentLength;
+    if contentLength is string {
+        requestHeaders[CONTENT_LENGTH] = contentLength;
+    }
+}
+
 isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
     int statusCode = httpResponse.statusCode;
     if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {

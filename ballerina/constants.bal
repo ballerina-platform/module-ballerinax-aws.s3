@@ -60,6 +60,7 @@ const X_AMZ_SIGNATURE = "X-Amz-Signature";
 // HTTP verbs.
 const string GET = "GET";
 const string PUT = "PUT";
+const POST = "POST";
 const string DELETE = "DELETE";
 const string TRUE = "TRUE";
 const string FALSE = "FALSE";
