@@ -155,8 +155,7 @@ public type MultipartUploadHeaders record {
 # Represents the details of a part uploaded through the `UploadPart` function.
 #
 # + partNumber - The part number of the file part
-# + ETag - The entity tag is a hash of the object. The ETag reflects changes only to the contents of an object, 
-#          not its metadata
+# + ETag - Represents the hash value of the object, which reflects modifications made exclusively to the contents of the object
 public type CompletedPart record {
     @display {label: "Part Number"}
     int partNumber;
