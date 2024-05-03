@@ -341,6 +341,181 @@ public isolated client class Client {
         return string `${HTTPS}${self.amazonHost}/${bucketName}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE
             }=${signature}`;
     }
+
+    # Initiates a multipart upload and returns an upload ID.
+    #
+    # + objectName - The name of the object  
+    # + bucketName - The name of the bucket  
+    # + cannedACL - The access control list of the new object
+    # + multipartUploadHeaders - Optional headers for multipart uploads
+    # + return - If success, the upload ID, else an error
+    remote isolated function createMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Grant"} CannedACL? cannedACL = (),
+            @display {label: "Multipart Upload Headers"} MultipartUploadHeaders? multipartUploadHeaders = ())
+            returns string|error {
+
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        http:Request request = new;
+        
+        string requestURI = string `/${bucketName}/${objectName}`;
+        string queryParamStr = string `?uploads`;
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+        if cannedACL is CannedACL {
+            requestHeaders[X_AMZ_ACL] = cannedACL;
+        }
+        populateMultipartUploadHeaders(requestHeaders, multipartUploadHeaders);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, request, queryParams = {"uploads": EMPTY_STRING});
+        requestURI = string `${requestURI}${queryParamStr}`;
+        http:Response httpResponse = check self.amazonS3->post(requestURI, request);
+
+        xml XMLPayload = check httpResponse.getXmlPayload();
+        if httpResponse.statusCode == http:STATUS_OK {
+            return getUploadId(XMLPayload);
+        } else {
+            return error(XMLPayload.toString());
+        }
+    }
+    
+    # Completes a multipart upload by assembling previously uploaded parts.
+    #
+    # + objectName - The name of the object  
+    # + bucketName - The name of the bucket  
+    # + payload - The file content that needed to be added to the bucket  
+    # + uploadId - The upload ID of the multipart upload  
+    # + partNumber - The part number of the object  
+    # + uploadPartHeaders - Optional headers for the upload
+    # + return - An error on failure or else `()`
+    remote isolated function uploadPart(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
+            @display {label: "Upload ID"} string uploadId,
+            @display {label: "Part Number"} int partNumber,
+            @display {label: "UploadPart Headers"} UploadPartHeaders? uploadPartHeaders = ())
+            returns CompletedPart|error {
+
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+        http:Request request = new;
+
+        string requestURI = string `/${bucketName}/${objectName}`;
+        string queryParamStr = string `?partNumber=${partNumber}&uploadId=${uploadId}`;
+
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+
+        populateUploadPartHeaders(requestHeaders, uploadPartHeaders);
+
+        if payload is byte[] {
+            request.setBinaryPayload(payload);
+        } else if payload is stream<io:Block, io:Error?> {
+            request.setByteStream(payload);
+        } else {
+            request.setPayload(payload);
+        }
+        
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
+            requestHeaders, request, queryParams = {"partNumber": partNumber.toString(), "uploadId": uploadId});
+        requestURI = string `${requestURI}${queryParamStr}`;
+
+        http:Response httpResponse = check self.amazonS3->put(requestURI, request);
+        if httpResponse.statusCode == http:STATUS_OK {
+            string ETag = check httpResponse.getHeader("ETag");
+            return {partNumber, ETag};
+        } else {
+            xml XMLPayload = check httpResponse.getXmlPayload();
+            return error(XMLPayload.toString());
+        }
+    }
+
+    # Completes a multipart upload by assembling previously uploaded parts.
+    #
+    # + objectName - The name of the object  
+    # + bucketName - The name of the bucket  
+    # + uploadId - The upload ID of the multipart upload  
+    # + completedParts - An array containing the part number and ETag of each uploaded part
+    # + return - An error on failure or else `()`
+    remote isolated function completeMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Upload ID"} string uploadId,
+            @display {label: "Completed Parts"} CompletedPart[] completedParts)
+            returns error? {
+        
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        http:Request request = new;
+
+        string requestURI = string `/${bucketName}/${objectName}`;
+        string queryParamStr = string `?uploadId=${uploadId}`;
+
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, 
+            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
+        requestURI = string `${requestURI}${queryParamStr}`;
+
+        string payload = string `<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`;
+        foreach CompletedPart part in completedParts {
+            payload = string `${payload}<Part><PartNumber>${part.partNumber.toString()}</PartNumber><ETag>${part.ETag}</ETag></Part>`;
+        }
+        payload = string `${payload}</CompleteMultipartUpload>`;
+        request.setPayload(payload);
+
+        http:Response httpResponse = check self.amazonS3->post(requestURI, request);
+        return handleHttpResponse(httpResponse);
+    }
+
+    # Aborts a multipart upload.
+    #
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket 
+    # + uploadId - The upload ID of the multipart upload
+    # + return - An error on failure or else `()`
+    remote isolated function abortMultipartUpload(
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Upload ID"} string uploadId)
+            returns error? {
+        
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        http:Request request = new;
+
+        string requestURI = string `/${bucketName}/${objectName}`;
+        map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
+
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI, 
+            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
+        
+        requestURI = string `${requestURI}?uploadId=${uploadId}`;
+
+        http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
+        return handleHttpResponse(httpResponse);
+    }
 }
 
 isolated function setDefaultHeaders(string amazonHost) returns map<string> {
