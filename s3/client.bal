@@ -41,7 +41,7 @@ public isolated client class Client {
     public isolated function init(ConnectionConfig config) returns error? {
         self.region = (config?.region is string) ? <string>(config?.region) : DEFAULT_REGION;
         self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
-            SERVICE_NAME + "." + self.region) :  AMAZON_AWS_HOST;
+            SERVICE_NAME + "." + self.region) : AMAZON_AWS_HOST;
         string baseURL = HTTPS + self.amazonHost;
         self.accessKeyId = config.accessKeyId;
         self.secretAccessKey = config.secretAccessKey;
@@ -83,7 +83,7 @@ public isolated client class Client {
         if (cannedACL != ()) {
             requestHeaders[X_AMZ_ACL] = cannedACL.toString();
         }
-        if(self.region != DEFAULT_REGION) {
+        if (self.region != DEFAULT_REGION) {
             xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
                                         <LocationConstraint>${self.region}</LocationConstraint> 
                                 </CreateBucketConfiguration>`;   
@@ -260,6 +260,86 @@ public isolated client class Client {
             UNSIGNED_PAYLOAD, requestHeaders, request);
         http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
         return handleHttpResponse(httpResponse);
+    }
+    
+    # Generates a presigned URL for the object.
+    #
+    # + bucketName - The name of the bucket  
+    # + objectName - The name of the object  
+    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation) 
+    #            or the relevant headers for object retrieval or creation
+    # + expires - The time period for which the presigned URL is valid, in seconds  
+    # + partNo - The part number of the object, when uploading multipart objects  
+    # + uploadId - The upload ID of the multipart upload
+    # + return - If successful, a presigned URL, else an error
+    @display {label: "Create Presigned URL"}
+    remote isolated function createPresignedUrl(
+            @display {label: "Bucket Name"} string bucketName,
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Object retrieval or creation indication with optional headers"} 
+                ObjectAction|ObjectCreationHeaders|ObjectRetrievalHeaders action,
+            @display {label: "Expiration Time"} int expires = 1800,
+            @display {label: "Part Number"} int? partNo = (),
+            @display {label: "Upload ID"} string? uploadId = ())
+        returns string|error {
+        
+        if expires < 0 {
+            return error(EXPIRATION_TIME_ERROR_MSG);
+        }
+        if objectName == EMPTY_STRING {
+            return error(EMPTY_OBJECT_NAME_ERROR_MSG);
+        }
+        if bucketName == EMPTY_STRING {
+            return error(EMPTY_BUCKET_NAME_ERROR_MSG);
+        }
+
+        [string, string] [amzDateStr, shortDateStr] = check generateDateString();
+
+        map<string> requestHeaders = {
+            [HOST] : self.amazonHost
+        };
+
+        GET|PUT httpMethod;
+        if action is CREATE || action is ObjectCreationHeaders {
+            httpMethod = PUT;
+            if action is ObjectCreationHeaders {
+                populateCreateObjectHeaders(requestHeaders, action);
+            }
+        } else {
+            httpMethod = GET;
+            if action is ObjectRetrievalHeaders {
+                populateGetObjectHeaders(requestHeaders, action);
+            }
+        }
+
+        [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(requestHeaders, ());
+
+        map<string> queryParams = {
+            [X_AMZ_ALGORITHM]: AWS4_HMAC_SHA256,
+            [X_AMZ_CREDENTIAL]: string `${self.accessKeyId}/${shortDateStr}/${self.region}/${SERVICE_NAME}/${
+                TERMINATION_STRING}`,
+            [X_AMZ_DATE]: amzDateStr,
+            [X_AMZ_EXPIRES]: expires.toString(),
+            [X_AMZ_SIGNED_HEADERS]: signedHeaders
+        };
+
+        string|error canonicalQuery = generateCanonicalQueryString(queryParams);
+        if canonicalQuery is error {
+            return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+        }
+        string canonicalQueryString = canonicalQuery;
+
+        if partNo != () && uploadId != () && httpMethod == PUT {
+            canonicalQueryString = string `${canonicalQueryString}&partNumber=${partNo}&uploadId=${uploadId}`;
+        }
+        canonicalQueryString = re `/`.replaceAll(canonicalQueryString, "%2F");
+        string canonicalRequest = string `${httpMethod}${"\n"}/${bucketName}${string `/${objectName}`}${"\n"}${
+            canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
+        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
+        string signature = check constructPresignedUrlSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, 
+            self.region, stringToSign);
+        return string `${HTTPS}${self.amazonHost}/${bucketName}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE
+            }=${signature}`;
     }
 }
 
