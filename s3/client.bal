@@ -300,16 +300,21 @@ public isolated client class Client {
         };
 
         GET|PUT httpMethod;
-        if action is CREATE || action is ObjectCreationHeaders {
+
+        if action is ObjectCreationHeaders {
             httpMethod = PUT;
-            if action is ObjectCreationHeaders {
-                populateCreateObjectHeaders(requestHeaders, action);
-            }
+            populateCreateObjectHeaders(requestHeaders, action);
+        } 
+        
+        if action is ObjectRetrievalHeaders {
+            httpMethod = GET;
+            populateGetObjectHeaders(requestHeaders, action);
+        } 
+        
+        if action is CREATE {
+            httpMethod = PUT;
         } else {
             httpMethod = GET;
-            if action is ObjectRetrievalHeaders {
-                populateGetObjectHeaders(requestHeaders, action);
-            }
         }
 
         [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(requestHeaders, ());
