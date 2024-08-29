@@ -2,7 +2,7 @@
 distribution = "2201.4.1"
 org = "ballerinax"
 name = "aws.s3"
-version = "3.4.0"
+version = "3.4.1"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["Content & Files/File Management & Storage", "Cost/Paid", "Vendor/Amazon"]
