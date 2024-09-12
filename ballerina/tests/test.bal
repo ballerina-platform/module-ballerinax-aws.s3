@@ -56,6 +56,19 @@ function testCreateBucket() {
 @test:Config {
     dependsOn: [testCreateBucket]
 }
+function testCreateObjectWithMetadata() returns error? {
+    map<string> metadata = {
+        "Description" : "This is a text file",
+        "Language" : "English"
+    };
+    
+    Client amazonS3Client = check new(amazonS3Config);
+    _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
 function testListBuckets() {
     log:printInfo("amazonS3Client->listBuckets()");
     Client|error amazonS3Client = new(amazonS3Config);
@@ -133,19 +146,6 @@ function testCreatePresignedUrlWithInvalidBucketName() returns error? {
     string|error url = amazonS3Client->createPresignedUrl(EMPTY_STRING, fileName, RETRIEVE, 3600);
     test:assertTrue(url is error, msg = "Expected an error but got a URL");
     test:assertEquals((<error>url).message(), EMPTY_BUCKET_NAME_ERROR_MSG);
-}
-
-@test:Config {
-    dependsOn: [testCreateBucket]
-}
-function testCreateObjectWithMetadata() returns error? {
-    map<string> metadata = {
-        "Description" : "This is a text file",
-        "Language" : "English"
-    };
-    
-    Client amazonS3Client = check new(amazonS3Config);
-    _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
 }
 
 @test:Config {
