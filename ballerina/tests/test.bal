@@ -64,6 +64,13 @@ function testCreateObjectWithMetadata() returns error? {
     
     Client amazonS3Client = check new(amazonS3Config);
     _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
+
+    string url = check amazonS3Client->createPresignedUrl(testBucketName, fileName, RETRIEVE, 3600);
+    http:Client httpClient = check new (url);
+    // Use Range header as we only need to check headers
+    http:Response httpResponse = check httpClient->get(EMPTY_STRING, {"Range": "bytes=0-0"});
+    test:assertEquals(httpResponse.getHeader("x-amz-meta-Description"), "This is a text file", "Metadata mismatch");
+    test:assertEquals(httpResponse.getHeader("x-amz-meta-Language"), "English", "Metadata mismatch");
 }
 
 @test:Config {
