@@ -25,12 +25,12 @@ import ballerina/url;
 
 isolated function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
                             requestURI, string payload, map<string> headers, http:Request? request = (),
-                            map<string>? queryParams = ()) returns @tainted error? {
+        map<string>? queryParams = (), string? sessionToken = ()) returns @tainted error? {
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
     map<string> requestHeaders = headers;
-    [string, string][amzDateStr, shortDateStr] = ["",""];
+    [string, string] [amzDateStr, shortDateStr] = ["", ""];
 
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
@@ -39,6 +39,11 @@ isolated function generateSignature(string accessKeyId, string secretAccessKey, 
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
         requestHeaders[X_AMZ_DATE] = amzDateStr;
+    }
+
+    // Add x-amz-security-token header if session token is provided.
+    if sessionToken is string {
+        requestHeaders[X_AMZ_SECURITY_TOKEN] = sessionToken;
     }
 
     // Get canonical URI.
@@ -59,12 +64,12 @@ isolated function generateSignature(string accessKeyId, string secretAccessKey, 
             requestPayload = payload;
         } else if (request is http:Request) {
             requestPayload = array:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
-            string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii()); 
+            string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii());
             requestHeaders[CONTENT_TYPE] = contentType;
         }
 
         // Generete canonical and signed headers.
-        [string, string] [canonicalHeaders,signedHeaders] = generateCanonicalHeaders(headers, request);
+        [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(headers, request);
 
         // Generate canonical request.
         canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
@@ -73,13 +78,19 @@ isolated function generateSignature(string accessKeyId, string secretAccessKey, 
         // Generate string to sign.
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
         // Construct authorization signature string.
-        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
-            signedHeaders, stringToSign);
+        string authHeader = check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region,
+                signedHeaders, stringToSign, sessionToken);
         // Set authorization header.
         if (request is http:Request) {
             request.setHeader(AUTHORIZATION, authHeader);
+            if sessionToken is string {
+                request.setHeader(X_AMZ_SECURITY_TOKEN, sessionToken);
+            }
         } else {
-            requestHeaders[AUTHORIZATION] = authHeader; 
+            requestHeaders[AUTHORIZATION] = authHeader;
+            if sessionToken is string {
+                requestHeaders[X_AMZ_SECURITY_TOKEN] = sessionToken;
+            }
         }
     } else {
         return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
@@ -97,7 +108,7 @@ isolated function generateDateString() returns [string, string]|error {
 }
 
 isolated function utcToString(time:Utc utc, string pattern) returns string|error {
-    [int, decimal][epochSeconds, lastSecondFraction] = utc;
+    [int, decimal] [epochSeconds, lastSecondFraction] = utc;
     int nanoAdjustments = (<int>lastSecondFraction * 1000000000);
     var instant = ofEpochSecond(epochSeconds, nanoAdjustments);
     var zoneId = getZoneId(java:fromString("Z"));
@@ -116,7 +127,7 @@ isolated function utcToString(time:Utc utc, string pattern) returns string|error
 #
 # + return - String to sign.
 isolated function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
-                            returns string{
+                            returns string {
     //Start creating the string to sign
     string stringToSign = string `${AWS4_HMAC_SHA256}${"\n"}${amzDateStr}${"\n"}${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}${"\n"}${array:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
@@ -166,7 +177,7 @@ isolated function generateCanonicalQueryString(map<string> queryParams) returns 
 # + headers - Headers map.
 # + request - HTTP request.
 # + return - Return canonical and signed headers.
-isolated function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted[string, string] {
+isolated function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted [string, string] {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;
@@ -210,13 +221,18 @@ isolated function generateSigningKey(string secretAccessKey, string shortDateStr
 # + region - Endpoint region.
 # + signedHeaders - Signed headers.
 # + stringToSign - stringToSign Parameter Description
+# + sessionToken - Optional session token.
 # + return - Authorization header string value.
 isolated function constructAuthSignature(string accessKeyId, string secretAccessKey, string shortDateStr, string region,
-        string signedHeaders, string stringToSign) returns string|error {
+        string signedHeaders, string stringToSign, string? sessionToken = ()) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
     string credential = string `${accessKeyId}/${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}`;
-    string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${signedHeaders}`;
+    string sHeaders = signedHeaders;
+    if sessionToken is string {
+        sHeaders = string `${sHeaders};${X_AMZ_SECURITY_TOKEN}`;
+    }
+    string authHeader = string `${AWS4_HMAC_SHA256} ${CREDENTIAL}=${credential},${SIGNED_HEADER}=${sHeaders}`;
     authHeader = string `${authHeader},${SIGNATURE}=${encodedStr.toLowerAscii()}`;
     return authHeader;
 }
@@ -229,7 +245,7 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 # + region - Endpoint region  
 # + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
 # + return - Signature used for authentication
-isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
+isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr,
         string region, string stringToSign) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
@@ -242,7 +258,7 @@ isolated function constructPresignedUrlSignature(string accessKeyId, string secr
 # + objectCreationHeaders - Optional headers for createObject function.
 isolated function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders?
                                                 objectCreationHeaders) {
-    if(objectCreationHeaders != ()) {
+    if (objectCreationHeaders != ()) {
         if (objectCreationHeaders?.cacheControl != ()) {
             requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders?.cacheControl;
         }
@@ -274,7 +290,7 @@ isolated function populateCreateObjectHeaders(map<string> requestHeaders, Object
 #
 # + requestHeaders - Request headers map.
 # + userMetadataHeaders - Map containing user-defined metadata.
-isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders){
+isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders) {
     foreach string metadataKey in userMetadataHeaders.keys() {
         requestHeaders[string `x-amz-meta-${metadataKey.toLowerAscii()}`] = userMetadataHeaders.get(metadataKey);
     }
@@ -285,7 +301,7 @@ isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<st
 # + requestHeaders - Request headers map.
 # + objectRetrievalHeaders - Optional headers for getObject function.
 isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHeaders? objectRetrievalHeaders) {
-    if(objectRetrievalHeaders != ()) {
+    if (objectRetrievalHeaders != ()) {
         if (objectRetrievalHeaders?.modifiedSince != ()) {
             requestHeaders[IF_MODIFIED_SINCE] = <string>objectRetrievalHeaders?.modifiedSince;
         }
@@ -305,12 +321,12 @@ isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRet
 }
 
 isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType
-                                                = (), int? maxKeys = (), string? prefix = (), string? startAfter = (), 
-                                                boolean? fetchOwner = (), string? continuationToken = ()) returns 
+                                                = (), int? maxKeys = (), string? prefix = (), string? startAfter = (),
+        boolean? fetchOwner = (), string? continuationToken = ()) returns
                                                 string {
     string queryParamsStr = "";
     // Append query parameter(delimiter).
-        if (delimiter is string) {
+    if (delimiter is string) {
         queryParamsStr = string `${queryParamsStr}&delimiter=${delimiter}`;
         queryParamsMap["delimiter"] = delimiter;
     }
@@ -406,4 +422,29 @@ isolated function handleHttpResponse(http:Response httpResponse) returns @tainte
         xml xmlPayload = check httpResponse.getXmlPayload();
         return error(xmlPayload.toString());
     }
+}
+
+isolated function getIAMCredentials() returns IAMCredentials|error {
+    // Create HTTP client for metadata service
+    http:Client metadataClient = check new (METADATA_TOKEN_URL);
+
+    // Get IMDSv2 token
+    string token = check metadataClient->put("", {}, {[X_AWS_EC2_METADATA_TOKEN_TTL_SECONDS]: "21600"});
+
+    // Get role name
+    http:Client metaDataRoleClient = check new (METADATA_BASE_URL);
+    string roleName = check metaDataRoleClient->/(
+        headers = {
+            [X_AWS_EC2_METADATA_TOKEN]: token
+        }
+    );
+
+    // Get credentials
+    string credResult = check metaDataRoleClient->/[roleName](
+        headers = {
+            [X_AWS_EC2_METADATA_TOKEN]: token
+        }
+    );
+    return credResult.fromJsonStringWithType();
+
 }

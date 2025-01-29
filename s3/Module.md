@@ -29,6 +29,14 @@ s3:ConnectionConfig amazonS3Config = {
 s3:Client amazonS3Client = check new(amazonS3Config);
 ```
 
+IAM role-based authentication can be used as below if the code is running within an EC2 instance.
+```ballerina
+s3:ConnectionConfig amazonS3Config = {
+    authType: s3:EC2_IAM_ROLE,
+    region: <REGION>
+} ;
+```
+
 ### Step 3: Invoke connector operation
 1. Now you can use the operations available within the connector. Note that they are in the form of remote operations.  
 Following is an example on how to create a bucket using the connector.
@@ -42,4 +50,4 @@ Following is an example on how to create a bucket using the connector.
     ```
 2. Use `bal run` command to compile and run the Ballerina program.
 
-**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/samples)**
+**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples)**

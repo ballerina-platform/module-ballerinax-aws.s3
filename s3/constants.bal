@@ -38,6 +38,8 @@ const string X_AMZ_DATE = "X-Amz-Date";
 const string HOST = "Host";
 const string X_AMZ_ACL = "x-amz-acl";
 const string X_AMZ_MFA = "x-amz-mfa";
+const string X_AWS_EC2_METADATA_TOKEN = "X-aws-ec2-metadata-token";
+const string X_AWS_EC2_METADATA_TOKEN_TTL_SECONDS = "X-aws-ec2-metadata-token-ttl-seconds";
 const string CACHE_CONTROL = "Cache-Control";
 const string CONTENT_DISPOSITION = "Content-Disposition";
 const string CONTENT_ENCODING = "Content-Encoding";
@@ -50,12 +52,13 @@ const string IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
 const string IF_MATCH = "If-Match";
 const string IF_NONE_MATCH = "If-None-Match";
 const string RANGE = "Range";
-const string AUTHORIZATION= "Authorization";
+const string AUTHORIZATION = "Authorization";
 const X_AMZ_EXPIRES = "X-Amz-Expires";
 const X_AMZ_ALGORITHM = "X-Amz-Algorithm";
 const X_AMZ_CREDENTIAL = "X-Amz-Credential";
 const X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders";
 const X_AMZ_SIGNATURE = "X-Amz-Signature";
+const X_AMZ_SECURITY_TOKEN = "X-amz-security-token";
 
 // HTTP verbs.
 const string GET = "GET";
@@ -69,6 +72,10 @@ const string HTTPS = "https://";
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
 const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";
+
+# IAM role related constants.
+const string METADATA_TOKEN_URL = "http://169.254.169.254/latest/api/token";
+const string METADATA_BASE_URL = "http://169.254.169.254/latest/meta-data/iam/security-credentials";
 
 # Error messages.
 const string EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG = "Empty values set for accessKeyId or secretAccessKey credential";
