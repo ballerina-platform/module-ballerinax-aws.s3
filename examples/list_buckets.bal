@@ -13,14 +13,14 @@ s3:ConnectionConfig amazonS3Config = {
 
 final s3:Client amazonS3Client = check new (amazonS3Config);
 
-public function main() {
-    var listBucketResponse = amazonS3Client->listBuckets();
-    if listBucketResponse is s3:Bucket[] {
-        log:printInfo("Listing all buckets: ");
-        foreach var bucket in listBucketResponse {
-            log:printInfo("Bucket Name: " + bucket.name);
-        }
-    } else {
+public function main() returns error? {
+    s3:Bucket[]|error listBucketResponse = amazonS3Client->listBuckets();
+    if listBucketResponse is error {
         log:printError("Error occurred while listing buckets", listBucketResponse);
+        return listBucketResponse;
+    }
+    log:printInfo("Listing all buckets: ");
+    foreach var bucket in listBucketResponse {
+        log:printInfo("Bucket Name: " + bucket.name);
     }
 }

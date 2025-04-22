@@ -20,8 +20,11 @@ public function main() returns error? {
     if getObjectResponse is error {
         log:printError("Error occurred while getting object", getObjectResponse);
     } else {
-        error? err = getObjectResponse.forEach(isolated function(byte[] res) {
+        check getObjectResponse.forEach(isolated function(byte[] res) {
             error? writeRes = io:fileWriteBytes("./resources/test.txt", res, io:APPEND);
+            if writeRes is error {
+                log:printError("Error occurred while writing object", writeRes);
+            }
         });
     }
 }

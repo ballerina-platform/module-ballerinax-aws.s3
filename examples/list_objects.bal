@@ -15,9 +15,10 @@ s3:ConnectionConfig amazonS3Config = {
 final s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() returns error? {
-    var listObjectsResponse = amazonS3Client->listObjects(bucketName);
+    s3:S3Object[]|error listObjectsResponse = amazonS3Client->listObjects(bucketName);
     if listObjectsResponse is error {
         log:printError("Error occurred while listing objects", listObjectsResponse);
+        return listObjectsResponse;
     }
     log:printInfo("Listing all object: ");
     foreach s3:S3Object s3Object in listObjectsResponse {
@@ -25,4 +26,4 @@ public function main() returns error? {
         log:printInfo("Object Name: " + s3Object["objectName"].toString());
         log:printInfo("Object Size: " + s3Object["objectSize"].toString());
     }
-
+}

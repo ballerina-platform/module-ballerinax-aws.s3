@@ -31,8 +31,10 @@ plugins {
 rootProject.name = 'module-ballerinax-aws.s3'
 
 include ':aws.s3-ballerina'
+include ':aws.s3-examples'
 
 project(':aws.s3-ballerina').projectDir = file("ballerina")
+project(':aws.s3-examples').projectDir = file("examples")
 
 gradleEnterprise {
     buildScan {
