@@ -17,7 +17,7 @@
 const string NON_ALPHABET = "nonAlp";
 
 class SortBucket {
-    private final string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", 
+    private final string[] alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
 "t", "u", "v", "w", "x", "y", "z"];
     private string[] items = [];
     private int index = 0;
@@ -56,13 +56,13 @@ class SortBucket {
         int i = 0;
         while (i < self.alphabet.length()) {
             string alpChar = self.alphabet[i];
-            if (buckets.hasKey(alpChar)) {
+            if buckets.hasKey(alpChar) {
                 addToResultByKey(<SortBucket>buckets[alpChar], result);
             }
             i = i + 1;
         }
 
-        if (buckets.hasKey(NON_ALPHABET)) {
+        if buckets.hasKey(NON_ALPHABET) {
             addToResultByKey(<SortBucket>buckets[NON_ALPHABET], result);
         }
     }
@@ -77,14 +77,14 @@ class SortBucket {
 
     isolated function addToBucket(string item, int index, map<any> bucketsMap, string[] result) {
         int nextIndex = index + 1;
-        if (item.length() < nextIndex) {
+        if item.length() < nextIndex {
             // Nothing to sort further, add to result
             result[result.length()] = item;
         }
 
         boolean matchFound = false;
         foreach var char in self.alphabet {
-            if (string:equalsIgnoreCaseAscii(item.substring(index, nextIndex), char)) {
+            if string:equalsIgnoreCaseAscii(item.substring(index, nextIndex), char) {
                 populateMap(bucketsMap, char, item, index, result);
                 matchFound = true;
                 break;
@@ -92,7 +92,7 @@ class SortBucket {
         }
 
         // Skip current character and consider next.
-        if (!matchFound) {
+        if !matchFound {
             populateMap(bucketsMap, NON_ALPHABET, item, index, result);
         }
     }
@@ -115,7 +115,7 @@ public isolated function sort(string[] unsortedArray) returns string[] {
 }
 
 isolated function populateMap(map<any> bucketmap, string key, string item, int index, string[] result) {
-    if (bucketmap.hasKey(key)) {
+    if bucketmap.hasKey(key) {
         SortBucket buck = <SortBucket>bucketmap[key];
         buck.addItem(item);
         buck.setIndex(index + 1);
@@ -130,7 +130,7 @@ isolated function populateMap(map<any> bucketmap, string key, string item, int i
 }
 
 isolated function addToResultByKey(SortBucket thisBucket, string[] result) {
-    if (thisBucket.getItems().length() > 1) {
+    if thisBucket.getItems().length() > 1 {
         thisBucket.sortBucket(); // Create buckets again
     } else {
         // Only one item in the bucket

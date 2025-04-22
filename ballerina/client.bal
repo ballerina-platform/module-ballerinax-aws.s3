@@ -17,7 +17,6 @@
 
 import ballerina/http;
 import ballerina/io;
-import ballerina/regex;
 import ballerinax/'client.config;
 
 # Ballerina Amazon S3 connector provides the capability to access AWS S3 API.
@@ -34,70 +33,69 @@ public isolated client class Client {
     # Initializes the connector. During initialization you have to pass access key id and secret access key
     # Create an AWS account and obtain tokens following
     # [this guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
-    # 
+    #
     # + amazonS3Config - Configuration required to initialize the client
     # + httpConfig - HTTP configuration
     # + return - An error on failure of initialization or else `()`
     public isolated function init(ConnectionConfig config) returns error? {
-        self.region = (config?.region is string) ? <string>(config?.region) : DEFAULT_REGION;
-        self.amazonHost = self.region != DEFAULT_REGION ? regex:replaceFirst(AMAZON_AWS_HOST, SERVICE_NAME,
-            SERVICE_NAME + "." + self.region) : AMAZON_AWS_HOST;
-        string baseURL = HTTPS + self.amazonHost;
+        string? region = config?.region;
+        self.region = region is string ? region : DEFAULT_REGION;
+        string host = string `${SERVICE_NAME}.${self.region}`;
+        self.amazonHost = self.region != DEFAULT_REGION ? re `${SERVICE_NAME}`.replace(AMAZON_AWS_HOST, host) : AMAZON_AWS_HOST;
+        string baseURL = string `https://${self.amazonHost}`;
         self.accessKeyId = config.accessKeyId;
         self.secretAccessKey = config.secretAccessKey;
-        check verifyCredentials(self.accessKeyId, self.secretAccessKey);  
-
+        check verifyCredentials(self.accessKeyId, self.secretAccessKey);
         http:ClientConfiguration httpClientConfig = check config:constructHTTPClientConfig(config);
         httpClientConfig.http1Settings = {chunking: http:CHUNKING_NEVER};
-        self.amazonS3  = check new(baseURL, httpClientConfig); 
+        self.amazonS3 = check new (baseURL, httpClientConfig);
     }
 
     # Retrieves a list of all Amazon S3 buckets that the authenticated user of the request owns.
-    # 
+    #
     # + return - If success, a list of Bucket record, else an error
     @display {label: "List Buckets"}
-    remote isolated function listBuckets() returns @tainted Bucket[]|error {
+    remote isolated function listBuckets() returns Bucket[]|error {
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, SLASH, UNSIGNED_PAYLOAD,
-            requestHeaders);
+                requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(SLASH, requestHeaders);
         xml xmlPayload = check httpResponse.getXmlPayload();
-        if (httpResponse.statusCode == http:STATUS_OK) {
+        if httpResponse.statusCode == http:STATUS_OK {
             return getBucketsList(xmlPayload);
         }
         return error(xmlPayload.toString());
     }
 
     # Creates a bucket.
-    # 
+    #
     # + bucketName - A unique name for the bucket
     # + cannedACL - The access control list of the new bucket
     # + return - An error on failure or else `()`
     @display {label: "Create Bucket"}
     remote isolated function createBucket(@display {label: "Bucket Name"} string bucketName,
-                                    @display {label: "Access Control List"} CannedACL? cannedACL = ()) returns 
-                                    @tainted error? {
+            @display {label: "Access Control List"} CannedACL? cannedACL = ()) returns error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}/`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        if (cannedACL != ()) {
+        if cannedACL != () {
             requestHeaders[X_AMZ_ACL] = cannedACL.toString();
         }
-        if (self.region != DEFAULT_REGION) {
-            xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
-                                        <LocationConstraint>${self.region}</LocationConstraint> 
-                                </CreateBucketConfiguration>`;   
+        if self.region != DEFAULT_REGION {
+            xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        <LocationConstraint>${self.region}</LocationConstraint>
+                                </CreateBucketConfiguration>`;
             request.setXmlPayload(xmlPayload);
         }
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders, request);
+                requestHeaders, request);
         http:Response httpResponse = check self.amazonS3->put(requestURI, request);
         return handleHttpResponse(httpResponse);
     }
 
     # Retrieves the existing objects in a given bucket.
-    # 
+    #
     # + bucketName - The name of the bucket
     # + delimiter - A delimiter is a character you use to group keys
     # + encodingType - The encoding method to be applied to the response
@@ -105,38 +103,37 @@ public isolated client class Client {
     # + prefix - The prefix of the objects to be listed. If unspecified, all objects are listed
     # + startAfter - Object key from which to begin listing
     # + fetchOwner - Set to true, to retrieve the owner information in the response. By default the API does not return
-    #                the Owner information in the response
-    # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element 
-    #                       value is true), the response also includes the NextContinuationToken element. 
-    #                       To list the next set of objects, you can use the NextContinuationToken element in the next 
-    #                       request as the continuation-token
+    # the Owner information in the response
+    # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element
+    # value is true), the response also includes the NextContinuationToken element.
+    # To list the next set of objects, you can use the NextContinuationToken element in the next
+    # request as the continuation-token
     # + return - If success, list of S3 objects, else an error
     @display {label: "List Objects"}
     remote isolated function listObjects(@display {label: "Bucket Name"} string bucketName,
-                                @display {label: "Group Identifier"} string? delimiter = (),
-                                @display {label: "Encoding Type"} string?  encodingType = (),
-                                @display {label: "Maximum Number of Keys"} int? maxKeys = (),
-                                @display {label: "Required Object Prefix"} string? prefix = (),
-                                @display {label: "Object Key Starts From"} string? startAfter = (),
-                                @display {label: "Is Owner Information Required?"} boolean? fetchOwner = (),
-                                @display {label: "Next List Token"} string? continuationToken = ()) returns @tainted
+            @display {label: "Group Identifier"} string? delimiter = (),
+            @display {label: "Encoding Type"} string? encodingType = (),
+            @display {label: "Maximum Number of Keys"} int? maxKeys = (),
+            @display {label: "Required Object Prefix"} string? prefix = (),
+            @display {label: "Object Key Starts From"} string? startAfter = (),
+            @display {label: "Is Owner Information Required?"} boolean? fetchOwner = (),
+            @display {label: "Next List Token"} string? continuationToken = ()) returns
                                 @display {label: "List of Objects"} S3Object[]|error {
         map<string> queryParamsMap = {};
         string requestURI = string `/${bucketName}/`;
         string queryParamsStr = "?list-type=2";
         queryParamsMap["list-type"] = "2";
-        string queryParams = populateOptionalParameters(queryParamsMap, delimiter = delimiter, encodingType = 
-            encodingType, maxKeys = maxKeys, prefix = prefix, startAfter = startAfter, fetchOwner = fetchOwner,
-            continuationToken = continuationToken);
+        string queryParams = populateOptionalParameters(queryParamsMap, delimiter, encodingType, maxKeys, prefix, startAfter, fetchOwner,
+                continuationToken);
         queryParamsStr = string `${queryParamsStr}${queryParams}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders, queryParams = queryParamsMap);
+                requestHeaders, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
         xml xmlPayload = check httpResponse.getXmlPayload();
-        if (httpResponse.statusCode == http:STATUS_OK) {
+        if httpResponse.statusCode == http:STATUS_OK {
             return getS3ObjectsList(xmlPayload);
         }
         return error(xmlPayload.toString());
@@ -151,21 +148,21 @@ public isolated client class Client {
     # + return - If success, S3ObjectContent object, else an error
     @display {label: "Get Object"}
     remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
-                                @display {label: "Object Name"} string objectName,
-                                @display {label: "Object Retrieval Headers"} ObjectRetrievalHeaders?
-                                objectRetrievalHeaders = (), 
-                                @display {label: "Byte Array Size"} int? byteArraySize = ()) 
-                                returns @tainted @display {label: "Byte Stream"} stream<byte[], io:Error?>|error {
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Object Retrieval Headers"} ObjectRetrievalHeaders?
+                                objectRetrievalHeaders = (),
+            @display {label: "Byte Array Size"} int? byteArraySize = ())
+                                returns @display {label: "Byte Stream"} stream<byte[], io:Error?>|error {
         string requestURI = string `/${bucketName}/${objectName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
         // Add optional headers.
         populateGetObjectHeaders(requestHeaders, objectRetrievalHeaders);
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, GET, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders);
+                requestHeaders);
         http:Response httpResponse = check self.amazonS3->get(requestURI, requestHeaders);
-        if (httpResponse.statusCode == http:STATUS_OK || (httpResponse.statusCode == http:STATUS_PARTIAL_CONTENT && objectRetrievalHeaders?.range != ())) {
+        if httpResponse.statusCode == http:STATUS_OK || (httpResponse.statusCode == http:STATUS_PARTIAL_CONTENT && objectRetrievalHeaders?.range != ()) {
             if byteArraySize is int {
                 return httpResponse.getByteStream(byteArraySize);
             }
@@ -187,11 +184,11 @@ public isolated client class Client {
     # + return - An error on failure or else `()`
     @display {label: "Create Object"}
     remote isolated function createObject(@display {label: "Bucket Name"} string bucketName,
-                                    @display {label: "Object Name"} string objectName,
-                                    @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
-                                    @display {label: "Grant"} CannedACL? cannedACL = (),
-                                    @display {label: "Object Creation Headers"} ObjectCreationHeaders? objectCreationHeaders = (), 
-                                    @display {label: "User Metadata Headers"} map<string> userMetadataHeaders = {}) 
+            @display {label: "Object Name"} string objectName,
+            @display {label: "File Content"} string|xml|json|byte[]|stream<io:Block, io:Error?> payload,
+            @display {label: "Grant"} CannedACL? cannedACL = (),
+            @display {label: "Object Creation Headers"} ObjectCreationHeaders? objectCreationHeaders = (),
+            @display {label: "User Metadata Headers"} map<string> userMetadataHeaders = {})
                                     returns error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}/${objectName}`;
@@ -203,86 +200,86 @@ public isolated client class Client {
         } else {
             request.setPayload(payload);
         }
-        
+
         // Add optional headers.
         populateCreateObjectHeaders(requestHeaders, objectCreationHeaders);
 
         // Add user-defined metadata headers.
         populateUserMetadataHeaders(requestHeaders, userMetadataHeaders);
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders, request);
+                requestHeaders, request);
         http:Response httpResponse = check self.amazonS3->put(requestURI, request);
         return handleHttpResponse(httpResponse);
     }
 
     # Deletes an object.
-    # 
+    #
     # + bucketName - The name of the bucket
     # + objectName - The name of the object
     # + versionId - The specific version of the object to delete, if versioning is enabled
     # + return - An error on failure or else `()`
     @display {label: "Delete Object"}
     remote isolated function deleteObject(@display {label: "Bucket Name"} string bucketName,
-                                    @display {label: "Object Name"} string objectName,
-                                    @display {label: "Object Version"} string? versionId = ())
-                                    returns @tainted error? {
+            @display {label: "Object Name"} string objectName,
+            @display {label: "Object Version"} string? versionId = ())
+                                    returns error? {
         map<string> queryParamsMap = {};
         http:Request request = new;
         string queryParamsStr = "";
         string requestURI = string `/${bucketName}/${objectName}`;
 
         // Append query parameter(versionId).
-        if (versionId is string) {
+        if versionId is string {
             queryParamsStr = string `${queryParamsStr}?versionId=${versionId}`;
             queryParamsMap["versionId"] = versionId;
-        }    
+        }
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
+                UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = queryParamsMap);
         requestURI = string `${requestURI}${queryParamsStr}`;
         http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
         return handleHttpResponse(httpResponse);
-    }     
+    }
 
     # Deletes a bucket.
-    # 
+    #
     # + bucketName - The name of the bucket
     # + return - An error on failure or else `()`
     @display {label: "Delete Bucket"}
-    remote isolated function deleteBucket(@display {label: "Bucket Name"} string bucketName) returns @tainted error? {
+    remote isolated function deleteBucket(@display {label: "Bucket Name"} string bucketName) returns error? {
         http:Request request = new;
         string requestURI = string `/${bucketName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
-            UNSIGNED_PAYLOAD, requestHeaders, request);
+                UNSIGNED_PAYLOAD, requestHeaders, request);
         http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
         return handleHttpResponse(httpResponse);
     }
-    
+
     # Generates a presigned URL for the object.
     #
-    # + bucketName - The name of the bucket  
-    # + objectName - The name of the object  
-    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation) 
-    #            or the relevant headers for object retrieval or creation
-    # + expires - The time period for which the presigned URL is valid, in seconds  
-    # + partNo - The part number of the object, when uploading multipart objects  
+    # + bucketName - The name of the bucket
+    # + objectName - The name of the object
+    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation)
+    # or the relevant headers for object retrieval or creation
+    # + expires - The time period for which the presigned URL is valid, in seconds
+    # + partNo - The part number of the object, when uploading multipart objects
     # + uploadId - The upload ID of the multipart upload
     # + return - If successful, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
     remote isolated function createPresignedUrl(
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Name"} string objectName,
-            @display {label: "Object retrieval or creation indication with optional headers"} 
+            @display {label: "Object retrieval or creation indication with optional headers"}
                 ObjectAction|ObjectCreationHeaders|ObjectRetrievalHeaders action,
             @display {label: "Expiration Time"} int expires = 1800,
             @display {label: "Part Number"} int? partNo = (),
             @display {label: "Upload ID"} string? uploadId = ())
         returns string|error {
-        
+
         if expires < 0 {
             return error(EXPIRATION_TIME_ERROR_MSG);
         }
@@ -296,7 +293,7 @@ public isolated client class Client {
         [string, string] [amzDateStr, shortDateStr] = check generateDateString();
 
         map<string> requestHeaders = {
-            [HOST] : self.amazonHost
+            [HOST]: self.amazonHost
         };
 
         GET|PUT httpMethod;
@@ -336,16 +333,16 @@ public isolated client class Client {
         string canonicalRequest = string `${httpMethod}${"\n"}/${bucketName}${string `/${objectName}`}${"\n"}${
             canonicalQueryString}${"\n"}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${UNSIGNED_PAYLOAD}`;
         string stringToSign = generateStringToSign(amzDateStr, shortDateStr, self.region, canonicalRequest);
-        string signature = check constructPresignedUrlSignature(self.accessKeyId, self.secretAccessKey, shortDateStr, 
-            self.region, stringToSign);
+        string signature = check constructPresignedUrlSignature(self.accessKeyId, self.secretAccessKey, shortDateStr,
+                self.region, stringToSign);
         return string `${HTTPS}${self.amazonHost}/${bucketName}/${objectName}?${canonicalQueryString}&${X_AMZ_SIGNATURE
             }=${signature}`;
     }
 
     # Initiates a multipart upload and returns an upload ID.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
     # + cannedACL - The access control list of the new object
     # + multipartUploadHeaders - Optional headers for multipart uploads
     # + return - If success, the upload ID, else an error
@@ -364,7 +361,7 @@ public isolated client class Client {
         }
 
         http:Request request = new;
-        
+
         string requestURI = string `/${bucketName}/${objectName}`;
         string queryParamStr = string `?uploads`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
@@ -374,7 +371,7 @@ public isolated client class Client {
         populateMultipartUploadHeaders(requestHeaders, multipartUploadHeaders);
 
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders, request, queryParams = {"uploads": EMPTY_STRING});
+                requestHeaders, request, queryParams = {"uploads": EMPTY_STRING});
         requestURI = string `${requestURI}${queryParamStr}`;
         http:Response httpResponse = check self.amazonS3->post(requestURI, request);
 
@@ -385,14 +382,14 @@ public isolated client class Client {
             return error(XMLPayload.toString());
         }
     }
-    
+
     # Completes a multipart upload by assembling previously uploaded parts.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
-    # + payload - The file content that needed to be added to the bucket  
-    # + uploadId - The upload ID of the multipart upload  
-    # + partNumber - The part number of the object  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
+    # + payload - The file content that needed to be added to the bucket
+    # + uploadId - The upload ID of the multipart upload
+    # + partNumber - The part number of the object
     # + uploadPartHeaders - Optional headers for the upload
     # + return - An error on failure or else `()`
     remote isolated function uploadPart(
@@ -426,9 +423,9 @@ public isolated client class Client {
         } else {
             request.setPayload(payload);
         }
-        
+
         check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, PUT, requestURI, UNSIGNED_PAYLOAD,
-            requestHeaders, request, queryParams = {"partNumber": partNumber.toString(), "uploadId": uploadId});
+                requestHeaders, request, queryParams = {"partNumber": partNumber.toString(), "uploadId": uploadId});
         requestURI = string `${requestURI}${queryParamStr}`;
 
         http:Response httpResponse = check self.amazonS3->put(requestURI, request);
@@ -443,9 +440,9 @@ public isolated client class Client {
 
     # Completes a multipart upload by assembling previously uploaded parts.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
-    # + uploadId - The upload ID of the multipart upload  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
+    # + uploadId - The upload ID of the multipart upload
     # + completedParts - An array containing the part number and ETag of each uploaded part
     # + return - An error on failure or else `()`
     remote isolated function completeMultipartUpload(
@@ -454,7 +451,7 @@ public isolated client class Client {
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Completed Parts"} CompletedPart[] completedParts)
             returns error? {
-        
+
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
         }
@@ -469,8 +466,8 @@ public isolated client class Client {
 
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
-        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI, 
-            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, POST, requestURI,
+                UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
         requestURI = string `${requestURI}${queryParamStr}`;
 
         string payload = string `<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`;
@@ -487,7 +484,7 @@ public isolated client class Client {
     # Aborts a multipart upload.
     #
     # + objectName - The name of the object
-    # + bucketName - The name of the bucket 
+    # + bucketName - The name of the bucket
     # + uploadId - The upload ID of the multipart upload
     # + return - An error on failure or else `()`
     remote isolated function abortMultipartUpload(
@@ -495,7 +492,7 @@ public isolated client class Client {
             @display {label: "Bucket Name"} string bucketName,
             @display {label: "Upload ID"} string uploadId)
             returns error? {
-        
+
         if objectName == EMPTY_STRING {
             return error(EMPTY_OBJECT_NAME_ERROR_MSG);
         }
@@ -508,9 +505,9 @@ public isolated client class Client {
         string requestURI = string `/${bucketName}/${objectName}`;
         map<string> requestHeaders = setDefaultHeaders(self.amazonHost);
 
-        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI, 
-            UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
-        
+        check generateSignature(self.accessKeyId, self.secretAccessKey, self.region, DELETE, requestURI,
+                UNSIGNED_PAYLOAD, requestHeaders, request, queryParams = {"uploadId": uploadId});
+
         requestURI = string `${requestURI}?uploadId=${uploadId}`;
 
         http:Response httpResponse = check self.amazonS3->delete(requestURI, request);
@@ -530,10 +527,10 @@ isolated function setDefaultHeaders(string amazonHost) returns map<string> {
 #
 # + accessKeyId - The access key of the Amazon S3 account
 # + secretAccessKey - The secret access key of the Amazon S3 account
-# 
+#
 # + return - An error on failure or else `()`
 isolated function verifyCredentials(string accessKeyId, string secretAccessKey) returns error? {
-    if ((accessKeyId == "") || (secretAccessKey == "")) {
+    if accessKeyId.trim() == "" || secretAccessKey.trim() == "" {
         return error(EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG);
     }
 }

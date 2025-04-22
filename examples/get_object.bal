@@ -13,15 +13,15 @@ s3:ConnectionConfig amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = check new (amazonS3Config);
+final s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() returns error? {
     stream<byte[], io:Error?>|error getObjectResponse = amazonS3Client->getObject(bucketName, "test.txt");
-    if (getObjectResponse is stream<byte[], io:Error?>) {
+    if getObjectResponse is error {
+        log:printError("Error occurred while getting object", getObjectResponse);
+    } else {
         error? err = getObjectResponse.forEach(isolated function(byte[] res) {
             error? writeRes = io:fileWriteBytes("./resources/test.txt", res, io:APPEND);
         });
-    } else {
-        log:printError("Error: " + getObjectResponse.toString());
     }
 }

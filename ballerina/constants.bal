@@ -72,11 +72,11 @@ const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";
 
 # Error messages.
 const string EMPTY_VALUES_FOR_CREDENTIALS_ERROR_MSG = "Empty values set for accessKeyId or secretAccessKey credential";
-const string DATE_STRING_GENERATION_ERROR_MSG = "Error occured while generating date strings.";
-const string CANONICAL_URI_GENERATION_ERROR_MSG = "Error occured while generating canonical URI.";
-const string CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG = "Error occured while generating canonical query string.";
+const string DATE_STRING_GENERATION_ERROR_MSG = "Error occurred while generating date strings.";
+const string CANONICAL_URI_GENERATION_ERROR_MSG = "Error occurred while generating canonical URI.";
+const string CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG = "Error occurred while generating canonical query string.";
 const string XML_EXTRACTION_ERROR_MSG = "Error occurred while accessing the XML payload from the http response.";
-const string BINARY_CONTENT_EXTRACTION_ERROR_MSG = "Error occured while accessing binary content from the http response";
+const string BINARY_CONTENT_EXTRACTION_ERROR_MSG = "Error occurred while accessing binary content from the http response";
 const EXPIRATION_TIME_ERROR_MSG = "Invalid expiration time. Expiration time should be a positive integer.";
 const EMPTY_OBJECT_NAME_ERROR_MSG = "Invalid object name. Object name should not be empty.";
 const EMPTY_BUCKET_NAME_ERROR_MSG = "Invalid bucket name. Bucket name should not be empty.";

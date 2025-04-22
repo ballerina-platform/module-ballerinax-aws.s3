@@ -11,16 +11,16 @@ s3:ConnectionConfig amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = check new (amazonS3Config);
+final s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     var listBucketResponse = amazonS3Client->listBuckets();
-    if (listBucketResponse is s3:Bucket[]) {
+    if listBucketResponse is s3:Bucket[] {
         log:printInfo("Listing all buckets: ");
         foreach var bucket in listBucketResponse {
             log:printInfo("Bucket Name: " + bucket.name);
         }
     } else {
-        log:printError("Error: " + listBucketResponse.toString());
+        log:printError("Error occurred while listing buckets", listBucketResponse);
     }
 }

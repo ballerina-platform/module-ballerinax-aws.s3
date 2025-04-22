@@ -12,12 +12,12 @@ s3:ConnectionConfig amazonS3Config = {
     region: region
 };
 
-s3:Client amazonS3Client = check new (amazonS3Config);
+final s3:Client amazonS3Client = check new (amazonS3Config);
 
 public function main() {
     error? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
-    if (deleteObjectResponse is error) {
-        log:printError("Error: " + deleteObjectResponse.toString());
+    if deleteObjectResponse is error {
+        log:printError("Error occurred while deleting object", deleteObjectResponse);
     } else {
         log:printInfo("Successfully deleted object");
     }
