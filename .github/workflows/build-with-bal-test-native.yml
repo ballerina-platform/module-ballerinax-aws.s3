@@ -1,8 +1,9 @@
 name: GraalVM Check
 
 on:
-  schedule:
-    - cron: "30 18 * * *"
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
 concurrency:
