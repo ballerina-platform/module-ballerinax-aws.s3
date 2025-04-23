@@ -19,22 +19,21 @@ import ballerina/crypto;
 import ballerina/http;
 import ballerina/jballerina.java;
 import ballerina/lang.array;
-import ballerina/regex;
 import ballerina/time;
 import ballerina/url;
 
 isolated function generateSignature(string accessKeyId, string secretAccessKey, string region, string httpVerb, string
                             requestURI, string payload, map<string> headers, http:Request? request = (),
-                            map<string>? queryParams = ()) returns @tainted error? {
+        map<string>? queryParams = ()) returns error? {
     string canonicalRequest = httpVerb;
     string canonicalQueryString = "";
     string requestPayload = "";
     map<string> requestHeaders = headers;
-    [string, string][amzDateStr, shortDateStr] = ["",""];
+    [string, string] [amzDateStr, shortDateStr] = ["", ""];
 
     // Generate date strings and put it in the headers map to generate the signature.
     [string, string]|error dateStrings = generateDateString();
-    if (dateStrings is error) {
+    if dateStrings is error {
         return error(DATE_STRING_GENERATION_ERROR_MSG, dateStrings);
     } else {
         [amzDateStr, shortDateStr] = dateStrings;
@@ -42,51 +41,49 @@ isolated function generateSignature(string accessKeyId, string secretAccessKey, 
     }
 
     // Get canonical URI.
-    var canonicalURI = getCanonicalURI(requestURI);
-    if (canonicalURI is string) {
-        // Generate canonical query string.
-        if (queryParams is map<string> && queryParams.length() > 0) {
-            string|error canonicalQuery = generateCanonicalQueryString(queryParams);
-            if (canonicalQuery is string) {
-                canonicalQueryString = canonicalQuery;
-            } else {
-                return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
-            }
-        }
-
-        // Encode request payload.
-        if (payload == UNSIGNED_PAYLOAD) {
-            requestPayload = payload;
-        } else if (request is http:Request) {
-            requestPayload = array:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
-            string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii()); 
-            requestHeaders[CONTENT_TYPE] = contentType;
-        }
-
-        // Generete canonical and signed headers.
-        [string, string] [canonicalHeaders,signedHeaders] = generateCanonicalHeaders(headers, request);
-
-        // Generate canonical request.
-        canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
-        canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
-
-        // Generate string to sign.
-        string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
-        // Construct authorization signature string.
-        string authHeader =  check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, 
-            signedHeaders, stringToSign);
-        // Set authorization header.
-        if (request is http:Request) {
-            request.setHeader(AUTHORIZATION, authHeader);
-        } else {
-            requestHeaders[AUTHORIZATION] = authHeader; 
-        }
-    } else {
+    string|error canonicalURI = getCanonicalURI(requestURI);
+    if canonicalURI is error {
         return error(CANONICAL_URI_GENERATION_ERROR_MSG, canonicalURI);
+    }
+
+    // Generate canonical query string.
+    if queryParams is map<string> && queryParams.length() > 0 {
+        string|error canonicalQuery = generateCanonicalQueryString(queryParams);
+        if canonicalQuery is error {
+            return error(CANONICAL_QUERY_STRING_GENERATION_ERROR_MSG, canonicalQuery);
+        }
+        canonicalQueryString = canonicalQuery;
+    }
+    // Encode request payload.
+    if payload == UNSIGNED_PAYLOAD {
+        requestPayload = payload;
+    } else if request is http:Request {
+        requestPayload = array:toBase16(crypto:hashSha256(payload.toBytes())).toLowerAscii();
+        string contentType = check request.getHeader(CONTENT_TYPE.toLowerAscii());
+        requestHeaders[CONTENT_TYPE] = contentType;
+    }
+
+    // Generate canonical and signed headers.
+    [string, string] [canonicalHeaders, signedHeaders] = generateCanonicalHeaders(headers, request);
+
+    // Generate canonical request.
+    canonicalRequest = string `${canonicalRequest}${"\n"}${canonicalURI}${"\n"}${canonicalQueryString}${"\n"}`;
+    canonicalRequest = string `${canonicalRequest}${canonicalHeaders}${"\n"}${signedHeaders}${"\n"}${requestPayload}`;
+
+    // Generate string to sign.
+    string stringToSign = generateStringToSign(amzDateStr, shortDateStr, region, canonicalRequest);
+    // Construct authorization signature string.
+    string authHeader = check constructAuthSignature(accessKeyId, secretAccessKey, shortDateStr, region, signedHeaders,
+            stringToSign);
+    // Set authorization header.
+    if request is http:Request {
+        request.setHeader(AUTHORIZATION, authHeader);
+    } else {
+        requestHeaders[AUTHORIZATION] = authHeader;
     }
 }
 
-# Funtion to generate the date strings.
+# Function to generate the date strings.
 #
 # + return - amzDate string and short date string.
 isolated function generateDateString() returns [string, string]|error {
@@ -97,7 +94,7 @@ isolated function generateDateString() returns [string, string]|error {
 }
 
 isolated function utcToString(time:Utc utc, string pattern) returns string|error {
-    [int, decimal][epochSeconds, lastSecondFraction] = utc;
+    [int, decimal] [epochSeconds, lastSecondFraction] = utc;
     int nanoAdjustments = (<int>lastSecondFraction * 1000000000);
     var instant = ofEpochSecond(epochSeconds, nanoAdjustments);
     var zoneId = getZoneId(java:fromString("Z"));
@@ -116,7 +113,7 @@ isolated function utcToString(time:Utc utc, string pattern) returns string|error
 #
 # + return - String to sign.
 isolated function generateStringToSign(string amzDateStr, string shortDateStr, string region, string canonicalRequest)
-                            returns string{
+                            returns string {
     //Start creating the string to sign
     string stringToSign = string `${AWS4_HMAC_SHA256}${"\n"}${amzDateStr}${"\n"}${shortDateStr}/${region}/${SERVICE_NAME}/${TERMINATION_STRING}${"\n"}${array:toBase16(crypto:hashSha256(canonicalRequest.toBytes())).toLowerAscii()}`;
     return stringToSign;
@@ -130,7 +127,7 @@ isolated function generateStringToSign(string amzDateStr, string shortDateStr, s
 # + return - Return encoded request URI.
 isolated function getCanonicalURI(string requestURI) returns string|error {
     string value = check url:encode(requestURI, UTF_8);
-    return regex:replaceAll(value, ENCODED_SLASH, SLASH);
+    return re `${ENCODED_SLASH}`.replaceAll(value, SLASH);
 }
 
 # Function to generate canonical query string.
@@ -142,18 +139,18 @@ isolated function generateCanonicalQueryString(map<string> queryParams) returns 
     string canonicalQueryString = "";
     string key;
     string value;
-    string encodedKeyValue = EMPTY_STRING;
-    string encodedValue = EMPTY_STRING;
+    string encodedKeyValue;
+    string encodedValue;
     string[] queryParamsKeys = queryParams.keys();
     string[] sortedKeys = sort(queryParamsKeys);
     int index = 0;
-    while (index < sortedKeys.length()) {
+    while index < sortedKeys.length() {
         key = sortedKeys[index];
         string encodedKey = check url:encode(key, UTF_8);
-        encodedKeyValue = regex:replaceAll(encodedKey, ENCODED_SLASH, SLASH);
-        value = <string>queryParams[key];
+        encodedKeyValue = re `${ENCODED_SLASH}`.replaceAll(encodedKey, SLASH);
+        value = check queryParams[key].ensureType();
         string encodedVal = check url:encode(value, UTF_8);
-        encodedValue = regex:replaceAll(encodedVal, ENCODED_SLASH, SLASH);
+        encodedValue = re `${ENCODED_SLASH}`.replaceAll(encodedVal, SLASH);
         canonicalQueryString = string `${canonicalQueryString}${encodedKeyValue}=${encodedValue}&`;
         index = index + 1;
     }
@@ -166,19 +163,18 @@ isolated function generateCanonicalQueryString(map<string> queryParams) returns 
 # + headers - Headers map.
 # + request - HTTP request.
 # + return - Return canonical and signed headers.
-isolated function generateCanonicalHeaders(map<string> headers, http:Request? request) returns @tainted[string, string] {
+isolated function generateCanonicalHeaders(map<string> headers, http:Request? request) returns [string, string] {
     string canonicalHeaders = "";
     string signedHeaders = "";
     string key;
     string value;
-    string[] headerKeys = headers.keys();
-    string[] sortedHeaderKeys = sort(headerKeys);
+    string[] sortedHeaderKeys = sort(headers.keys());
     int index = 0;
-    while (index < sortedHeaderKeys.length()) {
+    while index < sortedHeaderKeys.length() {
         key = sortedHeaderKeys[index];
-        value = <string>headers[key];
-        if (request is http:Request) {
-            request.setHeader(<@untainted>key, value);
+        value = headers.get(key);
+        if request is http:Request {
+            request.setHeader(key, value);
         }
         canonicalHeaders = string `${canonicalHeaders}${key.toLowerAscii()}:${value}${"\n"}`;
         signedHeaders = string `${signedHeaders}${key.toLowerAscii()};`;
@@ -202,7 +198,7 @@ isolated function generateSigningKey(string secretAccessKey, string shortDateStr
     return crypto:hmacSha256(TERMINATION_STRING.toBytes(), serviceKey);
 }
 
-# Funtion to construct authorization header string.
+# Function to construct authorization header string.
 #
 # + accessKeyId - Value of the access key.
 # + secretAccessKey - Value of the secret key.
@@ -223,13 +219,13 @@ isolated function constructAuthSignature(string accessKeyId, string secretAccess
 
 # Function to construct signature for presigned URLs.
 #
-# + accessKeyId - Value of the access key  
-# + secretAccessKey - Value of the secret key  
-# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format  
-# + region - Endpoint region  
+# + accessKeyId - Value of the access key
+# + secretAccessKey - Value of the secret key
+# + shortDateStr - The string representation of the current date in 'yyyyMMdd' format
+# + region - Endpoint region
 # + stringToSign - String including information such as the HTTP method, resource path, query parameters, and headers
 # + return - Signature used for authentication
-isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr, 
+isolated function constructPresignedUrlSignature(string accessKeyId, string secretAccessKey, string shortDateStr,
         string region, string stringToSign) returns string|error {
     byte[] signingKey = check generateSigningKey(secretAccessKey, shortDateStr, region);
     string encodedStr = array:toBase16(check crypto:hmacSha256(stringToSign.toBytes(), signingKey));
@@ -242,31 +238,32 @@ isolated function constructPresignedUrlSignature(string accessKeyId, string secr
 # + objectCreationHeaders - Optional headers for createObject function.
 isolated function populateCreateObjectHeaders(map<string> requestHeaders, ObjectCreationHeaders?
                                                 objectCreationHeaders) {
-    if(objectCreationHeaders != ()) {
-        if (objectCreationHeaders?.cacheControl != ()) {
-            requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders?.cacheControl;
-        }
-        if (objectCreationHeaders?.contentDisposition != ()) {
-            requestHeaders[CONTENT_DISPOSITION] = <string>objectCreationHeaders?.contentDisposition;
-        }
-        if (objectCreationHeaders?.contentEncoding != ()) {
-            requestHeaders[CONTENT_ENCODING] = <string>objectCreationHeaders?.contentEncoding;
-        }
-        if (objectCreationHeaders?.contentLength != ()) {
-            requestHeaders[CONTENT_LENGTH] = <string>objectCreationHeaders?.contentLength;
-        }
-        if (objectCreationHeaders?.contentMD5 != ()) {
-            requestHeaders[CONTENT_MD5] = <string>objectCreationHeaders?.contentMD5;
-        }
-        if (objectCreationHeaders?.expect != ()) {
-            requestHeaders[EXPECT] = <string>objectCreationHeaders?.expect;
-        }
-        if (objectCreationHeaders?.expires != ()) {
-            requestHeaders[EXPIRES] = <string>objectCreationHeaders?.expires;
-        }
-        if (objectCreationHeaders?.contentType != ()) {
-            requestHeaders[CONTENT_TYPE] = <string>objectCreationHeaders?.contentType;
-        }
+    if objectCreationHeaders == () {
+        return;
+    }
+    if objectCreationHeaders?.cacheControl != () {
+        requestHeaders[CACHE_CONTROL] = <string>objectCreationHeaders?.cacheControl;
+    }
+    if objectCreationHeaders?.contentDisposition != () {
+        requestHeaders[CONTENT_DISPOSITION] = <string>objectCreationHeaders?.contentDisposition;
+    }
+    if objectCreationHeaders?.contentEncoding != () {
+        requestHeaders[CONTENT_ENCODING] = <string>objectCreationHeaders?.contentEncoding;
+    }
+    if objectCreationHeaders?.contentLength != () {
+        requestHeaders[CONTENT_LENGTH] = <string>objectCreationHeaders?.contentLength;
+    }
+    if objectCreationHeaders?.contentMD5 != () {
+        requestHeaders[CONTENT_MD5] = <string>objectCreationHeaders?.contentMD5;
+    }
+    if objectCreationHeaders?.expect != () {
+        requestHeaders[EXPECT] = <string>objectCreationHeaders?.expect;
+    }
+    if objectCreationHeaders?.expires != () {
+        requestHeaders[EXPIRES] = <string>objectCreationHeaders?.expires;
+    }
+    if objectCreationHeaders?.contentType != () {
+        requestHeaders[CONTENT_TYPE] = <string>objectCreationHeaders?.contentType;
     }
 }
 
@@ -274,7 +271,7 @@ isolated function populateCreateObjectHeaders(map<string> requestHeaders, Object
 #
 # + requestHeaders - Request headers map.
 # + userMetadataHeaders - Map containing user-defined metadata.
-isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders){
+isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<string> userMetadataHeaders) {
     foreach string metadataKey in userMetadataHeaders.keys() {
         requestHeaders["x-amz-meta-" + metadataKey.toLowerAscii()] = userMetadataHeaders[metadataKey] ?: "";
     }
@@ -285,68 +282,69 @@ isolated function populateUserMetadataHeaders(map<string> requestHeaders, map<st
 # + requestHeaders - Request headers map.
 # + objectRetrievalHeaders - Optional headers for getObject function.
 isolated function populateGetObjectHeaders(map<string> requestHeaders, ObjectRetrievalHeaders? objectRetrievalHeaders) {
-    if(objectRetrievalHeaders != ()) {
-        if (objectRetrievalHeaders?.modifiedSince != ()) {
-            requestHeaders[IF_MODIFIED_SINCE] = <string>objectRetrievalHeaders?.modifiedSince;
-        }
-        if (objectRetrievalHeaders?.unModifiedSince != ()) {
-            requestHeaders[IF_UNMODIFIED_SINCE] = <string>objectRetrievalHeaders?.unModifiedSince;
-        }
-        if (objectRetrievalHeaders?.ifMatch != ()) {
-            requestHeaders[IF_MATCH] = <string>objectRetrievalHeaders?.ifMatch;
-        }
-        if (objectRetrievalHeaders?.ifNoneMatch != ()) {
-            requestHeaders[IF_NONE_MATCH] = <string>objectRetrievalHeaders?.ifNoneMatch;
-        }
-        if (objectRetrievalHeaders?.range != ()) {
-            requestHeaders[RANGE] = <string>objectRetrievalHeaders?.range;
-        }
+    if objectRetrievalHeaders == () {
+        return;
+    }
+    if objectRetrievalHeaders?.modifiedSince != () {
+        requestHeaders[IF_MODIFIED_SINCE] = <string>objectRetrievalHeaders?.modifiedSince;
+    }
+    if objectRetrievalHeaders?.unModifiedSince != () {
+        requestHeaders[IF_UNMODIFIED_SINCE] = <string>objectRetrievalHeaders?.unModifiedSince;
+    }
+    if objectRetrievalHeaders?.ifMatch != () {
+        requestHeaders[IF_MATCH] = <string>objectRetrievalHeaders?.ifMatch;
+    }
+    if objectRetrievalHeaders?.ifNoneMatch != () {
+        requestHeaders[IF_NONE_MATCH] = <string>objectRetrievalHeaders?.ifNoneMatch;
+    }
+    if objectRetrievalHeaders?.range != () {
+        requestHeaders[RANGE] = <string>objectRetrievalHeaders?.range;
     }
 }
 
 isolated function populateOptionalParameters(map<string> queryParamsMap, string? delimiter = (), string? encodingType
-                                                = (), int? maxKeys = (), string? prefix = (), string? startAfter = (), 
-                                                boolean? fetchOwner = (), string? continuationToken = ()) returns 
+                                                = (), int? maxKeys = (), string? prefix = (), string? startAfter = (),
+        boolean? fetchOwner = (), string? continuationToken = ()) returns
                                                 string {
     string queryParamsStr = "";
     // Append query parameter(delimiter).
-        if (delimiter is string) {
+    if delimiter is string {
         queryParamsStr = string `${queryParamsStr}&delimiter=${delimiter}`;
         queryParamsMap["delimiter"] = delimiter;
     }
 
     // Append query parameter(encoding-type).
-    if (encodingType is string) {
+    if encodingType is string {
         queryParamsStr = string `${queryParamsStr}&encoding-type=${encodingType}`;
         queryParamsMap["encoding-type"] = encodingType;
     }
 
     // Append query parameter(max-keys).
-    if (maxKeys is int) {
+    if maxKeys is int {
         queryParamsStr = string `${queryParamsStr}&max-keys=${maxKeys}`;
         queryParamsMap["max-keys"] = maxKeys.toString();
     }
 
     // Append query parameter(prefix).
-    if (prefix is string) {
+    if prefix is string {
         queryParamsStr = string `${queryParamsStr}&prefix=${prefix}`;
         queryParamsMap["prefix"] = prefix;
     }
 
     // Append query parameter(startAfter).
-    if (startAfter is string) {
+    if startAfter is string {
         queryParamsStr = string `${queryParamsStr}start-after=${startAfter}`;
         queryParamsMap["start-after"] = startAfter;
     }
 
     // Append query parameter(fetch-owner).
-    if (fetchOwner is boolean) {
+    if fetchOwner is boolean {
         queryParamsStr = string `${queryParamsStr}&fetch-owner=${fetchOwner}`;
         queryParamsMap["fetch-owner"] = fetchOwner.toString();
     }
 
     // Append query parameter(continuation-token).
-    if (continuationToken is string) {
+    if continuationToken is string {
         queryParamsStr = string `${queryParamsStr}&continuation-token=${continuationToken}`;
         queryParamsMap["continuation-token"] = continuationToken;
     }
@@ -356,7 +354,7 @@ isolated function populateOptionalParameters(map<string> queryParamsMap, string?
 isolated function populateMultipartUploadHeaders(
         map<string> requestHeaders,
         MultipartUploadHeaders? multipartUploadHeaders) {
-    if multipartUploadHeaders is () {
+    if multipartUploadHeaders == () {
         return;
     }
     string? cacheControl = multipartUploadHeaders?.cacheControl;
@@ -387,7 +385,7 @@ isolated function populateMultipartUploadHeaders(
 
 isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPartHeaders? uploadPartHeaders) {
 
-    if uploadPartHeaders is () {
+    if uploadPartHeaders == () {
         return;
     }
     string? contentMD5 = uploadPartHeaders?.contentMD5;
@@ -400,9 +398,9 @@ isolated function populateUploadPartHeaders(map<string> requestHeaders, UploadPa
     }
 }
 
-isolated function handleHttpResponse(http:Response httpResponse) returns @tainted error? {
+isolated function handleHttpResponse(http:Response httpResponse) returns error? {
     int statusCode = httpResponse.statusCode;
-    if (statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT) {
+    if statusCode != http:STATUS_OK && statusCode != http:STATUS_NO_CONTENT {
         xml xmlPayload = check httpResponse.getXmlPayload();
         return error(xmlPayload.toString());
     }
