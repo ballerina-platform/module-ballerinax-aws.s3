@@ -40,8 +40,7 @@ public isolated client class Client {
     public isolated function init(ConnectionConfig config) returns error? {
         string? region = config?.region;
         self.region = region is string ? region : DEFAULT_REGION;
-        string host = string `${SERVICE_NAME}.${self.region}`;
-        self.amazonHost = self.region != DEFAULT_REGION ? re `${SERVICE_NAME}`.replace(AMAZON_AWS_HOST, host) : AMAZON_AWS_HOST;
+        self.amazonHost = self.region == DEFAULT_REGION ? AMAZON_AWS_HOST : SERVICE_NAME + "." + self.region +  "." + AWS_DOMAIN_SUFFIX;        
         string baseURL = string `https://${self.amazonHost}`;
         self.accessKeyId = config.accessKeyId;
         self.secretAccessKey = config.secretAccessKey;
