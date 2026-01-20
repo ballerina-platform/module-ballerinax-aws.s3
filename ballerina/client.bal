@@ -100,7 +100,7 @@ public isolated client class Client {
     @display {label: "Put Object"}
     remote isolated function putObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            @display {label: "Content"} anydata content,
+            @display {label: "Content"} ContentType content,
             *PutObjectConfig config) returns Error? {
         byte[] converted = toByteArray(content);
         check nativePutObjectWithContent(self, bucketName, objectKey, converted, config);
@@ -133,7 +133,7 @@ public isolated client class Client {
             @display {label: "Object Key"} string objectKey,
             *GetObjectConfig config) 
             returns @display {label: "Byte Stream"} stream<byte[], error?>|Error {
-        S3StreamResult streamImpl = check nativeGetObject(self, bucketName, objectKey, config);
+        StreamIterator streamImpl = check nativeGetObject(self, bucketName, objectKey, config);
         return new stream<byte[], Error?>(streamImpl);
     }
 
@@ -149,7 +149,7 @@ public isolated client class Client {
     @display {label: "Get Object"}
     remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            @display {label: "Target Type"} typedesc<anydata> targetType = <>,
+            @display {label: "Target Type"} typedesc<ContentType> targetType = <>,
             *GetObjectConfig config) 
             returns @display {label: "Content"} targetType|Error = @java:Method {
         name: "getObjectWithType",
@@ -162,7 +162,7 @@ public isolated client class Client {
     # + bytes - The byte array to convert
     # + targetType - The target type descriptor
     # + return - Converted value or Error
-    isolated function getObjectInternal(byte[] bytes, typedesc<anydata> targetType) returns anydata|Error {
+    isolated function getObjectInternal(byte[] bytes, typedesc<ContentType> targetType) returns ContentType|Error {
         do {
             if targetType is typedesc<byte[]> {
                 return bytes;
@@ -171,16 +171,15 @@ public isolated client class Client {
             } else if targetType is typedesc<json> {
                 string stringValue = check string:fromBytes(bytes);
                 return check stringValue.fromJsonStringWithType(targetType);
-            } else if targetType is typedesc<xml> {
+            } else {
                 string stringValue = check string:fromBytes(bytes);
                 return check xml:fromString(stringValue);
-            } else {
-                return bytes;
             }
         } on fail error err {
             return error Error("Failed to convert object to target type: " + err.message(), err);
         }
     }
+
 
     # Deletes an S3 object from an S3 bucket.
     #
@@ -307,7 +306,7 @@ public isolated client class Client {
             @display {label: "Object Key"} string objectKey,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
-            @display {label: "Content"} anydata content,
+            @display {label: "Content"} ContentType content,
             *UploadPartConfig config)
             returns @display {label: "ETag"} string|Error {
         byte[] converted = toByteArray(content);
@@ -329,7 +328,7 @@ public isolated client class Client {
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
             @display {label: "Content Stream"} stream<byte[], error?> contentStream,
-            *UploadPartConfig config)
+            *UploadStreamPartConfig config)
             returns @display {label: "ETag"} string|Error = @java:Method {
         name: "uploadPartWithStream",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
@@ -384,7 +383,7 @@ isolated function nativePutObjectWithContent(Client clientObj, string bucket, st
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 
-isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns S3StreamResult|Error = @java:Method {
+isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns StreamIterator|Error = @java:Method {
     name: "getObject",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;

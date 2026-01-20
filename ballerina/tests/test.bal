@@ -325,7 +325,7 @@ function testPutObjectAsStreamWithMetadata() returns error? {
     PutObjectConfig putConfig = {metadata: metadata};
     check s3Client->putObject(testBucketName, objectKey, fileContent, putConfig);
     
-    // Verify metadata via presigned URL (AWS returns headers in lowercase)
+    // Verify metadata via presigned URL
     PresignedUrlConfig urlConfig = {expirationMinutes: 60, httpMethod: "GET"};
     string url = check s3Client->createPresignedUrl(testBucketName, objectKey, urlConfig);
     http:Client httpClient = check new (url);
@@ -396,21 +396,28 @@ function testPutObjectAsStreamLargeFile() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testPutObjectAsStreamDirect() returns error? {
-    string objectKey = "test_put_object_as_stream_direct.txt";
-    string tempFilePath = "./tests/resources/temp_stream_direct_file.txt";
-    string streamContent = "This is content uploaded directly via putObjectAsStream method";
+    string objectKey = "testputobjectasstreamdirect.txt";
+    string tempFilePath = "./tests/resources/tempstreamdirectfile.txt";
+    string streamContent = "This is content uploaded directly via putObjectAsStream method.";
     
     // Create a temporary file to stream from
     check io:fileWriteString(tempFilePath, streamContent);
     
+    // Calculate content length
+    int contentLength = streamContent.toBytes().length();
+
     // Open file as a byte block stream
     stream<io:Block, io:Error?> fileStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload using putObjectAsStream directly
-    check s3Client->putObjectAsStream(testBucketName, objectKey, fileStream);
+    // Upload using putObjectAsStream with required contentLength
+    PutObjectStreamConfig config = {
+        contentLength: contentLength
+    };
+    check s3Client->putObjectAsStream(testBucketName, objectKey, fileStream, config);
     
     // Verify by downloading and checking content
     stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+
     byte[] fullContent = [];
     check from byte[] bytes in response
         do {
@@ -428,27 +435,37 @@ function testPutObjectAsStreamDirect() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testPutObjectAsStreamDirectWithMetadata() returns error? {
-    string objectKey = "test_put_object_as_stream_direct_meta.txt";
-    string tempFilePath = "./tests/resources/temp_stream_direct_meta_file.txt";
-    string streamContent = "Stream content with metadata via putObjectAsStream";
+    string objectKey = "testputobjectasstreamdirectmeta.txt";
+    string tempFilePath = "./tests/resources/tempstreamdirectmetafile.txt";
+    string streamContent = "Stream content with metadata via putObjectAsStream.";
     
     // Create a temporary file to stream from
     check io:fileWriteString(tempFilePath, streamContent);
     
+    // Calculate content length (REQUIRED)
+    int contentLength = streamContent.toBytes().length();
+
     // Open file as a byte block stream
     stream<io:Block, io:Error?> fileStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload with metadata using putObjectAsStream directly
+    // Upload with metadata using putObjectAsStream with required contentLength
     map<string> metadata = {
         "streammethod": "direct",
         "testtype": "putObjectAsStream"
     };
-    PutObjectConfig putConfig = {metadata: metadata};
+    PutObjectStreamConfig putConfig = {
+        contentLength: contentLength,  // REQUIRED
+        metadata: metadata
+    };
     check s3Client->putObjectAsStream(testBucketName, objectKey, fileStream, putConfig);
     
     // Verify metadata via presigned URL
-    PresignedUrlConfig urlConfig = {expirationMinutes: 60, httpMethod: "GET"};
+    PresignedUrlConfig urlConfig = {
+        expirationMinutes: 60,
+        httpMethod: "GET"
+    };
     string url = check s3Client->createPresignedUrl(testBucketName, objectKey, urlConfig);
+
     http:Client httpClient = check new (url);
     http:Response httpResponse = check httpClient->get("", {"Range": "bytes=0-0"});
     
@@ -467,17 +484,17 @@ function testPutObjectAsStreamDirectWithMetadata() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testUploadPartAsStreamDirect() returns error? {
-    string objectKey = "test_upload_part_as_stream_direct.txt";
-    string tempFilePath = "./tests/resources/temp_upload_part_stream.txt";
+    string objectKey = "testuploadpartasstreamdirect.txt";
+    string tempFilePath = "./tests/resources/tempuploadpartstream.txt";
     
     // Create content for the part (must be at least 5MB for non-last part in multipart)
     // For testing, we'll use this as the only part so size doesn't matter
     string partContent = "This is part content uploaded via uploadPartAsStream method directly.";
     check io:fileWriteString(tempFilePath, partContent);
     
-    // Calculate content length before streaming
+    // Calculate content length (REQUIRED)
     int contentLength = partContent.toBytes().length();
-    
+
     // Create multipart upload
     string streamUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(streamUploadId.length() > 0, "Failed to create multipart upload");
@@ -485,9 +502,14 @@ function testUploadPartAsStreamDirect() returns error? {
     // Open file as a byte block stream
     stream<io:Block, io:Error?> fileStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload part using uploadPartAsStream directly with contentLength as named argument
-    string etag = check s3Client->uploadPartAsStream(testBucketName, objectKey, streamUploadId, 1, fileStream, 
-        contentLength = contentLength
+    // Upload part using uploadPartAsStream with contentLength (REQUIRED)
+    string etag = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        streamUploadId,
+        1,
+        fileStream,
+        contentLength = contentLength  // REQUIRED parameter
     );
     test:assertTrue(etag.length() > 0, msg = "Failed to upload part via uploadPartAsStream");
     
@@ -496,8 +518,9 @@ function testUploadPartAsStreamDirect() returns error? {
     
     // Verify the uploaded object
     stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
-    record {|byte[] value;|}? chunk = check response.next();
-    if chunk is record {|byte[] value;|} {
+    record {byte[] value;}? chunk = check response.next();
+
+    if chunk is record {byte[] value;} {
         string downloadedContent = check string:fromBytes(chunk.value);
         test:assertEquals(downloadedContent, partContent, "uploadPartAsStream content mismatch");
     } else {
@@ -513,9 +536,9 @@ function testUploadPartAsStreamDirect() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testUploadMultiplePartsAsStreamDirect() returns error? {
-    string objectKey = "test_multi_part_stream_direct.txt";
-    string tempFilePath1 = "./tests/resources/temp_part1_stream.txt";
-    string tempFilePath2 = "./tests/resources/temp_part2_stream.txt";
+    string objectKey = "testmultipartstreamdirect.txt";
+    string tempFilePath1 = "./tests/resources/temppart1stream.txt";
+    string tempFilePath2 = "./tests/resources/temppart2stream.txt";
     
     // AWS S3 requires each part (except the last) to be at least 5MB
     // Create 5MB content for part 1
@@ -526,31 +549,41 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
     }
     check io:fileWriteBytes(tempFilePath1, part1Bytes);
     
-    // Calculate part 1 content length
+    // Calculate part 1 content length (REQUIRED)
     int part1Length = part1Bytes.length();
-    
+
     // Part 2 can be smaller (last part)
     string part2Content = "This is the last part uploaded via uploadPartAsStream.";
     check io:fileWriteString(tempFilePath2, part2Content);
     
-    // Calculate part 2 content length
+    // Calculate part 2 content length (REQUIRED)
     int part2Length = part2Content.toBytes().length();
-    
+
     // Create multipart upload
     string multiPartUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(multiPartUploadId.length() > 0, "Failed to create multipart upload");
     
-    // Upload part 1 using uploadPartAsStream with contentLength
+    // Upload part 1 using uploadPartAsStream with contentLength (REQUIRED)
     stream<io:Block, io:Error?> fileStream1 = check io:fileReadBlocksAsStream(tempFilePath1, 65536); // 64KB chunks
-    string etag1 = check s3Client->uploadPartAsStream(testBucketName, objectKey, multiPartUploadId, 1, fileStream1,
-        contentLength = part1Length
+    string etag1 = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        multiPartUploadId,
+        1,
+        fileStream1,
+        contentLength = part1Length  // REQUIRED
     );
     test:assertTrue(etag1.length() > 0, msg = "Failed to upload part 1 via uploadPartAsStream");
     
-    // Upload part 2 using uploadPartAsStream with contentLength
+    // Upload part 2 using uploadPartAsStream with contentLength (REQUIRED)
     stream<io:Block, io:Error?> fileStream2 = check io:fileReadBlocksAsStream(tempFilePath2, 4096);
-    string etag2 = check s3Client->uploadPartAsStream(testBucketName, objectKey, multiPartUploadId, 2, fileStream2,
-        contentLength = part2Length
+    string etag2 = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        multiPartUploadId,
+        2,
+        fileStream2,
+        contentLength = part2Length  // REQUIRED
     );
     test:assertTrue(etag2.length() > 0, msg = "Failed to upload part 2 via uploadPartAsStream");
     
@@ -991,16 +1024,16 @@ function testDeleteMultipartUpload() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testUploadPartAsStream() returns error? {
-    string objectKey = "stream_multipart_upload.txt";
-    string tempFilePath = "./tests/resources/temp_stream_part.txt";
+    string objectKey = "streammultipartupload.txt";
+    string tempFilePath = "./tests/resources/tempstreampart.txt";
     
     // Create content for the part
     string partContent = "This is part content uploaded via stream for multipart upload test.";
     check io:fileWriteString(tempFilePath, partContent);
     
-    // Calculate content length
+    // Calculate content length (REQUIRED)
     int contentLength = partContent.toBytes().length();
-    
+
     // Create multipart upload
     string streamUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(streamUploadId.length() > 0, "Failed to create multipart upload for stream test");
@@ -1008,9 +1041,14 @@ function testUploadPartAsStream() returns error? {
     // Open file as a byte block stream
     stream<byte[], error?> byteStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload part using uploadPartAsStream API with contentLength
-    string etag = check s3Client->uploadPartAsStream(testBucketName, objectKey, streamUploadId, 1, byteStream,
-        contentLength = contentLength
+    // Upload part using uploadPartAsStream API with contentLength (REQUIRED)
+    string etag = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        streamUploadId,
+        1,
+        byteStream,
+        contentLength = contentLength  // REQUIRED parameter
     );
     test:assertTrue(etag.length() > 0, msg = "Failed to upload part via stream");
     
@@ -1019,8 +1057,9 @@ function testUploadPartAsStream() returns error? {
     
     // Verify the uploaded object
     stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
-    record {|byte[] value;|}? chunk = check response.next();
-    if chunk is record {|byte[] value;|} {
+    record {byte[] value;}? chunk = check response.next();
+
+    if chunk is record {byte[] value;} {
         string downloadedContent = check string:fromBytes(chunk.value);
         test:assertEquals(downloadedContent, partContent, "Stream uploaded content mismatch");
     } else {
@@ -1036,9 +1075,9 @@ function testUploadPartAsStream() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testUploadMultiplePartsAsStream() returns error? {
-    string objectKey = "multi_part_stream_upload.txt";
-    string tempFilePath1 = "./tests/resources/temp_multi_part1.bin";
-    string tempFilePath2 = "./tests/resources/temp_multi_part2.txt";
+    string objectKey = "multipartstreamupload.txt";
+    string tempFilePath1 = "./tests/resources/tempmultipart1.bin";
+    string tempFilePath2 = "./tests/resources/tempmultipart2.txt";
     
     // AWS S3 requires each part (except the last) to be at least 5MB
     int minPartSize = 5 * 1024 * 1024; // 5MB minimum
@@ -1046,12 +1085,13 @@ function testUploadMultiplePartsAsStream() returns error? {
     foreach int i in 0 ..< minPartSize {
         part1Content.push(<byte>(i % 256));
     }
+
     string part2Content = "This is the second part of the multipart upload.";
     
-    // Calculate content lengths before writing files
+    // Calculate content lengths before writing files (REQUIRED)
     int part1Length = part1Content.length();
     int part2Length = part2Content.toBytes().length();
-    
+
     // Write part contents to temp files
     check io:fileWriteBytes(tempFilePath1, part1Content);
     check io:fileWriteString(tempFilePath2, part2Content);
@@ -1060,15 +1100,25 @@ function testUploadMultiplePartsAsStream() returns error? {
     string multiPartUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(multiPartUploadId.length() > 0, "Failed to create multipart upload");
     
-    // Upload parts using uploadPartAsStream API with contentLength
+    // Upload parts using uploadPartAsStream API with contentLength (REQUIRED)
     stream<byte[], error?> part1Stream = check io:fileReadBlocksAsStream(tempFilePath1, 65536);
-    string etag1 = check s3Client->uploadPartAsStream(testBucketName, objectKey, multiPartUploadId, 1, part1Stream,
-        contentLength = part1Length
+    string etag1 = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        multiPartUploadId,
+        1,
+        part1Stream,
+        contentLength = part1Length  // REQUIRED
     );
     
     stream<byte[], error?> part2Stream = check io:fileReadBlocksAsStream(tempFilePath2, 4096);
-    string etag2 = check s3Client->uploadPartAsStream(testBucketName, objectKey, multiPartUploadId, 2, part2Stream,
-        contentLength = part2Length
+    string etag2 = check s3Client->uploadPartAsStream(
+        testBucketName,
+        objectKey,
+        multiPartUploadId,
+        2,
+        part2Stream,
+        contentLength = part2Length  // REQUIRED
     );
     
     test:assertTrue(etag1.length() > 0, msg = "Failed to upload part 1");
@@ -1091,7 +1141,6 @@ function testUploadMultiplePartsAsStream() returns error? {
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
 }
-
 
 @test:Config {
     dependsOn: [testCreateBucket]

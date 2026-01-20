@@ -135,12 +135,6 @@ byte[] bytes = check s3Client->getObject("my-s3-bucket", "docs/readme.txt", Byte
 
 // Return as string
 string text = check s3Client->getObject("my-s3-bucket", "docs/readme.txt", string);
-
-// Return as json
-json data = check s3Client->getObject("my-s3-bucket", "data.json", json);
-
-// Return as xml (using alias)
-xml x = check s3Client->getObject("my-s3-bucket", "data.xml", Xml);
 ```
 
 #### Download an object as a stream (for large files)
@@ -174,36 +168,6 @@ string region = check s3Client->getBucketLocation("my-s3-bucket");
 check s3Client->deleteBucket("my-s3-bucket");
 ```
 
-#### Multipart uploads
-```ballerina
-// 1) Start a multipart upload and get the upload ID
-string uploadId = check s3Client->createMultipartUpload("my-s3-bucket", "large/video.mp4", {
-   contentType: "video/mp4"
-});
-
-// 2) Upload parts
-// 2a) Upload a part from in-memory content (byte[], string, json, xml)
-byte[] firstChunk = [];
-string etag1 = check s3Client->uploadPart(
-   "my-s3-bucket", "large/video.mp4", uploadId, 1, firstChunk
-);
-
-// 2b) Upload a part from a stream (recommended for large parts)
-stream<byte[], error?> part2Stream = (); // provide a stream of byte[] chunks
-string etag2 = check s3Client->uploadPartAsStream(
-   "my-s3-bucket", "large/video.mp4", uploadId, 2, part2Stream
-);
-
-// 3) Complete the multipart upload
-// Part numbers and ETag order must match the uploaded parts
-check s3Client->completeMultipartUpload(
-   "my-s3-bucket", "large/video.mp4", uploadId, [1, 2], [etag1, etag2]
-);
-
-// Optional: Abort if you do not intend to complete the upload
-// check s3Client->abortMultipartUpload("my-s3-bucket", "large/video.mp4", uploadId);
-```
-
 #### Presigned URLs
 ```ballerina
 // Generate a presigned URL for downloading an object
@@ -222,3 +186,16 @@ bal run
 ```
 
 ## Examples
+
+The `ballerinax/aws.s3` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples):
+
+1. [**Authentication**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/authentication) - Demonstrates how to authenticate with AWS S3 using static credentials.
+
+2. [**Bucket Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/bucket-operations) - Shows how to create, list, get location, and delete S3 buckets.
+
+3. [**Object Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/object-operations) - Demonstrates comprehensive object operations including upload/download with different content types (String, JSON, XML, Byte[]), metadata retrieval, copying, and existence checks.
+
+4. [**Multipart Uploads**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/multipart-uploads) - Shows how to handle large file uploads using S3 multipart upload API with multiple parts.
+
+5. [**Stream Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/stream-operations) - Demonstrates memory-efficient streaming operations for uploading and downloading large files.
+

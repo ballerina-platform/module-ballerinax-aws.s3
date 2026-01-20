@@ -1,0 +1,8 @@
+[package]
+org = "examples"
+name = "bucket_operations"
+version = "0.1.0"
+distribution = "2201.12.2"
+
+[build-options]
+observabilityIncluded = true

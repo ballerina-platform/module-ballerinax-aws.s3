@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+}
+
+description = 'Ballerina - AWS S3 Multipart Uploads Example'
+
+task clean {
+    delete 'target'
+    delete 'Dependencies.toml'
+}
+
+task build {
+    dependsOn clean
+    doLast {
+        exec {
+            workingDir project.projectDir
+            commandLine 'bal', 'build'
+        }
+    }
+}
+
+task run {
+    doLast {
+        exec {
+            workingDir project.projectDir
+            commandLine 'bal', 'run'
+        }
+    }
+}

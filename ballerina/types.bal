@@ -16,9 +16,9 @@
 
 # Static credential configuration
 public type StaticAuthConfig record {|
-    # The AWS Access Key ID
+    # The Access Key of the Amazon S3 account
     string accessKeyId;
-    # The AWS Secret Access Key
+    # The Secret Access Key of the Amazon S3 account
     string secretAccessKey;
     # Optional session token for temporary credentials
     string sessionToken?;
@@ -39,16 +39,16 @@ public type AuthConfig StaticAuthConfig|ProfileAuthConfig;
 public type ConnectionConfig record {|
     # Authentication configuration
     AuthConfig auth;
-    # The AWS Region
+     # The AWS Region. If you don't specify an AWS region, Client uses US East as default region
     string region;
 |};
 
 
 # Configuration for creating a bucket.
 public type CreateBucketConfig record {|
-    # Who can access the bucket (e.g., "private", "public-read")
+    # Specifies accessibility for this object (e.g., "private", "public-read")
     CannedACL acl = PRIVATE;
-    # Who owns objects uploaded to this bucket (e.g., "BucketOwnerEnforced", "ObjectWriter")
+    # Specifies ownership of objects uploaded to this bucket (e.g., "BucketOwnerEnforced", "ObjectWriter")
     ObjectOwnership objectOwnership = BUCKET_OWNER_ENFORCED;
     # Enable Object Lock to prevent objects from being deleted or overwritten
     boolean objectLockEnabled?;
@@ -64,6 +64,9 @@ public type Bucket record {
     string region;
 };
 
+# Represents byte[], string, json and xml
+public type ContentType byte[]|string|json|xml;
+
 # Represents byte array type for getObject return type.
 public type Bytes byte[];
 
@@ -72,25 +75,25 @@ public type Xml xml;
 
 # Configuration for uploading an object.
 public type PutObjectConfig record {|
-    # The file type (e.g., "image/jpeg", "application/pdf", "text/plain")
+    # The MIME type of the content
     string contentType?;
-    # Who can access this object (e.g., "private", "public-read")
+    # Specifies accessibility for this object (e.g., "private", "public-read")
     CannedACL acl = PRIVATE;
-    # Storage type (e.g., "STANDARD", "GLACIER" for archive, "INTELLIGENT_TIERING")
+    # The Storage class of the object (e.g., "STANDARD", "GLACIER" for archive, "INTELLIGENT_TIERING")
     StorageClass storageClass = STANDARD;
     # Custom data to attach to the object (e.g., {"author": "John", "project": "demo"})
     map<string> metadata?;
-    # How long to cache the file (e.g., "max-age=3600" for 1 hour)
+    # Specifies caching behavior along the request/reply chain
     string cacheControl?;
-    # How to handle download (e.g., "attachment; filename=report.pdf")
+    # Specifies presentational information for the object
     string contentDisposition?;
-    # Compression type (e.g., "gzip")
+    # Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field
     string contentEncoding?;
-    # Language of the content (e.g., "en-US", "fr")
+    # The language the content is in (e.g., "en-US", "fr")
     string contentLanguage?;
-    # When the object expires
+    # The date and time at which the object is no longer cacheable
     string expires?;
-    # Tags for the object (e.g., "env=prod&team=finance")
+    # Tags for the object
     string tagging?;
     # Encryption type ("AES256" or "aws:kms")
     string serverSideEncryption?;
@@ -99,29 +102,29 @@ public type PutObjectConfig record {|
 # Configuration for uploading an object as a stream.
 public type PutObjectStreamConfig record {|
     *PutObjectConfig;
-    # Size of the content in bytes
-    int contentLength?;
+    # The Size of the content, in bytes
+    int contentLength;
 |};
 
 # Configuration for retrieving an object.
 public type GetObjectConfig record {|
     # Get a specific version of the object (when versioning is enabled)
     string versionId?;
-    # Download only part of the file (e.g., "bytes=0-1023" for first 1KB)
+    # Downloads the specified range bytes of an object
     string range?;
-    # Only download if the file's ID matches this value
+    # Return the object only if its entity tag (ETag) is the same as the one specified
     string ifMatch?;
-    # Only download if the file's ID does NOT match this value
+    # Return the object only if its entity tag (ETag) is different from the one specified
     string ifNoneMatch?;
-    # Only download if the file was changed after this date (e.g., "2024-01-15T00:00:00Z")
+    # Return the object only if it has been modified since the specified time (e.g., "2024-01-15T00:00:00Z")
     string ifModifiedSince?;
-    # Only download if the file was NOT changed after this date (e.g., "2024-01-15T00:00:00Z")
+    # Return the object only if it has not been modified since the specified time (e.g., "2024-01-15T00:00:00Z")
     string ifUnmodifiedSince?;
-    # For multipart uploads, which part number to get (starts at 1)
+    # The part number of the file part
     int partNumber?;
-    # Override the file type in the response (e.g., "text/plain")
+    # Override the MIME type of the content
     string responseContentType?;
-    # Override how the file is downloaded (e.g., "attachment; filename=myfile.pdf")
+    # Override presentational information for the object
     string responseContentDisposition?;
 |};
 
@@ -155,7 +158,7 @@ public type ListObjectsConfig record {|
 
 # Configuration for copying an object.
 public type CopyObjectConfig record {|
-    # Who can access the copied object (e.g., "private", "public-read")
+    # Specifies accessibility for the copied object (e.g., "private", "public-read")
     CannedACL acl = PRIVATE;
     # Storage type for the copied object (e.g., "STANDARD", "GLACIER")
     StorageClass storageClass = STANDARD;
@@ -163,23 +166,23 @@ public type CopyObjectConfig record {|
     string metadataDirective?;
     # New metadata for the copied object (only used when metadataDirective is "REPLACE")
     map<string> metadata?;
-    # File type for the copied object (e.g., "image/jpeg")
+    # The MIME type of the copied object
     string contentType?;
-    # How long to cache the file (e.g., "max-age=3600")
+    # Specifies caching behavior along the request/reply chain
     string cacheControl?;
-    # How to handle download (e.g., "attachment; filename=report.pdf")
+    # Specifies presentational information for the object
     string contentDisposition?;
-    # Compression type (e.g., "gzip")
+    # Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field
     string contentEncoding?;
     # Tags for the copied object (e.g., "env=prod&team=finance")
     string tagging?;
-    # Only copy if source file's ETag matches this value
+    # Copy the object only if its entity tag (ETag) is the same as the one specified
     string copySourceIfMatch?;
-    # Only copy if source file's ETag does NOT match this value
+    # Copy the object only if its entity tag (ETag) is different from the one specified
     string copySourceIfNoneMatch?;
-    # Only copy if source file changed after this date
+    # Copy the object only if it has been modified since the specified time (e.g., "2024-01-15T00:00:00Z")
     string copySourceIfModifiedSince?;
-    # Only copy if source file has NOT changed after this date
+    # Copy the object only if it has not been modified since the specified time (e.g., "2024-01-15T00:00:00Z")
     string copySourceIfUnmodifiedSince?;
 |};
 
@@ -187,29 +190,29 @@ public type CopyObjectConfig record {|
 public type HeadObjectConfig record {|
     # Get metadata for a specific version of the object (when versioning is enabled)
     string versionId?;
-    # For multipart uploads, which part number to get metadata for (starts at 1) 
+    # The part number of the file part to get metadata for
     int partNumber?;
-    # Only get metadata if the file's ETag matches this value
+    # Return the metadata only if its entity tag (ETag) is the same as the one specified
     string ifMatch?;
-    # Only get metadata if the file's ETag does NOT match this value
+    # Return the metadata only if its entity tag (ETag) is different from the one specified
     string ifNoneMatch?;
-    # Only get metadata if the file changed after this date
+    # Return the metadata only if it has been modified since the specified time
     string ifModifiedSince?;
-    # Only get metadata if the file has NOT changed after this date
+    # Return the metadata only if it has not been modified since the specified time
     string ifUnmodifiedSince?;
 |};
 
 # Configuration for creating presigned URLs.
 public type PresignedUrlConfig record {|
-    # How long the URL is valid in minutes (default: 15, max: 10080 for 7 days)
+    # Specifies how long the URL is valid in minutes (default: 15, max: 10080 for 7 days)
     int expirationMinutes = 15;
-    # What action the URL allows ("GET" to download, "PUT" to upload)
-    string httpMethod = "GET";
-    # File type for upload URLs (e.g., "image/jpeg")
+    # Specifies what action the URL allows ("GET" to download, "PUT" to upload)
+    HttpMethod httpMethod = GET;
+    # The MIME type of the content (for PUT requests)
     string contentType?;
-    # How to handle download (e.g., "attachment; filename=report.pdf")
+    # Specifies presentational information for the object (for GET requests)
     string contentDisposition?;
-    # Override file type when downloading (e.g., "text/plain")
+    # Override file type when downloading (for GET requests)
     string responseContentType?;
     # Get URL for a specific version of the object (when versioning is enabled)
     string versionId?;
@@ -217,19 +220,19 @@ public type PresignedUrlConfig record {|
 
 # Configuration for multipart upload (for large files uploaded in parts).
 public type MultipartUploadConfig record {|
-    # File type (e.g., "image/jpeg", "application/pdf")
+    # The MIME type of the content
     string contentType?;
-    # Who can access this object (e.g., "private", "public-read")
+    # Specifies accessibility for this object (e.g., "private", "public-read")
     CannedACL acl = PRIVATE;
-    # Storage type (e.g., "STANDARD", "GLACIER" for archive)
+    # The Storage class of the object (e.g., "STANDARD", "GLACIER" for archive)
     StorageClass storageClass = STANDARD;
     # Custom data to attach to the object (e.g., {"author": "John"})
     map<string> metadata?;
-    # How long to cache the file (e.g., "max-age=3600")
+    # Specifies caching behavior along the request/reply chain
     string cacheControl?;
-    # How to handle download (e.g., "attachment; filename=report.pdf")
+    # Specifies presentational information for the object
     string contentDisposition?;
-    # Compression type (e.g., "gzip")
+    # Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field
     string contentEncoding?;
     # Tags for the object (e.g., "env=prod&team=finance")
     string tagging?;
@@ -260,9 +263,9 @@ public type S3Object record {|
     int size;
     # When the object was last changed
     string lastModified;
-    # Unique ID of the object's content
+    # Represents the hash value of the object, which reflects modifications made exclusively to the contents of the object
     string eTag;
-    # Storage type (e.g., "STANDARD", "GLACIER")
+    # The Storage class of the object (e.g., "STANDARD", "GLACIER")
     StorageClass storageClass = STANDARD;
 |};
 
@@ -284,13 +287,13 @@ public type ObjectMetadata record {|
     string key;
     # Size of the object in bytes
     int contentLength;
-    # File type (e.g., "image/jpeg", "application/pdf")
+    # The MIME type of the content
     string contentType?;
     # Unique ID of the object's content 
     string eTag;
     # When the object was last changed 
     string lastModified;
-    # Storage type (e.g., "STANDARD", "GLACIER")
+    # The Storage class of the object (e.g., "STANDARD", "GLACIER")
     StorageClass storageClass = STANDARD;
     # Version ID of the object (when versioning is enabled)
     string versionId?;
@@ -306,9 +309,9 @@ public type ObjectInfo record {|
     int size;
     # When the object was last changed
     string lastModified;
-    # Unique ID of the object's content
+    # Represents the hash value of the object, which reflects modifications made exclusively to the contents of the object
     string eTag;
-    # Storage type (e.g., "STANDARD", "GLACIER")
+    # The Storage class of the object (e.g., "STANDARD", "GLACIER")
     StorageClass storageClass = STANDARD;
 |};
 
@@ -358,4 +361,12 @@ public enum StorageClass {
     GLACIER_IR = "GLACIER_IR",
     # Lowest cost archive, retrieval takes hours (min 180 days)
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
+}
+
+# HTTP methods for presigned URLs.
+public enum HttpMethod {
+    # HTTP GET method
+    GET = "GET",
+    # HTTP PUT method
+    PUT = "PUT"
 }

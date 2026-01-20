@@ -1,0 +1,1 @@
+Stream content with metadata via putObjectAsStream.

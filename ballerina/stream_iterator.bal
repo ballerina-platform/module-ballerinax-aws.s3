@@ -6,7 +6,7 @@
 // You may obtain a copy of the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -17,7 +17,7 @@
 import ballerina/jballerina.java;
 
 # The iterator class that fetches bytes from the native Java Input Stream.
-isolated class S3StreamResult {
+isolated class StreamIterator {
 
     # Fetches the next chunk of data from the S3 Response Stream.
     #
@@ -38,12 +38,12 @@ isolated class S3StreamResult {
     }
 }
 
-isolated function nativeReadStreamBytes(S3StreamResult streamObj) returns byte[]|Error? = @java:Method {
+isolated function nativeReadStreamBytes(StreamIterator streamObj) returns byte[]|Error? = @java:Method {
     name: "readStreamBytes",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+    'class: "io.ballerina.lib.aws.s3.StreamIteratorUtils"
 } external;
 
-isolated function nativeCloseStream(S3StreamResult streamObj) returns Error? = @java:Method {
+isolated function nativeCloseStream(StreamIterator streamObj) returns Error? = @java:Method {
     name: "closeStream",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+    'class: "io.ballerina.lib.aws.s3.StreamIteratorUtils"
 } external;

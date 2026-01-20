@@ -20,6 +20,7 @@ import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.types.MethodType;
 import io.ballerina.runtime.api.types.ObjectType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
@@ -54,7 +55,7 @@ public class BallerinaStreamInputStream extends InputStream {
         
         // Check if stream has a close method
         Type iteratorType = ballerinaStream.getIteratorObj().getOriginalType();
-        if (iteratorType instanceof ObjectType) {
+        if (iteratorType.getTag() == TypeTags.OBJECT_TYPE_TAG) {
             ObjectType iteratorObjectType = (ObjectType) iteratorType;
             MethodType[] methods = iteratorObjectType.getMethods();
             hasCloseMethod = java.util.Arrays.stream(methods)
@@ -165,4 +166,3 @@ public class BallerinaStreamInputStream extends InputStream {
         currentChunk = null;
     }
 }
-

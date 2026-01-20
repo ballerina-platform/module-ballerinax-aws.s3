@@ -18,7 +18,6 @@ package io.ballerina.lib.aws.s3;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;
-import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -26,7 +25,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 /**
  * Utility class for creating Ballerina errors from the aws.s3 module.
  */
-public class S3ExceptionUtils {
+public class ErrorCreator {
 
     private static Module s3Module;
 
@@ -70,10 +69,10 @@ public class S3ExceptionUtils {
      */
     public static BError createError(String errorType, String message) {
         if (s3Module != null) {
-            return ErrorCreator.createError(s3Module, errorType,
-                    StringUtils.fromString(message), null, null);
+            return io.ballerina.runtime.api.creators.ErrorCreator.createError(s3Module, errorType,
+                StringUtils.fromString(message), null, null);
         }
-        return ErrorCreator.createError(StringUtils.fromString(message));
+        return io.ballerina.runtime.api.creators.ErrorCreator.createError(StringUtils.fromString(message));
     }
 
     /**
@@ -85,10 +84,10 @@ public class S3ExceptionUtils {
      */
     public static BError createError(String message, BError cause) {
         if (s3Module != null) {
-            return ErrorCreator.createError(s3Module, ERROR,
-                    StringUtils.fromString(message), cause, null);
+            return io.ballerina.runtime.api.creators.ErrorCreator.createError(s3Module, ERROR,
+                StringUtils.fromString(message), cause, null);
         }
-        return ErrorCreator.createError(StringUtils.fromString(message), cause);
+        return io.ballerina.runtime.api.creators.ErrorCreator.createError(StringUtils.fromString(message), cause);
     }
 
     /**

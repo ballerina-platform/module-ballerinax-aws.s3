@@ -57,7 +57,6 @@ import software.amazon.awssdk.services.s3.model.GetBucketLocationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketLocationResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
@@ -67,16 +66,13 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
-import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -174,15 +170,15 @@ public class NativeClientAdaptor {
     @SuppressWarnings("unchecked")
     public static Object initClient(Environment env, BObject clientObj, BMap<BString, Object> config) {
         try {
-            S3ExceptionUtils.initModule(env);
+            ErrorCreator.initModule(env);
 
             String region = config.getStringValue(StringUtils.fromString("region")).getValue();
             Object authObj = config.get(StringUtils.fromString("auth"));
 
             if (!(authObj instanceof BMap)) {
-                return S3ExceptionUtils.createError("Invalid auth configuration provided");
+                return ErrorCreator.createError("Invalid auth configuration provided");
             }
-          
+
             BMap<BString, Object> auth = (BMap<BString, Object>) authObj;
             AwsCredentialsProvider credentialsProvider = createCredentialsProvider(auth);
 
@@ -196,7 +192,7 @@ public class NativeClientAdaptor {
             clientObj.addNativeData(NATIVE_CONFIG, connConfig);
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -263,7 +259,7 @@ public class NativeClientAdaptor {
     private static S3Client getClient(BObject clientObj) {
         S3Client client = (S3Client) clientObj.getNativeData(NATIVE_CLIENT);
         if (client == null) {
-            throw S3ExceptionUtils.createError("S3 Client is not initialized");
+            throw ErrorCreator.createError("S3 Client is not initialized");
         }
         return client;
     }
@@ -271,7 +267,7 @@ public class NativeClientAdaptor {
     private static ConnectionConfig getConnectionConfig(BObject clientObj) {
         ConnectionConfig config = (ConnectionConfig) clientObj.getNativeData(NATIVE_CONFIG);
         if (config == null) {
-            throw S3ExceptionUtils.createError("S3 Connection Config is not initialized");
+            throw ErrorCreator.createError("S3 Connection Config is not initialized");
         }
         return config;
     }
@@ -290,13 +286,9 @@ public class NativeClientAdaptor {
 
             s3.createBucket(builder.build());
 
-            S3Waiter s3Waiter = s3.waiter();
-            HeadBucketRequest bucketRequestWait = HeadBucketRequest.builder().bucket(bucket).build();
-            s3Waiter.waitUntilBucketExists(bucketRequestWait);
-
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -306,7 +298,7 @@ public class NativeClientAdaptor {
             s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket.getValue()).build());
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -351,7 +343,7 @@ public class NativeClientAdaptor {
             return ValueCreator.createArrayValue(bBuckets,
                     TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON));
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -365,7 +357,7 @@ public class NativeClientAdaptor {
             String location = response.locationConstraintAsString();
             return StringUtils.fromString(location != null ? location : "us-east-1");
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -384,7 +376,7 @@ public class NativeClientAdaptor {
             s3.putObject(builder.build(), RequestBody.fromFile(java.nio.file.Paths.get(filePath.getValue())));
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -401,260 +393,43 @@ public class NativeClientAdaptor {
             s3.putObject(builder.build(), RequestBody.fromBytes(content.getBytes()));
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
-    // Constants
-    private static final int CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
-    private static final int BUFFER_SIZE = 8192; // 8KB
-
-    // Main method - now supports both modes
     public static Object putObjectWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BStream contentStream, BMap<BString, Object> config) {
         S3Client s3 = getClient(clientObj);
-        try {
-            InputStream inputStream = new BallerinaStreamInputStream(env, contentStream);
 
-            // Check if contentLength is provided
-            if (config.containsKey(StringUtils.fromString("contentLength"))) {
-                return putObjectWithKnownSize(s3, bucket, key, inputStream, config);
+        try {
+            long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
+
+            // Validate contentLength is positive
+            if (contentLength <= 0) {
+                return ErrorCreator.createError(
+                        "contentLength must be a positive value, got: " + contentLength);
             }
 
-            return putObjectWithUnknownSize(s3, bucket, key, inputStream, config);
+            // Create input stream from Ballerina stream
+            InputStream inputStream = new BallerinaStreamInputStream(env, contentStream);
 
-        } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
-        }
-    }
+            PutObjectRequest.Builder builder = PutObjectRequest.builder()
+                    .bucket(bucket.getValue())
+                    .key(key.getValue())
+                    .contentLength(contentLength);
 
-    // Optimized path: Direct streaming when contentLength is known
-    private static Object putObjectWithKnownSize(S3Client s3, BString bucket, BString key,
-            InputStream inputStream, BMap<BString, Object> config) throws IOException {
+            applyPutObjectConfig(builder, config);
 
-        long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
+            s3.putObject(builder.build(), RequestBody.fromInputStream(inputStream, contentLength));
 
-        PutObjectRequest.Builder builder = PutObjectRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue())
-                .contentLength(contentLength);
-        applyPutObjectConfig(builder, config);
-
-        // Stream directly to S3 without any buffering
-        s3.putObject(builder.build(), RequestBody.fromInputStream(inputStream, contentLength));
-        inputStream.close();
-
-        return null;
-    }
-
-    // Auto-chunking when contentLength is unknown
-    private static Object putObjectWithUnknownSize(S3Client s3, BString bucket, BString key,
-            InputStream inputStream, BMap<BString, Object> config) throws IOException {
-
-        // Read first chunk and determine strategy
-        ChunkData firstChunk = readFirstChunk(inputStream);
-
-        if (!firstChunk.hasMoreData) {
-            // Small file - use simple PUT
-            return putSmallFile(s3, bucket, key, firstChunk.buffer, config, inputStream);
-        }
-
-        // Large file - use multipart upload
-        return putLargeFileMultipart(s3, bucket, key, inputStream, firstChunk, config);
-    }
-
-    // Helper class to hold first chunk result
-    private static class ChunkData {
-        final ByteArrayOutputStream buffer;
-        final boolean hasMoreData;
-        final int nextByte;
-
-        ChunkData(ByteArrayOutputStream buffer, boolean hasMoreData, int nextByte) {
-            this.buffer = buffer;
-            this.hasMoreData = hasMoreData;
-            this.nextByte = nextByte;
-        }
-    }
-
-    // Read first chunk to determine if multipart is needed
-    private static ChunkData readFirstChunk(InputStream inputStream) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(CHUNK_SIZE);
-        byte[] data = new byte[BUFFER_SIZE];
-        int bytesRead;
-        int totalRead = 0;
-
-        while (totalRead < CHUNK_SIZE && (bytesRead = inputStream.read(data)) != -1) {
-            buffer.write(data, 0, bytesRead);
-            totalRead += bytesRead;
-        }
-
-        int nextByte = inputStream.read();
-        boolean hasMoreData = (nextByte != -1);
-
-        return new ChunkData(buffer, hasMoreData, nextByte);
-    }
-
-    // Handle small file upload with simple PUT
-    private static Object putSmallFile(S3Client s3, BString bucket, BString key,
-            ByteArrayOutputStream buffer, BMap<BString, Object> config, InputStream inputStream) throws IOException {
-        inputStream.close();
-
-        PutObjectRequest.Builder builder = PutObjectRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue());
-        applyPutObjectConfig(builder, config);
-
-        s3.putObject(builder.build(), RequestBody.fromBytes(buffer.toByteArray()));
-        return null;
-    }
-
-    // Handle large file upload with multipart
-    private static Object putLargeFileMultipart(S3Client s3, BString bucket, BString key,
-            InputStream inputStream, ChunkData firstChunk, BMap<BString, Object> config) throws IOException {
-
-        // Initialize multipart upload
-        CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue());
-        applyPutObjectConfigToMultipart(builder, config);
-
-        CreateMultipartUploadResponse response = s3.createMultipartUpload(builder.build());
-        String uploadId = response.uploadId();
-
-        try {
-            // Upload all parts
-            List<CompletedPart> completedParts = uploadMultipartChunks(s3, bucket, key, uploadId,
-                    inputStream, firstChunk);
-
+            // Close the stream
             inputStream.close();
 
-            // Complete the upload
-            finishMultipartUpload(s3, bucket, key, uploadId, completedParts);
             return null;
 
         } catch (Exception e) {
-            // Abort on error
-            abortMultipartUpload(s3, bucket, key, uploadId);
-            throw e;
+            return ErrorCreator.createError(e);
         }
-    }
-
-    // Upload all chunks for multipart upload
-    private static List<CompletedPart> uploadMultipartChunks(S3Client s3, BString bucket, BString key,
-            String uploadId, InputStream inputStream, ChunkData firstChunk) throws IOException {
-
-        List<CompletedPart> completedParts = new ArrayList<>();
-        int partNumber = 1;
-
-        // Upload first chunk
-        CompletedPart firstPart = uploadChunk(s3, bucket, key, uploadId, partNumber++,
-                firstChunk.buffer.toByteArray());
-        completedParts.add(firstPart);
-
-        // Upload remaining chunks
-        uploadRemainingChunks(s3, bucket, key, uploadId, inputStream, completedParts,
-                partNumber, firstChunk.nextByte);
-
-        return completedParts;
-    }
-
-    // Upload remaining chunks after first one
-    private static void uploadRemainingChunks(S3Client s3, BString bucket, BString key,
-            String uploadId, InputStream inputStream, List<CompletedPart> completedParts,
-            int startPartNumber, int firstByte) throws IOException {
-
-        ByteArrayOutputStream chunkBuffer = new ByteArrayOutputStream(CHUNK_SIZE);
-        byte[] data = new byte[BUFFER_SIZE];
-        int partNumber = startPartNumber;
-        int chunkSize = 1;
-        int bytesRead;
-
-        // Write the byte we read earlier
-        chunkBuffer.write(firstByte);
-
-        while ((bytesRead = inputStream.read(data)) != -1) {
-            chunkBuffer.write(data, 0, bytesRead);
-            chunkSize += bytesRead;
-
-            // Upload when chunk reaches 5MB
-            if (chunkSize >= CHUNK_SIZE) {
-                CompletedPart part = uploadChunk(s3, bucket, key, uploadId, partNumber++,
-                        chunkBuffer.toByteArray());
-                completedParts.add(part);
-
-                chunkBuffer.reset();
-                chunkSize = 0;
-            }
-        }
-
-        // Upload last chunk if any remaining
-        if (chunkSize > 0) {
-            CompletedPart lastPart = uploadChunk(s3, bucket, key, uploadId, partNumber,
-                    chunkBuffer.toByteArray());
-            completedParts.add(lastPart);
-        }
-    }
-
-    // Upload a single chunk (eliminates duplicate code)
-    private static CompletedPart uploadChunk(S3Client s3, BString bucket, BString key,
-            String uploadId, int partNumber, byte[] data) {
-
-        UploadPartRequest request = UploadPartRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue())
-                .uploadId(uploadId)
-                .partNumber(partNumber)
-                .build();
-
-        UploadPartResponse response = s3.uploadPart(request, RequestBody.fromBytes(data));
-
-        return CompletedPart.builder()
-                .partNumber(partNumber)
-                .eTag(response.eTag())
-                .build();
-    }
-
-    // Complete multipart upload
-    private static void finishMultipartUpload(S3Client s3, BString bucket, BString key,
-            String uploadId, List<CompletedPart> completedParts) {
-
-        CompletedMultipartUpload completedUpload = CompletedMultipartUpload.builder()
-                .parts(completedParts)
-                .build();
-
-        CompleteMultipartUploadRequest request = CompleteMultipartUploadRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue())
-                .uploadId(uploadId)
-                .multipartUpload(completedUpload)
-                .build();
-
-        s3.completeMultipartUpload(request);
-    }
-
-    // Abort multipart upload on error
-    private static void abortMultipartUpload(S3Client s3, BString bucket, BString key, String uploadId) {
-        AbortMultipartUploadRequest request = AbortMultipartUploadRequest.builder()
-                .bucket(bucket.getValue())
-                .key(key.getValue())
-                .uploadId(uploadId)
-                .build();
-        s3.abortMultipartUpload(request);
-    }
-
-    // Helper method to apply PutObject config to Multipart config
-    private static void applyPutObjectConfigToMultipart(CreateMultipartUploadRequest.Builder builder,
-            BMap<BString, Object> config) {
-        applyStringConfig(config, "contentType", builder::contentType);
-        applyStringConfig(config, "acl", builder::acl);
-        applyStringConfig(config, "storageClass", builder::storageClass);
-        applyStringConfig(config, "cacheControl", builder::cacheControl);
-        applyStringConfig(config, "contentDisposition", builder::contentDisposition);
-        applyStringConfig(config, "contentEncoding", builder::contentEncoding);
-        applyStringConfig(config, "contentLanguage", builder::contentLanguage);
-        applyStringConfig(config, "tagging", builder::tagging);
-        applyStringConfig(config, "serverSideEncryption", builder::serverSideEncryption);
-        applyMetadataConfig(config, "metadata", builder::metadata);
     }
 
     private static void applyPutObjectConfig(PutObjectRequest.Builder builder, BMap<BString, Object> config) {
@@ -687,11 +462,11 @@ public class NativeClientAdaptor {
             applyIntConfig(config, "partNumber", builder::partNumber);
 
             ResponseInputStream<GetObjectResponse> s3Stream = s3.getObject(builder.build());
-            BObject streamWrapper = ValueCreator.createObjectValue(env.getCurrentModule(), "S3StreamResult");
+            BObject streamWrapper = ValueCreator.createObjectValue(env.getCurrentModule(), "StreamIterator");
             streamWrapper.addNativeData("NATIVE_STREAM", s3Stream);
             return streamWrapper;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -723,7 +498,7 @@ public class NativeClientAdaptor {
                     byteArray,
                     targetType);
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -743,7 +518,7 @@ public class NativeClientAdaptor {
         } catch (NoSuchKeyException e) {
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -798,7 +573,7 @@ public class NativeClientAdaptor {
 
             return result;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -840,7 +615,7 @@ public class NativeClientAdaptor {
 
             return metadata;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -863,7 +638,7 @@ public class NativeClientAdaptor {
             s3.copyObject(builder.build());
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -879,7 +654,7 @@ public class NativeClientAdaptor {
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
-            throw S3ExceptionUtils.createError(e);
+            throw ErrorCreator.createError(e);
         }
     }
 
@@ -898,7 +673,7 @@ public class NativeClientAdaptor {
             CreateMultipartUploadResponse response = s3.createMultipartUpload(builder.build());
             return StringUtils.fromString(response.uploadId());
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -932,7 +707,7 @@ public class NativeClientAdaptor {
 
             return StringUtils.fromString(response.eTag());
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -940,11 +715,6 @@ public class NativeClientAdaptor {
             BString uploadId, long partNumber, BStream contentStream, BMap<BString, Object> config) {
         S3Client s3 = getClient(clientObj);
         try {
-            // Extract required contentLength from config
-            if (!config.containsKey(StringUtils.fromString("contentLength"))) {
-                return S3ExceptionUtils.createError("contentLength is required in config for stream-based upload");
-            }
-
             long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
 
             UploadPartRequest.Builder builder = UploadPartRequest.builder()
@@ -956,7 +726,6 @@ public class NativeClientAdaptor {
 
             applyStringConfig(config, "contentMD5", builder::contentMD5);
 
-            // Stream directly to S3 without buffering in memory
             InputStream inputStream = new BallerinaStreamInputStream(env, contentStream);
 
             UploadPartResponse response = s3.uploadPart(builder.build(),
@@ -966,7 +735,7 @@ public class NativeClientAdaptor {
 
             return StringUtils.fromString(response.eTag());
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -999,7 +768,7 @@ public class NativeClientAdaptor {
             s3.completeMultipartUpload(request);
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -1015,7 +784,7 @@ public class NativeClientAdaptor {
             s3.abortMultipartUpload(request);
             return null;
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -1023,49 +792,43 @@ public class NativeClientAdaptor {
 
     public static Object createPresignedUrl(BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
-        try {
-            long expirationMinutes = 15;
-            if (config.containsKey(StringUtils.fromString("expirationMinutes"))) {
-                expirationMinutes = config.getIntValue(StringUtils.fromString("expirationMinutes"));
-            }
+        S3Presigner presigner = null;
 
-            String httpMethod = "GET";
-            if (config.containsKey(StringUtils.fromString("httpMethod"))) {
-                Object methodObj = config.get(StringUtils.fromString("httpMethod"));
-                if (methodObj instanceof BString) {
-                    httpMethod = ((BString) methodObj).getValue().toUpperCase();
-                }
-            }
+        try {
+            long expirationMinutes = config.getIntValue(StringUtils.fromString("expirationMinutes"));
+
+            Object methodObj = config.get(StringUtils.fromString("httpMethod"));
+            String httpMethod = (methodObj instanceof BString)
+                    ? ((BString) methodObj).getValue().toUpperCase()
+                    : "GET";
 
             ConnectionConfig connConfig = getConnectionConfig(clientObj);
 
-            S3Presigner presigner = S3Presigner.builder()
+            presigner = S3Presigner.builder()
                     .region(connConfig.region)
                     .credentialsProvider(connConfig.credentialsProvider)
                     .build();
 
-            String presignedUrl;
+            String presignedUrl = "GET".equals(httpMethod)
+                    ? generateGetPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes, config)
+                    : "PUT".equals(httpMethod)
+                            ? generatePutPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes,
+                                    config)
+                            : null;
 
-            switch (httpMethod) {
-                case "GET":
-                    presignedUrl = generateGetPresignedUrl(presigner, bucket.getValue(), key.getValue(),
-                            expirationMinutes, config);
-                    break;
-                case "PUT":
-                    presignedUrl = generatePutPresignedUrl(presigner, bucket.getValue(), key.getValue(),
-                            expirationMinutes, config);
-                    break;
-                default:
-                    presigner.close();
-                    return S3ExceptionUtils.createError(new IllegalArgumentException(
-                            "Unsupported HTTP method: " + httpMethod + ". Supported methods: GET, PUT"));
+            if (presignedUrl == null) {
+                return ErrorCreator.createError(
+                        "Unsupported HTTP method: " + httpMethod + ". Supported methods: GET, PUT");
             }
 
-            presigner.close();
             return StringUtils.fromString(presignedUrl);
 
         } catch (Exception e) {
-            return S3ExceptionUtils.createError(e);
+            return ErrorCreator.createError(e);
+        } finally {
+            if (presigner != null) {
+                presigner.close();
+            }
         }
     }
 
@@ -1106,49 +869,5 @@ public class NativeClientAdaptor {
 
         PresignedPutObjectRequest presignedRequest = presigner.presignPutObject(presignRequest);
         return presignedRequest.url().toString();
-    }
-
-    // Stream Operations
-    @SuppressWarnings("unchecked")
-    public static Object readStreamBytes(BObject streamWrapper) {
-        ResponseInputStream<GetObjectResponse> input = (ResponseInputStream<GetObjectResponse>) streamWrapper
-                .getNativeData("NATIVE_STREAM");
-        if (input == null)
-            return S3ExceptionUtils.createError("Stream is closed.");
-
-        try {
-            byte[] buffer = new byte[4096];
-            int read = input.read(buffer);
-            if (read == -1) {
-                input.close();
-                streamWrapper.addNativeData("NATIVE_STREAM", null);
-                return null;
-            }
-            if (read < 4096) {
-                byte[] trimmed = new byte[read];
-                System.arraycopy(buffer, 0, trimmed, 0, read);
-                return ValueCreator.createArrayValue(trimmed);
-            }
-            return ValueCreator.createArrayValue(buffer);
-        } catch (IOException e) {
-            return S3ExceptionUtils.createError(e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Object closeStream(BObject streamWrapper) {
-        ResponseInputStream<GetObjectResponse> input = (ResponseInputStream<GetObjectResponse>) streamWrapper
-                .getNativeData("NATIVE_STREAM");
-        if (input == null) {
-            return null; // Already closed
-        }
-
-        try {
-            input.close();
-            streamWrapper.addNativeData("NATIVE_STREAM", null);
-            return null;
-        } catch (IOException e) {
-            return S3ExceptionUtils.createError(e);
-        }
     }
 }

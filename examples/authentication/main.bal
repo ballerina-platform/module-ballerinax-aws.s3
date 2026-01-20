@@ -10,33 +10,26 @@
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
+// KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/log;
+import ballerina/io;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
 configurable string secretAccessKey = ?;
-configurable string region = ?;
-configurable string bucketName = ?;
 
-s3:ConnectionConfig amazonS3Config = {
-    auth: {
-        accessKeyId,
-        secretAccessKey
-    },
-    region
-};
+public function main() returns error? {
+    s3:Client s3Client = check new ({
+        region: "us-east-1",
+        auth: {
+            accessKeyId,
+            secretAccessKey
+        }
+    });
 
-final s3:Client amazonS3Client = check new (amazonS3Config);
-
-public function main() {
-    error? deleteObjectResponse = amazonS3Client->deleteObject(bucketName, "test.txt");
-    if deleteObjectResponse is error {
-        log:printError("Error occurred while deleting object", deleteObjectResponse);
-    } else {
-        log:printInfo("Successfully deleted object");
-    }
+    s3:Bucket[] buckets = check s3Client->listBuckets();
+    io:println("Authentication successful!");
+    io:println(string `Found ${buckets.length()} bucket(s) in your account.`);
 }
