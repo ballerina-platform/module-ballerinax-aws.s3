@@ -71,6 +71,7 @@ const string HTTPS = "https://";
 
 const string AMAZON_AWS_HOST = "s3.amazonaws.com";
 const string DEFAULT_REGION = "us-east-1";
+const string AWS_DOMAIN_SUFFIX = "amazonaws.com";
 const string ERROR_REASON_PREFIX = "{ballerinax/aws.s3}";
 
 # IAM role related constants.
