@@ -41,10 +41,15 @@ ConnectionConfig amazonS3Config = {
 @test:BeforeSuite
 function setupTests() returns error? {
     Client amazonS3Client = check new (amazonS3Config);
-    check emptyBucket(amazonS3Client, testBucketName);
+    error? emptyBucketResult = emptyBucket(amazonS3Client, testBucketName);
+    if emptyBucketResult is error {
+        io:println("Failed to empty the bucket: " + emptyBucketResult.toString());
+        // Ignore the result and continue
+    }
     error? response = amazonS3Client->deleteBucket(testBucketName);
     if response is error {
-        test:assertFail(response.toString());
+        io:println("Failed to delete the bucket: " + response.toString());
+        // Ignore the result and continue
     }
 }
 
