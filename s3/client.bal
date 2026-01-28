@@ -41,8 +41,7 @@ public isolated client class Client {
     # + return - An error on failure of initialization or else `()`
     public isolated function init(ConnectionConfig config) returns error? {
         self.region = (config?.region is string) ? <string>(config?.region) : DEFAULT_REGION;
-        self.amazonHost = self.region != DEFAULT_REGION ?
-            re `$SERVICE_NAME`.replace(AMAZON_AWS_HOST, SERVICE_NAME + "." + self.region) : AMAZON_AWS_HOST;
+        self.amazonHost = self.region == DEFAULT_REGION ? AMAZON_AWS_HOST : string `${SERVICE_NAME}.${self.region}.${AWS_DOMAIN_SUFFIX}`;
         string baseURL = HTTPS + self.amazonHost;
         self.authType = config.authType;
         if self.authType is AWS_STATIC_AUTH {
@@ -95,8 +94,8 @@ public isolated client class Client {
             requestHeaders[X_AMZ_ACL] = cannedACL.toString();
         }
         if (self.region != DEFAULT_REGION) {
-            xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"> 
-                                        <LocationConstraint>${self.region}</LocationConstraint> 
+            xml xmlPayload = xml `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        <LocationConstraint>${self.region}</LocationConstraint>
                                 </CreateBucketConfiguration>`;
             request.setXmlPayload(xmlPayload);
         }
@@ -117,9 +116,9 @@ public isolated client class Client {
     # + startAfter - Object key from which to begin listing
     # + fetchOwner - Set to true, to retrieve the owner information in the response. By default the API does not return
     # the Owner information in the response
-    # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element 
-    # value is true), the response also includes the NextContinuationToken element. 
-    # To list the next set of objects, you can use the NextContinuationToken element in the next 
+    # + continuationToken - When the response to this API call is truncated (that is, the IsTruncated response element
+    # value is true), the response also includes the NextContinuationToken element.
+    # To list the next set of objects, you can use the NextContinuationToken element in the next
     # request as the continuation-token
     # + return - If success, list of S3 objects, else an error
     @display {label: "List Objects"}
@@ -275,12 +274,12 @@ public isolated client class Client {
 
     # Generates a presigned URL for the object.
     #
-    # + bucketName - The name of the bucket  
-    # + objectName - The name of the object  
-    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation) 
+    # + bucketName - The name of the bucket
+    # + objectName - The name of the object
+    # + action - The action to be done on the object (`RETRIEVE` for object retrieval or `CREATE` for object creation)
     # or the relevant headers for object retrieval or creation
-    # + expires - The time period for which the presigned URL is valid, in seconds  
-    # + partNo - The part number of the object, when uploading multipart objects  
+    # + expires - The time period for which the presigned URL is valid, in seconds
+    # + partNo - The part number of the object, when uploading multipart objects
     # + uploadId - The upload ID of the multipart upload
     # + return - If successful, a presigned URL, else an error
     @display {label: "Create Presigned URL"}
@@ -360,8 +359,8 @@ public isolated client class Client {
 
     # Initiates a multipart upload and returns an upload ID.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
     # + cannedACL - The access control list of the new object
     # + multipartUploadHeaders - Optional headers for multipart uploads
     # + return - If success, the upload ID, else an error
@@ -404,11 +403,11 @@ public isolated client class Client {
 
     # Completes a multipart upload by assembling previously uploaded parts.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
-    # + payload - The file content that needed to be added to the bucket  
-    # + uploadId - The upload ID of the multipart upload  
-    # + partNumber - The part number of the object  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
+    # + payload - The file content that needed to be added to the bucket
+    # + uploadId - The upload ID of the multipart upload
+    # + partNumber - The part number of the object
     # + uploadPartHeaders - Optional headers for the upload
     # + return - An error on failure or else `()`
     remote isolated function uploadPart(
@@ -459,9 +458,9 @@ public isolated client class Client {
 
     # Completes a multipart upload by assembling previously uploaded parts.
     #
-    # + objectName - The name of the object  
-    # + bucketName - The name of the bucket  
-    # + uploadId - The upload ID of the multipart upload  
+    # + objectName - The name of the object
+    # + bucketName - The name of the bucket
+    # + uploadId - The upload ID of the multipart upload
     # + completedParts - An array containing the part number and ETag of each uploaded part
     # + return - An error on failure or else `()`
     remote isolated function completeMultipartUpload(
@@ -503,7 +502,7 @@ public isolated client class Client {
     # Aborts a multipart upload.
     #
     # + objectName - The name of the object
-    # + bucketName - The name of the bucket 
+    # + bucketName - The name of the bucket
     # + uploadId - The upload ID of the multipart upload
     # + return - An error on failure or else `()`
     remote isolated function abortMultipartUpload(

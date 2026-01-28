@@ -38,10 +38,25 @@ ConnectionConfig amazonS3Config = {
     region: region
 };
 
-@test:Config{}
+@test:BeforeSuite
+function setupTests() returns error? {
+    Client amazonS3Client = check new (amazonS3Config);
+    error? emptyBucketResult = emptyBucket(amazonS3Client, testBucketName);
+    if emptyBucketResult is error {
+        io:println("Failed to empty the bucket: " + emptyBucketResult.toString());
+        // Ignore the result and continue
+    }
+    error? response = amazonS3Client->deleteBucket(testBucketName);
+    if response is error {
+        io:println("Failed to delete the bucket: " + response.toString());
+        // Ignore the result and continue
+    }
+}
+
+@test:Config {}
 function testCreateBucket() {
     log:printInfo("amazonS3Client->createBucket()");
-    Client|error amazonS3Client = new(amazonS3Config);
+    Client|error amazonS3Client = new (amazonS3Config);
     if (amazonS3Client is Client) {
         CannedACL cannedACL = ACL_PRIVATE;
         error? response = amazonS3Client->createBucket(testBucketName, cannedACL);
@@ -58,9 +73,9 @@ function testCreateBucket() {
 }
 function testListBuckets() {
     log:printInfo("amazonS3Client->listBuckets()");
-    Client|error amazonS3Client = new(amazonS3Config);
+    Client|error amazonS3Client = new (amazonS3Config);
     if (amazonS3Client is Client) {
-        Bucket[]|error response =  amazonS3Client->listBuckets();
+        Bucket[]|error response = amazonS3Client->listBuckets();
         if (response is error) {
             test:assertFail(response.toString());
         } else {
@@ -77,7 +92,7 @@ function testListBuckets() {
 }
 function testCreateObject() {
     log:printInfo("amazonS3Client->createObject()");
-    Client|error amazonS3Client = new(amazonS3Config);
+    Client|error amazonS3Client = new (amazonS3Config);
     if (amazonS3Client is Client) {
         error? response = amazonS3Client->createObject(testBucketName, fileName, content);
         if (response is error) {
@@ -117,15 +132,15 @@ function testCreatePresignedUrlPut() returns error? {
 }
 function testCreateObjectWithMetadata() returns error? {
     map<string> metadata = {
-        "Description" : "This is a text file",
-        "Language" : "English"
+        "Description": "This is a text file",
+        "Language": "English"
     };
-    
-    Client amazonS3Client = check new(amazonS3Config);
+
+    Client amazonS3Client = check new (amazonS3Config);
     _ = check amazonS3Client->createObject(testBucketName, fileName, content, userMetadataHeaders = metadata);
 }
 
-@test:Config {   
+@test:Config {
     dependsOn: [testGetObject]
 }
 function testCreatePresignedUrlWithInvalidObjectName() returns error? {
@@ -167,9 +182,9 @@ function testGetObject() returns error? {
 }
 function testListObjects() {
     log:printInfo("amazonS3Client->listObjects()");
-    Client|error amazonS3Client = new(amazonS3Config);
+    Client|error amazonS3Client = new (amazonS3Config);
     if (amazonS3Client is Client) {
-        S3Object[]|error response = amazonS3Client -> listObjects(testBucketName, fetchOwner = true);
+        S3Object[]|error response = amazonS3Client->listObjects(testBucketName, fetchOwner = true);
         if (response is error) {
             test:assertFail(response.toString());
         } else {
@@ -185,9 +200,9 @@ function testListObjects() {
 }
 function testDeleteObject() {
     log:printInfo("amazonS3Client->deleteObject()");
-    Client|error amazonS3Client = new(amazonS3Config);
+    Client|error amazonS3Client = new (amazonS3Config);
     if (amazonS3Client is Client) {
-        error? response = amazonS3Client -> deleteObject(testBucketName, fileName);
+        error? response = amazonS3Client->deleteObject(testBucketName, fileName);
         if (response is error) {
             test:assertFail(response.toString());
         }
@@ -246,15 +261,22 @@ function testAbortFileUpload() returns error? {
 }
 
 @test:AfterSuite {}
-function testDeleteBucket() {
+function testDeleteBucket() returns error? {
     log:printInfo("amazonS3Client->deleteBucket()");
-    Client|error amazonS3Client = new(amazonS3Config);
-    if (amazonS3Client is Client) {
-        error? response = amazonS3Client -> deleteBucket(testBucketName);
-        if (response is error) {
-            test:assertFail(response.toString());
+    Client amazonS3Client = check new (amazonS3Config);
+    check emptyBucket(amazonS3Client, testBucketName);
+    error? response = amazonS3Client->deleteBucket(testBucketName);
+    if response is error {
+        test:assertFail(response.toString());
+    }
+}
+
+isolated function emptyBucket(Client amazonS3Client, string bucketName) returns error? {
+    S3Object[] objects = check amazonS3Client->listObjects(bucketName);
+    foreach S3Object item in objects {
+        string? objectName = item.objectName;
+        if objectName is string {
+            check amazonS3Client->deleteObject(bucketName, objectName);
         }
-    } else {
-        test:assertFail(amazonS3Client.toString());
     }
 }
