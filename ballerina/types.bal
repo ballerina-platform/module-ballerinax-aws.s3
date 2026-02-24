@@ -32,15 +32,20 @@ public type ProfileAuthConfig record {|
     string credentialsFilePath = "~/.aws/credentials";
 |};
 
+# Represents the default AWS credential chain based authentication.
+# Automatically resolves credentials from environment variables, ECS container credentials,
+# EC2 instance profiles, and other standard AWS credential sources.
+public const DEFAULT_CREDENTIALS = "DEFAULT_CREDENTIALS";
+
 # Authentication configuration
-public type AuthConfig StaticAuthConfig|ProfileAuthConfig;
+public type AuthConfig StaticAuthConfig|ProfileAuthConfig|DEFAULT_CREDENTIALS;
 
 # Configuration for the AWS S3 Client.
 public type ConnectionConfig record {|
     # Authentication configuration
     AuthConfig auth;
      # The AWS Region. If you don't specify an AWS region, Client uses US East as default region
-    string region;
+    Region region;
 |};
 
 
@@ -61,7 +66,7 @@ public type Bucket record {
     # The creation date of the bucket
     string creationDate;
     # The AWS region of the bucket
-    string region;
+    Region region;
 };
 
 # Represents byte[], string, json and xml
@@ -314,6 +319,82 @@ public type ObjectInfo record {|
     # The Storage class of the object (e.g., "STANDARD", "GLACIER")
     StorageClass storageClass = STANDARD;
 |};
+
+# Represents an AWS Region used by the Amazon S3 client.
+public enum Region {
+    # Africa (Cape Town)
+    AF_SOUTH_1 = "af-south-1",
+    # Asia Pacific (Hong Kong)
+    AP_EAST_1 = "ap-east-1",
+    # Asia Pacific (Taipei)
+    AP_EAST_2 = "ap-east-2",
+    # Asia Pacific (Tokyo)
+    AP_NORTHEAST_1 = "ap-northeast-1",
+    # Asia Pacific (Seoul)
+    AP_NORTHEAST_2 = "ap-northeast-2",
+    # Asia Pacific (Osaka)
+    AP_NORTHEAST_3 = "ap-northeast-3",
+    # Asia Pacific (Mumbai)
+    AP_SOUTH_1 = "ap-south-1",
+    # Asia Pacific (Hyderabad)
+    AP_SOUTH_2 = "ap-south-2",
+    # Asia Pacific (Singapore)
+    AP_SOUTHEAST_1 = "ap-southeast-1",
+    # Asia Pacific (Sydney)
+    AP_SOUTHEAST_2 = "ap-southeast-2",
+    # Asia Pacific (Jakarta)
+    AP_SOUTHEAST_3 = "ap-southeast-3",
+    # Asia Pacific (Melbourne)
+    AP_SOUTHEAST_4 = "ap-southeast-4",
+    # Asia Pacific (Malaysia)
+    AP_SOUTHEAST_5 = "ap-southeast-5",
+    # Asia Pacific (New Zealand)
+    AP_SOUTHEAST_6 = "ap-southeast-6",
+    # Asia Pacific (Thailand)
+    AP_SOUTHEAST_7 = "ap-southeast-7",
+    # Canada West (Calgary)
+    CA_WEST_1 = "ca-west-1",
+    # Canada (Central)
+    CA_CENTRAL_1 = "ca-central-1",
+    # Europe (Frankfurt)
+    EU_CENTRAL_1 = "eu-central-1",
+    # Europe (Zurich)
+    EU_CENTRAL_2 = "eu-central-2",
+    # Europe (Stockholm)
+    EU_NORTH_1 = "eu-north-1",
+    # Europe (Milan)
+    EU_SOUTH_1 = "eu-south-1",
+    # Europe (Spain)
+    EU_SOUTH_2 = "eu-south-2",
+    # Europe (Ireland)
+    EU_WEST_1 = "eu-west-1",
+    # Europe (London)
+    EU_WEST_2 = "eu-west-2",
+    # Europe (Paris)
+    EU_WEST_3 = "eu-west-3",
+    # Israel (Tel Aviv)
+    IL_CENTRAL_1 = "il-central-1",
+    # Mexico (Central)
+    MX_CENTRAL_1 = "mx-central-1",
+    # Middle East (UAE)
+    ME_CENTRAL_1 = "me-central-1",
+    # Middle East (Bahrain)
+    ME_SOUTH_1 = "me-south-1",
+    # South America (São Paulo)
+    SA_EAST_1 = "sa-east-1",
+    # US East (N. Virginia)
+    US_EAST_1 = "us-east-1",
+    # US East (Ohio)
+    US_EAST_2 = "us-east-2",
+    # AWS GovCloud (US-East)
+    US_GOV_EAST_1 = "us-gov-east-1",
+    # AWS GovCloud (US-West)
+    US_GOV_WEST_1 = "us-gov-west-1",
+    # US West (N. California)
+    US_WEST_1 = "us-west-1",
+    # US West (Oregon)
+    US_WEST_2 = "us-west-2"
+}
 
 # Access control options for buckets and objects.
 public enum CannedACL {

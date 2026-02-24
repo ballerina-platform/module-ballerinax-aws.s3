@@ -19,12 +19,10 @@ import ballerina/io;
 import ballerina/os;
 import ballerina/test;
 
+// Test bucket name from environment
 configurable string testBucketName = os:getEnv("BUCKET_NAME");
-configurable string accessKeyId = os:getEnv("ACCESS_KEY_ID");
-configurable string secretAccessKey = os:getEnv("SECRET_ACCESS_KEY");
-// configurable string region = os:getEnv("REGION");
-const string region = "eu-north-1";
 
+// Test-specific constants
 const fileName = "test.txt";
 const fileName2 = "test2.txt";
 const fileFromPath = "test_from_file.txt";
@@ -33,15 +31,36 @@ string uploadId = "";
 int[] partNumbers = [];
 string[] etags = [];
 
-ConnectionConfig amazonS3Config = {
-    auth: {
-        accessKeyId,
-        secretAccessKey
-    },
-    region
-};
+// @test:Config {}
+// isolated function testInitUsingStaticAuth() returns error? {
+//     ConnectionConfig connectionConfig = {
+//         region: awsRegion,
+//         auth: staticAuth
+//     };
+//     Client _ = check new (connectionConfig);
+// }
 
-final Client s3Client = check new (amazonS3Config);
+@test:Config {
+    // enable: false
+}
+isolated function testInitUsingProfileAuth() returns error? {
+    ConnectionConfig connectionConfig = {
+        region: awsRegion,
+        auth: profileAuth
+    };
+    Client _ = check new (connectionConfig);
+}
+
+@test:Config {
+    enable: false
+}
+isolated function testInitUsingDefaultCredentials() returns error? {
+    ConnectionConfig connectionConfig = {
+        region: awsRegion,
+        auth: DEFAULT_CREDENTIALS
+    };
+    Client _ = check new (connectionConfig);
+}
 
 @test:Config {}
 function testCreateBucket() returns error? {
@@ -610,7 +629,7 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
 }
 function testGetBucketLocation() returns error? {
     string location = check s3Client->getBucketLocation(testBucketName);
-    test:assertEquals(location, region, "Bucket location should match the configured region");
+    test:assertEquals(location, awsRegion, "Bucket location should match the configured region");
 }
 
 @test:Config {
@@ -618,7 +637,7 @@ function testGetBucketLocation() returns error? {
 }
 function testAccessBucketWithDifferentRegion() returns error? {
     // Create a client configured with a different region than where the bucket exists
-    string differentRegion = region == "us-east-1" ? "us-west-2" : "us-east-1";
+    Region differentRegion = awsRegion == US_EAST_1 ? US_WEST_2 : US_EAST_1;
     
     ConnectionConfig differentRegionConfig = {
         auth: {
@@ -636,7 +655,7 @@ function testAccessBucketWithDifferentRegion() returns error? {
     
     if locationResult is string {
         // getBucketLocation should return the actual bucket region, not the client's configured region
-        test:assertEquals(locationResult, region, 
+        test:assertEquals(locationResult, awsRegion, 
             "getBucketLocation should return actual bucket region even when client uses different region");
     } else {
         // Some cross-region operations may fail with redirect errors

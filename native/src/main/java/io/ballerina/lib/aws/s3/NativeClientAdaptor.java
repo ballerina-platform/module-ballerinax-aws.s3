@@ -32,6 +32,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.profiles.ProfileFile;
@@ -197,7 +198,10 @@ public class NativeClientAdaptor {
 
     // Method for credentials provider based on auth config
     private static AwsCredentialsProvider createCredentialsProvider(BMap<BString, Object> auth) {
-        if (auth.containsKey(StringUtils.fromString("accessKeyId"))) {
+        
+        if (auth instanceof BString) {
+            return DefaultCredentialsProvider.create();
+        } else if (auth.containsKey(StringUtils.fromString("accessKeyId"))) {
             return createStaticCredentialsProvider(auth);
         } else if (auth.containsKey(StringUtils.fromString("profileName"))) {
             return createProfileCredentialsProvider(auth);

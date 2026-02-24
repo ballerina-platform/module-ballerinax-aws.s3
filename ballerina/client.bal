@@ -17,6 +17,10 @@
 import ballerina/jballerina.java;
 
 # The AWS S3 Client Connector.
+# 
+# Provides access to Amazon Simple Storage Service (S3) using the AWS SDK for Java V2.
+# Supports static credentials, profile-based credentials, and the default AWS credential
+# provider chain (environment variables, ECS container credentials, EC2 instance profiles, etc.).
 @display {label: "AWS S3 Client", iconPath: "icon.png"}
 public isolated client class Client {
 
