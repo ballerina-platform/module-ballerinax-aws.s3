@@ -31,17 +31,17 @@ string uploadId = "";
 int[] partNumbers = [];
 string[] etags = [];
 
-// @test:Config {}
-// isolated function testInitUsingStaticAuth() returns error? {
-//     ConnectionConfig connectionConfig = {
-//         region: awsRegion,
-//         auth: staticAuth
-//     };
-//     Client _ = check new (connectionConfig);
-// }
+@test:Config {}
+isolated function testInitUsingStaticAuth() returns error? {
+    ConnectionConfig connectionConfig = {
+        region: awsRegion,
+        auth: staticAuth
+    };
+    Client _ = check new (connectionConfig);
+}
 
 @test:Config {
-    // enable: false
+    enable: false
 }
 isolated function testInitUsingProfileAuth() returns error? {
     ConnectionConfig connectionConfig = {
