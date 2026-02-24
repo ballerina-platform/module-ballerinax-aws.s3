@@ -54,11 +54,11 @@ public function main() returns error? {
     io:println("Binary object uploaded: binary.bin");
 
     // 5. Retrieve String content
-    string retrievedText = check s3Client->getObject(bucketName, "sample.txt", string);
+    string retrievedText = check s3Client->getObjectAsText(bucketName, "sample.txt");
     io:println("Retrieved text: " + retrievedText);
 
     // 6. Retrieve JSON content
-    json retrievedJson = check s3Client->getObject(bucketName, "data.json", json);
+    json retrievedJson = check s3Client->getObjectAsJson(bucketName, "data.json");
     io:println("Retrieved JSON: " + retrievedJson.toJsonString());
 
     // 7. Get object metadata

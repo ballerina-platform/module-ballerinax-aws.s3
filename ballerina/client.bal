@@ -17,6 +17,10 @@
 import ballerina/jballerina.java;
 
 # The AWS S3 Client Connector.
+# 
+# Provides access to Amazon Simple Storage Service (S3) using the AWS SDK for Java V2.
+# Supports static credentials, profile-based credentials, and the default AWS credential
+# provider chain (environment variables, ECS container credentials, EC2 instance profiles, etc.).
 @display {label: "AWS S3 Client", iconPath: "icon.png"}
 public isolated client class Client {
 
@@ -131,52 +135,101 @@ public isolated client class Client {
     @display {label: "Get Object As Stream"}
     remote isolated function getObjectAsStream(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config)
+            *GetObjectConfig config) 
             returns @display {label: "Byte Stream"} stream<byte[], error?>|Error {
-        StreamIterator streamImpl = check nativeGetObject(self, bucketName, objectKey, config);
+        StreamIterator streamImpl = check nativeGetObjectAsStream(self, bucketName, objectKey, config);
         return new stream<byte[], Error?>(streamImpl);
     }
 
-    # Downloads an S3 object and returns its content in the specified type.
+    # Downloads an S3 object and returns its content as a byte array.
     # This method loads the entire object into memory and is suitable for smaller objects.
     # For large objects, consider using `getObjectAsStream` instead.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + targetType - The type to return the content as (Bytes, string, json, or xml). Defaults to Bytes
     # + config - Optional retrieval configuration
-    # + return - The object content in the requested type, or an Error
+    # + return - The object content as `byte[]` or an Error
     @display {label: "Get Object"}
     remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            @display {label: "Target Type"} typedesc<ContentType> targetType = <>,
-            *GetObjectConfig config)
-            returns @display {label: "Content"} targetType|Error = @java:Method {
-        name: "getObjectWithType",
-        'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
-    } external;
+            *GetObjectConfig config) 
+            returns @display {label: "Content"} byte[]|Error {
+        return nativeGetObject(self, bucketName, objectKey, config);
+    }
 
-    # Internal function to convert bytes to target type.
-    # This is called from Java and contains all conversion logic in Ballerina.
+    # Downloads an S3 object and returns its content as a string.
+    # This method loads the entire object into memory and is suitable for smaller objects.
+    # For large objects, consider using `getObjectAsStream` instead.
     #
-    # + bytes - The byte array to convert
-    # + targetType - The target type descriptor
-    # + return - Converted value or Error
-    isolated function getObjectInternal(byte[] bytes, typedesc<ContentType> targetType) returns ContentType|Error {
-        do {
-            if targetType is typedesc<byte[]> {
-                return bytes;
-            } else if targetType is typedesc<string> {
-                return check string:fromBytes(bytes);
-            } else if targetType is typedesc<json> {
-                string stringValue = check string:fromBytes(bytes);
-                return check stringValue.fromJsonStringWithType(targetType);
+    # + bucketName - The name of the bucket
+    # + objectKey - The path of the object
+    # + config - Optional retrieval configuration
+    # + return - The object content as `string` or an Error
+    @display {label: "Get Object As Text"}
+    remote isolated function getObjectAsText(@display {label: "Bucket Name"} string bucketName,
+            @display {label: "Object Key"} string objectKey,
+            *GetObjectConfig config) 
+            returns @display {label: "Text"} string|Error {
+        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
+        var textRes = string:fromBytes(bytes);
+        if textRes is string {
+            return textRes;
+        } else {
+            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
+        }
+    }
+
+    # Downloads an S3 object and parses it as JSON.
+    # This method loads the entire object into memory and is suitable for smaller objects.
+    # For large objects, consider using `getObjectAsStream` instead.
+    #
+    # + bucketName - The name of the bucket
+    # + objectKey - The path of the object
+    # + config - Optional retrieval configuration
+    # + return - The object content as `json` or an Error
+    @display {label: "Get Object As JSON"}
+    remote isolated function getObjectAsJson(@display {label: "Bucket Name"} string bucketName,
+            @display {label: "Object Key"} string objectKey,
+            *GetObjectConfig config) 
+            returns @display {label: "JSON"} json|Error {
+        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
+        var textRes = string:fromBytes(bytes);
+        if textRes is string {
+            var parsed = textRes.fromJsonString();
+            if parsed is json {
+                return parsed;
             } else {
-                string stringValue = check string:fromBytes(bytes);
-                return check xml:fromString(stringValue);
+                return error Error("Failed to parse JSON: " + parsed.message(), parsed);
             }
-        } on fail error err {
-            return error Error("Failed to convert object to target type: " + err.message(), err);
+        } else {
+            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
+        }
+    }
+
+    # Downloads an S3 object and parses it as XML.
+    # This method loads the entire object into memory and is suitable for smaller objects.
+    # For large objects, consider using `getObjectAsStream` instead.
+    #
+    # + bucketName - The name of the bucket
+    # + objectKey - The path of the object
+    # + config - Optional retrieval configuration
+    # + return - The object content as `xml` or an Error
+    @display {label: "Get Object As XML"}
+    remote isolated function getObjectAsXml(@display {label: "Bucket Name"} string bucketName,
+            @display {label: "Object Key"} string objectKey,
+            *GetObjectConfig config) 
+            returns @display {label: "XML"} xml|Error {
+        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
+        var textRes = string:fromBytes(bytes);
+        if textRes is string {
+            var parsed = xml:fromString(textRes);
+            if parsed is xml {
+                return parsed;
+            } else {
+                return error Error("Failed to parse XML: " + parsed.message(), parsed);
+            }
+        } else {
+            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
         }
     }
 
@@ -383,8 +436,13 @@ isolated function nativePutObjectWithContent(Client clientObj, string bucket, st
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 
-isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns StreamIterator|Error = @java:Method {
+isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns byte[]|Error = @java:Method {
     name: "getObject",
+    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+} external;
+
+isolated function nativeGetObjectAsStream(Client clientObj, string bucket, string key, GetObjectConfig config) returns StreamIterator|Error = @java:Method {
+    name: "getObjectAsStream",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 

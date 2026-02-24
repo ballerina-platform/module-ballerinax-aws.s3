@@ -40,7 +40,8 @@ public function main() returns error? {
     byte[] data = "Hello from streaming upload!".toBytes();
     stream<byte[], error?> uploadStream = [data].toStream();
 
-    check s3Client->putObjectAsStream(bucketName, objectKey1, uploadStream);
+    int contentLength = data.length();
+    check s3Client->putObjectAsStream(bucketName, objectKey1, uploadStream, contentLength = contentLength);
     io:println("Object uploaded via stream: " + objectKey1);
 
     // Example 2: Stream download (getObjectAsStream)

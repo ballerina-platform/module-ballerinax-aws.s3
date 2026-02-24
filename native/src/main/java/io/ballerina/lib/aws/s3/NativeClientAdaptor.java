@@ -26,13 +26,13 @@ import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BMap;
-import io.ballerina.runtime.api.values.BTypedesc;
 import io.ballerina.runtime.api.utils.StringUtils;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.profiles.ProfileFile;
@@ -198,7 +198,10 @@ public class NativeClientAdaptor {
 
     // Method for credentials provider based on auth config
     private static AwsCredentialsProvider createCredentialsProvider(BMap<BString, Object> auth) {
-        if (auth.containsKey(StringUtils.fromString("accessKeyId"))) {
+        
+        if (auth instanceof BString) {
+            return DefaultCredentialsProvider.create();
+        } else if (auth.containsKey(StringUtils.fromString("accessKeyId"))) {
             return createStaticCredentialsProvider(auth);
         } else if (auth.containsKey(StringUtils.fromString("profileName"))) {
             return createProfileCredentialsProvider(auth);
@@ -445,7 +448,7 @@ public class NativeClientAdaptor {
         applyMetadataConfig(config, "metadata", builder::metadata);
     }
 
-    public static Object getObject(Environment env, BObject clientObj, BString bucket, BString key,
+    public static Object getObjectAsStream(Environment env, BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
         S3Client s3 = getClient(clientObj);
         try {
@@ -470,8 +473,8 @@ public class NativeClientAdaptor {
         }
     }
 
-    public static Object getObjectWithType(Environment env, BObject clientObj, BString bucket, BString key,
-            BTypedesc targetType, BMap<BString, Object> config) {
+    public static Object getObject(BObject clientObj, BString bucket, BString key,
+            BMap<BString, Object> config) {
         S3Client s3 = getClient(clientObj);
         try {
             GetObjectRequest.Builder builder = GetObjectRequest.builder()
@@ -488,15 +491,8 @@ public class NativeClientAdaptor {
 
             ResponseBytes<GetObjectResponse> responseBytes = s3.getObjectAsBytes(builder.build());
             byte[] bytes = responseBytes.asByteArray();
-            BArray byteArray = ValueCreator.createArrayValue(bytes);
 
-            // Call Ballerina getObjectInternal method to do the conversion
-            return env.getRuntime().callMethod(
-                    clientObj,
-                    "getObjectInternal",
-                    null,
-                    byteArray,
-                    targetType);
+            return ValueCreator.createArrayValue(bytes);
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }
