@@ -190,7 +190,7 @@ public type CopyObjectConfig record {|
 public type HeadObjectConfig record {|
     # Get metadata for a specific version of the object (when versioning is enabled)
     string versionId?;
-    # The part number of the file part to get metadata for 
+    # The part number of the file part to get metadata for
     int partNumber?;
     # Return the metadata only if its entity tag (ETag) is the same as the one specified
     string ifMatch?;

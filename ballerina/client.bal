@@ -68,7 +68,7 @@ public isolated client class Client {
     # + bucketName - The name of the bucket
     # + return - Region string or an Error
     @display {label: "Get Bucket Location"}
-    remote isolated function getBucketLocation(@display {label: "Bucket Name"} string bucketName) 
+    remote isolated function getBucketLocation(@display {label: "Bucket Name"} string bucketName)
             returns @display {label: "Region"} string|Error = @java:Method {
         name: "getBucketLocation",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
@@ -270,7 +270,7 @@ public isolated client class Client {
     @display {label: "Create Presigned URL"}
     remote isolated function createPresignedUrl(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *PresignedUrlConfig config) 
+            *PresignedUrlConfig config)
             returns @display {label: "Presigned URL"} string|Error = @java:Method {
         name: "createPresignedUrl",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
@@ -285,7 +285,7 @@ public isolated client class Client {
     @display {label: "Get Object Metadata"}
     remote isolated function getObjectMetadata(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *HeadObjectConfig config) 
+            *HeadObjectConfig config)
             returns @display {label: "Metadata"} ObjectMetadata|Error {
         json result = check nativeHeadObject(self, bucketName, objectKey, config);
         ObjectMetadata|error metadata = result.fromJsonWithType();
@@ -320,7 +320,7 @@ public isolated client class Client {
     # + return - True if exists, false otherwise
     @display {label: "Does Object Exist"}
     remote isolated function doesObjectExist(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey) 
+            @display {label: "Object Key"} string objectKey)
             returns @display {label: "Exists"} boolean = @java:Method {
         name: "doesObjectExist",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
@@ -335,7 +335,7 @@ public isolated client class Client {
     @display {label: "Create Multipart Upload"}
     remote isolated function createMultipartUpload(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *MultipartUploadConfig config) 
+            *MultipartUploadConfig config)
             returns @display {label: "Upload ID"} string|Error = @java:Method {
         name: "createMultipartUpload",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
