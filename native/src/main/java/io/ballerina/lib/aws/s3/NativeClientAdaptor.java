@@ -167,7 +167,6 @@ public class NativeClientAdaptor {
     }
 
     // Client Initialization Method
-    @SuppressWarnings("unchecked")
     public static Object initClient(Environment env, BObject clientObj, BMap<BString, Object> config) {
         try {
             ErrorCreator.initModule(env);
@@ -175,11 +174,11 @@ public class NativeClientAdaptor {
             String region = config.getStringValue(StringUtils.fromString("region")).getValue();
             Object authObj = config.get(StringUtils.fromString("auth"));
 
-            if (!(authObj instanceof BMap)) {
+            if (!(authObj instanceof BMap) && !(authObj instanceof BString)) {
                 return ErrorCreator.createError("Invalid auth configuration provided");
             }
 
-            BMap<BString, Object> auth = (BMap<BString, Object>) authObj;
+            Object auth = authObj;
             AwsCredentialsProvider credentialsProvider = createCredentialsProvider(auth);
 
             S3Client s3Client = S3Client.builder()
@@ -196,18 +195,35 @@ public class NativeClientAdaptor {
         }
     }
 
+    // Close client and release resources
+    public static Object closeClient(BObject clientObj) {
+        Object nativeClient = clientObj.getNativeData(NATIVE_CLIENT);
+        if (nativeClient instanceof S3Client) {
+            try {
+                ((S3Client) nativeClient).close();
+                clientObj.addNativeData(NATIVE_CLIENT, null);
+                return null;
+            } catch (Exception e) {
+                return ErrorCreator.createError(e);
+            }
+        }
+        return null;
+    }
+
     // Method for credentials provider based on auth config
-    private static AwsCredentialsProvider createCredentialsProvider(BMap<BString, Object> auth) {
-        
+    @SuppressWarnings("unchecked")
+    private static AwsCredentialsProvider createCredentialsProvider(Object auth) {
         if (auth instanceof BString) {
             return DefaultCredentialsProvider.create();
-        } else if (auth.containsKey(StringUtils.fromString("accessKeyId"))) {
-            return createStaticCredentialsProvider(auth);
-        } else if (auth.containsKey(StringUtils.fromString("profileName"))) {
-            return createProfileCredentialsProvider(auth);
-        } else {
-            throw new IllegalArgumentException("Unsupported auth configuration");
+        } else if (auth instanceof BMap) {
+            BMap<BString, Object> authMap = (BMap<BString, Object>) auth;
+            if (authMap.containsKey(StringUtils.fromString("accessKeyId"))) {
+                return createStaticCredentialsProvider(authMap);
+            } else if (authMap.containsKey(StringUtils.fromString("profileName"))) {
+                return createProfileCredentialsProvider(authMap);
+            }
         }
+        throw new IllegalArgumentException("Unsupported auth configuration");
     }
 
     // Handle static credentials with optional session token
@@ -403,7 +419,6 @@ public class NativeClientAdaptor {
     public static Object putObjectWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BStream contentStream, BMap<BString, Object> config) {
         S3Client s3 = getClient(clientObj);
-
         try {
             long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
 
@@ -413,9 +428,6 @@ public class NativeClientAdaptor {
                         "contentLength must be a positive value, got: " + contentLength);
             }
 
-            // Create input stream from Ballerina stream
-            InputStream inputStream = new BallerinaStreamInputStream(env, contentStream);
-
             PutObjectRequest.Builder builder = PutObjectRequest.builder()
                     .bucket(bucket.getValue())
                     .key(key.getValue())
@@ -423,10 +435,9 @@ public class NativeClientAdaptor {
 
             applyPutObjectConfig(builder, config);
 
-            s3.putObject(builder.build(), RequestBody.fromInputStream(inputStream, contentLength));
-
-            // Close the stream
-            inputStream.close();
+            try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
+                s3.putObject(builder.build(), RequestBody.fromInputStream(inputStream, contentLength));
+            }
 
             return null;
 
@@ -638,7 +649,7 @@ public class NativeClientAdaptor {
         }
     }
 
-    public static boolean doesObjectExist(BObject clientObj, BString bucket, BString key) {
+    public static Object doesObjectExist(BObject clientObj, BString bucket, BString key) {
         S3Client s3 = getClient(clientObj);
         try {
             HeadObjectRequest request = HeadObjectRequest.builder()
@@ -650,7 +661,7 @@ public class NativeClientAdaptor {
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
-            throw ErrorCreator.createError(e);
+            return ErrorCreator.createError(e);
         }
     }
 
@@ -720,16 +731,13 @@ public class NativeClientAdaptor {
                     .partNumber((int) partNumber)
                     .contentLength(contentLength);
 
-            applyStringConfig(config, "contentMD5", builder::contentMD5);
+                applyStringConfig(config, "contentMD5", builder::contentMD5);
 
-            InputStream inputStream = new BallerinaStreamInputStream(env, contentStream);
-
-            UploadPartResponse response = s3.uploadPart(builder.build(),
+                try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
+                UploadPartResponse response = s3.uploadPart(builder.build(),
                     RequestBody.fromInputStream(inputStream, contentLength));
-
-            inputStream.close();
-
-            return StringUtils.fromString(response.eTag());
+                return StringUtils.fromString(response.eTag());
+                }
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }

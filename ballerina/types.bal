@@ -29,7 +29,7 @@ public type ProfileAuthConfig record {|
     # AWS shared credentials profile name
     string profileName = "default";
     # Path to the credentials file
-    string credentialsFilePath = "~/.aws/credentials";
+    string credentialsFilePath?;
 |};
 
 # Represents the default AWS credential chain based authentication.

@@ -325,7 +325,7 @@ public isolated client class Client {
     @display {label: "Does Object Exist"}
     remote isolated function doesObjectExist(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey)
-            returns @display {label: "Exists"} boolean = @java:Method {
+            returns @display {label: "Exists"} boolean|Error = @java:Method {
         name: "doesObjectExist",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
@@ -418,11 +418,23 @@ public isolated client class Client {
         name: "abortMultipartUpload",
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
+
+    # Closes the underlying S3 client and releases resources.
+    #
+    # + return - An Error if closing fails
+    public isolated function close() returns Error? {
+        return closeClient(self);
+    }
 }
 
 // NATIVE INTEROP DECLARATIONS
 isolated function initClient(Client clientObj, ConnectionConfig config) returns Error? = @java:Method {
     name: "initClient",
+    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+} external;
+
+isolated function closeClient(Client clientObj) returns Error? = @java:Method {
+    name: "closeClient",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 

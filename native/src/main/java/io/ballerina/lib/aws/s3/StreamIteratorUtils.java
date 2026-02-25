@@ -25,12 +25,18 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import java.io.IOException;
 
 public class StreamIteratorUtils {
+    /**
+     * Key used to store the native ResponseInputStream in the BObject native data map.
+     * Keep this value in sync with the Ballerina side that stores/reads the native reference;
+     * a typo in the key would silently return null and lead to misleading "Stream is closed" errors.
+     */
+    private static final String NATIVE_STREAM = "NATIVE_STREAM";
 
     // Stream Operations
     @SuppressWarnings("unchecked")
     public static Object readStreamBytes(BObject streamWrapper) {
         ResponseInputStream<GetObjectResponse> input = (ResponseInputStream<GetObjectResponse>) streamWrapper
-                .getNativeData("NATIVE_STREAM");
+                .getNativeData(NATIVE_STREAM);
         if (input == null)
             return ErrorCreator.createError("Stream is closed.");
 
@@ -39,7 +45,7 @@ public class StreamIteratorUtils {
             int read = input.read(buffer);
             if (read == -1) {
                 input.close();
-                streamWrapper.addNativeData("NATIVE_STREAM", null);
+                streamWrapper.addNativeData(NATIVE_STREAM, null);
                 return null;
             }
             if (read < 4096) {
@@ -56,14 +62,14 @@ public class StreamIteratorUtils {
     @SuppressWarnings("unchecked")
     public static Object closeStream(BObject streamWrapper) {
         ResponseInputStream<GetObjectResponse> input = (ResponseInputStream<GetObjectResponse>) streamWrapper
-                .getNativeData("NATIVE_STREAM");
+                .getNativeData(NATIVE_STREAM);
         if (input == null) {
             return null; // Already closed
         }
 
         try {
             input.close();
-            streamWrapper.addNativeData("NATIVE_STREAM", null);
+            streamWrapper.addNativeData(NATIVE_STREAM, null);
             return null;
         } catch (IOException e) {
             return ErrorCreator.createError(e);

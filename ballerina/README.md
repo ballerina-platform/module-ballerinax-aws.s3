@@ -147,7 +147,7 @@ final byte[]? next = (); // placeholder to illustrate stream consumption
 #### List and delete objects
 ```ballerina
 // List objects in a bucket
-aws.s3:ListObjectsResponse resp = check s3Client->listObjects("my-s3-bucket", {
+s3:ListObjectsResponse resp = check s3Client->listObjects("my-s3-bucket", {
    prefix: "docs/",
    maxKeys: 100
 });
@@ -159,7 +159,7 @@ check s3Client->deleteObject("my-s3-bucket", "docs/readme.txt");
 #### Bucket utilities
 ```ballerina
 // List buckets
-aws.s3:Bucket[] buckets = check s3Client->listBuckets();
+s3:Bucket[] buckets = check s3Client->listBuckets();
 
 // Get bucket region
 string region = check s3Client->getBucketLocation("my-s3-bucket");
