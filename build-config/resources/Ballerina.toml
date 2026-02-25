@@ -272,3 +272,15 @@ groupId = "software.amazon.awssdk"
 artifactId = "utils"
 version = "@aws.s3.version@"
 path = "./lib/utils-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries-spi"
+version = "@aws.s3.version@"
+path = "./lib/retries-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries"
+version = "@aws.s3.version@"
+path = "./lib/retries-@aws.s3.version@.jar"

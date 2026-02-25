@@ -185,6 +185,12 @@ dependencies {
     externalJars(group: 'software.amazon.awssdk', name:'utils', version: "${awsS3SdkVersion}") {
         transitive = true
     }
+    externalJars(group: 'software.amazon.awssdk', name:'retries-spi', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'retries', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
 }
 
 task updateTomlFiles {

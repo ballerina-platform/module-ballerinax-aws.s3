@@ -113,7 +113,7 @@ function testListBuckets() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testListBuckets]
+    dependsOn: [testCreateBucket]
 }
 function testCreateObject() returns error? {
     check s3Client->putObject(testBucketName, fileName, content);
@@ -779,10 +779,10 @@ function testCopyObjectWithNewName() returns error? {
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey);
     
     // Verify both objects exist
-    boolean sourceExists = s3Client->doesObjectExist(testBucketName, sourceKey);
-    boolean destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
-    test:assertTrue(sourceExists, msg = "Source object should still exist after copy");
-    test:assertTrue(destExists, msg = "Destination object should exist after copy");
+    boolean|error sourceExists = s3Client->doesObjectExist(testBucketName, sourceKey);
+    boolean|error destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
+    test:assertTrue(sourceExists is boolean && sourceExists, msg = "Source object should still exist after copy");
+    test:assertTrue(destExists is boolean && destExists, msg = "Destination object should exist after copy");
     
     // Clean up
     check s3Client->deleteObject(testBucketName, sourceKey);
@@ -816,8 +816,8 @@ function testCopyObjectWithMetadata() returns error? {
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey, copyConfig);
     
     // Verify the copied object exists
-    boolean destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
-    test:assertTrue(destExists, msg = "Destination object should exist after copy");
+    boolean|error destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
+    test:assertTrue(destExists is boolean && destExists, msg = "Destination object should exist after copy");
     
     // Clean up
     check s3Client->deleteObject(testBucketName, sourceKey);
@@ -835,14 +835,14 @@ function testCopyObjectFromNonExistentSource() returns error? {
 }
 function testDoesObjectExist() returns error? {
     // Test with existing object (fileName is created in testCreateObject)
-    boolean exists = s3Client->doesObjectExist(testBucketName, fileName);
-    test:assertTrue(exists, msg = "Object should exist");
+    boolean|error exists = s3Client->doesObjectExist(testBucketName, fileName);
+    test:assertTrue(exists is boolean && exists, msg = "Object should exist");
 }
 
 @test:Config {}
 function testDoesObjectExistForNonExistentObject() returns error? {
-    boolean exists = s3Client->doesObjectExist(testBucketName, "non-existent-object-xyz-123.txt");
-    test:assertFalse(exists, msg = "Non-existent object should return false");
+    boolean|error exists = s3Client->doesObjectExist(testBucketName, "non-existent-object-xyz-123.txt");
+    test:assertFalse(exists is boolean && exists, msg = "Non-existent object should return false");
 }
 
 @test:Config {
@@ -853,27 +853,27 @@ function testDoesObjectExistAfterUploadAndDelete() returns error? {
     byte[] objectContent = "Test content for existence check".toBytes();
     
     // Initially object should not exist
-    boolean existsBefore = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertFalse(existsBefore, msg = "Object should not exist before upload");
+    boolean|error existsBefore = s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertFalse(existsBefore is boolean && existsBefore, msg = "Object should not exist before upload");
     
     // Upload the object
     check s3Client->putObject(testBucketName, objectKey, objectContent);
     
     // Now object should exist
-    boolean existsAfterUpload = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertTrue(existsAfterUpload, msg = "Object should exist after upload");
+    boolean|error existsAfterUpload = s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertTrue(existsAfterUpload is boolean && existsAfterUpload, msg = "Object should exist after upload");
     
     // Delete the object
     check s3Client->deleteObject(testBucketName, objectKey);
     
     // Object should not exist after deletion
-    boolean existsAfterDelete = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertFalse(existsAfterDelete, msg = "Object should not exist after deletion");
+    boolean|error existsAfterDelete = s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertFalse(existsAfterDelete is boolean && existsAfterDelete, msg = "Object should not exist after deletion");
 }
 
 @test:Config {}
 function testDoesObjectExistWithEmptyKey() returns error? {
-    boolean|error result = trap s3Client->doesObjectExist(testBucketName, "");
+    boolean|error result = s3Client->doesObjectExist(testBucketName, "");
     test:assertTrue(result is error, msg = "Empty key should throw an error");
 }
 
@@ -900,7 +900,7 @@ function testCreatePresignedUrlPut() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testGetObjectAsStream]
+    dependsOn: [testCreateObject]
 }
 function testCreatePresignedUrlWithInvalidObjectName() returns error? {
     PresignedUrlConfig urlConfig = {expirationMinutes: 60, httpMethod: "GET"};
@@ -910,7 +910,7 @@ function testCreatePresignedUrlWithInvalidObjectName() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testGetObjectAsStream]
+    dependsOn: [testCreateObject]
 }
 
 function testCreatePresignedUrlWithInvalidBucketName() returns error? {
@@ -944,7 +944,7 @@ function testGetObject() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testGetObject]
+    dependsOn: [testCreateObject]
 }
 function testGetObjectAsString() returns error? {
     // Test getting object as string using the getObjectAsText API
@@ -1001,14 +1001,14 @@ function testListObjects() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testListObjects]
+    dependsOn: [testCreateObject]
 }
 function testDeleteObject() returns error? {
     check s3Client->deleteObject(testBucketName, fileName);
 }
 
 @test:Config {
-    dependsOn: [testListObjects]
+    dependsOn: [testCreateBucket]
 }
 function testCreateMultipartUpload() returns error? {
     uploadId = check s3Client->createMultipartUpload(testBucketName, fileName2);
@@ -1180,7 +1180,7 @@ function testAbortMultipartUploadForStreamTest() returns error? {
     check s3Client->abortMultipartUpload(testBucketName, objectKey, abortUploadId);
     
     // Verify the object doesn't exist (upload was aborted, not completed)
-    boolean exists = s3Client->doesObjectExist(testBucketName, objectKey);
+    boolean exists = check s3Client->doesObjectExist(testBucketName, objectKey);
     test:assertFalse(exists, msg = "Object should not exist after aborting multipart upload");
 }
 
@@ -1212,11 +1212,26 @@ function testDeleteBucketWithInvalidName() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testListBuckets],
+    dependsOn: [testCreateBucket],
     before: testCreateMultipartUpload
 }
 function testAbortFileUpload() returns error? {
-    check s3Client->abortMultipartUpload(testBucketName, fileName2, uploadId);
+    // Create a multipart upload and abort it within this test to avoid relying on
+    // the module-level `uploadId` which may not be set at execution time.
+    string localUploadId = check s3Client->createMultipartUpload(testBucketName, fileName2);
+    test:assertTrue(localUploadId.length() > 0, "Failed to create multipart upload for file abort test");
+
+    // Upload a small part so there is something to abort
+    byte[] partContent = "Part to be aborted".toBytes();
+    string etag = check s3Client->uploadPart(testBucketName, fileName2, localUploadId, 1, partContent);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload part for abort test");
+
+    // Abort the multipart upload
+    check s3Client->abortMultipartUpload(testBucketName, fileName2, localUploadId);
+
+    // Verify the object doesn't exist after abort
+    boolean exists = check s3Client->doesObjectExist(testBucketName, fileName2);
+    test:assertFalse(exists, msg = "Object should not exist after aborting multipart upload");
 }
 
 @test:AfterSuite {}
