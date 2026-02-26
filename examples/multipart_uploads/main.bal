@@ -38,38 +38,48 @@ public function main() returns error? {
     // Create multipart upload
     string uploadId = check s3Client->createMultipartUpload(bucketName, objectKey);
     io:println("Multipart upload created. Upload ID: " + uploadId);
+    do {
+        // Upload parts (minimum 5MB each except last part)
+        string[] etags = [];
+        int[] partNumbers = [];
 
-    // Upload parts (minimum 5MB each except last part)
-    string[] etags = [];
-    int[] partNumbers = [];
+        // Part 1: 5MB
+        io:println("Uploading Part 1 (5MB)...");
+        byte[] part1 = createData(5 * 1024 * 1024);
+        string etag1 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 1, part1);
+        etags.push(etag1);
+        partNumbers.push(1);
+        io:println("Part 1 uploaded. ETag: " + etag1);
 
-    // Part 1: 5MB
-    io:println("Uploading Part 1 (5MB)...");
-    byte[] part1 = createData(5 * 1024 * 1024);
-    string etag1 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 1, part1);
-    etags.push(etag1);
-    partNumbers.push(1);
-    io:println("Part 1 uploaded. ETag: " + etag1);
+        // Part 2: 5MB
+        io:println("Uploading Part 2 (5MB)...");
+        byte[] part2 = createData(5 * 1024 * 1024);
+        string etag2 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 2, part2);
+        etags.push(etag2);
+        partNumbers.push(2);
+        io:println("Part 2 uploaded. ETag: " + etag2);
 
-    // Part 2: 5MB
-    io:println("Uploading Part 2 (5MB)...");
-    byte[] part2 = createData(5 * 1024 * 1024);
-    string etag2 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 2, part2);
-    etags.push(etag2);
-    partNumbers.push(2);
-    io:println("Part 2 uploaded. ETag: " + etag2);
+        // Part 3: 1MB (last part can be smaller)
+        io:println("Uploading Part 3 (1MB - last part)...");
+        byte[] part3 = createData(1 * 1024 * 1024);
+        string etag3 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 3, part3);
+        etags.push(etag3);
+        partNumbers.push(3);
+        io:println("Part 3 uploaded. ETag: " + etag3);
 
-    // Part 3: 1MB (last part can be smaller)
-    io:println("Uploading Part 3 (1MB - last part)...");
-    byte[] part3 = createData(1 * 1024 * 1024);
-    string etag3 = check s3Client->uploadPart(bucketName, objectKey, uploadId, 3, part3);
-    etags.push(etag3);
-    partNumbers.push(3);
-    io:println("Part 3 uploaded. ETag: " + etag3);
+        // Complete multipart upload
+        check s3Client->completeMultipartUpload(bucketName, objectKey, uploadId, partNumbers, etags);
+        io:println("Multipart upload completed successfully!");
+        
+    } on fail error e {
+        // Attempt best-effort abort of the multipart upload and log if it fails
+        error? abortErr = s3Client->abortMultipartUpload(bucketName, objectKey, uploadId);
+        if abortErr is error {
+            io:println("Warning: abortMultipartUpload failed: " + abortErr.message());
+        }
+        return e;
+    }
 
-    // Complete multipart upload
-    check s3Client->completeMultipartUpload(bucketName, objectKey, uploadId, partNumbers, etags);
-    io:println("Multipart upload completed successfully!");
     io:println("Total file size: 11 MB");
 
     // Clean up

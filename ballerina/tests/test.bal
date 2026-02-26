@@ -17,6 +17,7 @@
 import ballerina/http;
 import ballerina/io;
 import ballerina/os;
+import ballerina/random;
 import ballerina/test;
 
 // Test bucket name from environment
@@ -145,7 +146,7 @@ function testPutObjectFromFile() returns error? {
     
     // Clean up: delete the uploaded object and temp file
     check s3Client->deleteObject(testBucketName, fileFromPath);
-    check io:fileWriteString(tempFilePath, ""); // Clear file
+    check io:fileWriteString(tempFilePath, "");
 }
 
 @test:Config {
@@ -301,7 +302,7 @@ function testPutObjectAsStream() returns error? {
     // Create a temporary file to stream from
     check io:fileWriteString(tempFilePath, streamContent);
     
-    // Read content from file and upload (simulating stream usage pattern)
+    // Read content from file and upload
     byte[] fileContent = check io:fileReadBytes(tempFilePath);
     
     // Upload using putObject with byte content
@@ -336,7 +337,7 @@ function testPutObjectAsStreamWithMetadata() returns error? {
     // Read content from file
     byte[] fileContent = check io:fileReadBytes(tempFilePath);
     
-    // Upload with metadata (use lowercase keys as AWS lowercases them)
+    // Upload with metadata
     map<string> metadata = {
         "uploadtype": "Stream",
         "version": "1.0"
@@ -379,7 +380,7 @@ function testPutObjectAsStreamLargeFile() returns error? {
     string objectKey = "test_stream_large_content.txt";
     string tempFilePath = "./tests/resources/temp_large_stream_file.txt";
     
-    // Create a larger content (multiple chunks)
+    // Create a larger content
     string largeContent = "";
     int i = 0;
     while i < 1000 {
@@ -406,6 +407,7 @@ function testPutObjectAsStreamLargeFile() returns error? {
     
     string downloadedContent = check string:fromBytes(fullContent);
     test:assertEquals(downloadedContent, largeContent, "Large stream content mismatch");
+    check response.close();
     
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
@@ -445,6 +447,7 @@ function testPutObjectAsStreamDirect() returns error? {
     
     string downloadedContent = check string:fromBytes(fullContent);
     test:assertEquals(downloadedContent, streamContent, "Stream content mismatch");
+    check response.close();
     
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
@@ -461,7 +464,7 @@ function testPutObjectAsStreamDirectWithMetadata() returns error? {
     // Create a temporary file to stream from
     check io:fileWriteString(tempFilePath, streamContent);
     
-    // Calculate content length (REQUIRED)
+    // Calculate content length 
     int contentLength = streamContent.toBytes().length();
 
     // Open file as a byte block stream
@@ -473,7 +476,7 @@ function testPutObjectAsStreamDirectWithMetadata() returns error? {
         "testtype": "putObjectAsStream"
     };
     PutObjectStreamConfig putConfig = {
-        contentLength: contentLength,  // REQUIRED
+        contentLength: contentLength,
         metadata: metadata
     };
     check s3Client->putObjectAsStream(testBucketName, objectKey, fileStream, putConfig);
@@ -511,7 +514,7 @@ function testUploadPartAsStreamDirect() returns error? {
     string partContent = "This is part content uploaded via uploadPartAsStream method directly.";
     check io:fileWriteString(tempFilePath, partContent);
     
-    // Calculate content length (REQUIRED)
+    // Calculate content length 
     int contentLength = partContent.toBytes().length();
 
     // Create multipart upload
@@ -521,14 +524,14 @@ function testUploadPartAsStreamDirect() returns error? {
     // Open file as a byte block stream
     stream<io:Block, io:Error?> fileStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload part using uploadPartAsStream with contentLength (REQUIRED)
+    // Upload part using uploadPartAsStream with contentLength 
     string etag = check s3Client->uploadPartAsStream(
         testBucketName,
         objectKey,
         streamUploadId,
         1,
         fileStream,
-        contentLength = contentLength  // REQUIRED parameter
+        contentLength = contentLength
     );
     test:assertTrue(etag.length() > 0, msg = "Failed to upload part via uploadPartAsStream");
     
@@ -568,21 +571,21 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
     }
     check io:fileWriteBytes(tempFilePath1, part1Bytes);
     
-    // Calculate part 1 content length (REQUIRED)
+    // Calculate part 1 content length 
     int part1Length = part1Bytes.length();
 
     // Part 2 can be smaller (last part)
     string part2Content = "This is the last part uploaded via uploadPartAsStream.";
     check io:fileWriteString(tempFilePath2, part2Content);
     
-    // Calculate part 2 content length (REQUIRED)
+    // Calculate part 2 content length 
     int part2Length = part2Content.toBytes().length();
 
     // Create multipart upload
     string multiPartUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(multiPartUploadId.length() > 0, "Failed to create multipart upload");
     
-    // Upload part 1 using uploadPartAsStream with contentLength (REQUIRED)
+    // Upload part 1 using uploadPartAsStream with contentLength 
     stream<io:Block, io:Error?> fileStream1 = check io:fileReadBlocksAsStream(tempFilePath1, 65536); // 64KB chunks
     string etag1 = check s3Client->uploadPartAsStream(
         testBucketName,
@@ -590,11 +593,11 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
         multiPartUploadId,
         1,
         fileStream1,
-        contentLength = part1Length  // REQUIRED
+        contentLength = part1Length
     );
     test:assertTrue(etag1.length() > 0, msg = "Failed to upload part 1 via uploadPartAsStream");
     
-    // Upload part 2 using uploadPartAsStream with contentLength (REQUIRED)
+    // Upload part 2 using uploadPartAsStream with contentLength 
     stream<io:Block, io:Error?> fileStream2 = check io:fileReadBlocksAsStream(tempFilePath2, 4096);
     string etag2 = check s3Client->uploadPartAsStream(
         testBucketName, 
@@ -602,7 +605,7 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
         multiPartUploadId, 
         2, 
         fileStream2, 
-        contentLength = part2Length  // REQUIRED
+        contentLength = part2Length
     );
     test:assertTrue(etag2.length() > 0, msg = "Failed to upload part 2 via uploadPartAsStream");
     
@@ -619,6 +622,7 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
     
     int expectedSize = part1Bytes.length() + part2Content.toBytes().length();
     test:assertEquals(fullDownloadedContent.length(), expectedSize, "Multi-part stream content size mismatch");
+    check response.close();
     
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
@@ -638,44 +642,21 @@ function testGetBucketLocation() returns error? {
 function testAccessBucketWithDifferentRegion() returns error? {
     // Create a client configured with a different region than where the bucket exists
     Region differentRegion = awsRegion == US_EAST_1 ? US_WEST_2 : US_EAST_1;
-    
-    ConnectionConfig differentRegionConfig = {
-        auth: {
-            accessKeyId,
-            secretAccessKey
-        },
-        region: differentRegion
-    };
-    
-    Client differentRegionClient = check new (differentRegionConfig);
-    
-    // Try to get bucket location - this should still work and return the actual bucket region
-    // AWS S3 allows cross-region access but returns the actual bucket location
-    string|error locationResult = differentRegionClient->getBucketLocation(testBucketName);
-    
-    if locationResult is string {
-        // getBucketLocation should return the actual bucket region, not the client's configured region
-        test:assertEquals(locationResult, awsRegion, 
-            "getBucketLocation should return actual bucket region even when client uses different region");
-    } else {
-        // Some cross-region operations may fail with redirect errors
-        // This is expected behavior for certain S3 operations
-        test:assertTrue(locationResult.message().includes("redirect") || 
-                       locationResult.message().includes("PermanentRedirect") ||
-                       locationResult.message().includes("region"),
-            msg = "Cross-region error should be related to region mismatch");
-    }
-    
-    // Try to list objects in the bucket with mismatched region
-    ListObjectsResponse|Error listResult = differentRegionClient->listObjects(testBucketName);
-    
-    if listResult is ListObjectsResponse {
-        // If listing succeeds, AWS handled the cross-region request
-        test:assertTrue(true, msg = "Cross-region listObjects succeeded (AWS handled redirect)");
-    } else {
-        // Cross-region access may fail - this is acceptable behavior
-        test:assertTrue(true, msg = "Cross-region listObjects failed as expected: " + listResult.message());
-    }
+
+    // Use helper function to create client with proper auth handling
+    Client differentRegionClient = check createS3ClientWithRegion(differentRegion);
+
+    // Cross-region access is enabled via the AWS SDK's crossRegionAccessEnabled feature.
+    // The SDK automatically detects the bucket's actual region and routes requests there.
+    // getBucketLocation should succeed and return the actual bucket region
+    string location = check differentRegionClient->getBucketLocation(testBucketName);
+    test:assertEquals(location, awsRegion,
+        "getBucketLocation should return actual bucket region even when client uses different region");
+
+    // listObjects should succeed transparently across regions
+    ListObjectsResponse listResult = check differentRegionClient->listObjects(testBucketName);
+    test:assertTrue(listResult.objects is S3Object[],
+        msg = "Cross-region listObjects should return valid objects array");
 }
 
 @test:Config {}
@@ -775,7 +756,7 @@ function testCopyObjectWithNewName() returns error? {
     // Create source object
     check s3Client->putObject(testBucketName, sourceKey, content);
     
-    // Copy with a different name (simulating rename)
+    // Copy with a different name
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey);
     
     // Verify both objects exist
@@ -834,7 +815,7 @@ function testCopyObjectFromNonExistentSource() returns error? {
     dependsOn: [testCreateObject]
 }
 function testDoesObjectExist() returns error? {
-    // Test with existing object (fileName is created in testCreateObject)
+    // Test with existing object
     boolean|error exists = s3Client->doesObjectExist(testBucketName, fileName);
     test:assertTrue(exists is boolean && exists, msg = "Object should exist");
 }
@@ -1050,7 +1031,7 @@ function testUploadPartAsStream() returns error? {
     string partContent = "This is part content uploaded via stream for multipart upload test.";
     check io:fileWriteString(tempFilePath, partContent);
     
-    // Calculate content length (REQUIRED)
+    // Calculate content length 
     int contentLength = partContent.toBytes().length();
 
     // Create multipart upload
@@ -1060,14 +1041,14 @@ function testUploadPartAsStream() returns error? {
     // Open file as a byte block stream
     stream<byte[], error?> byteStream = check io:fileReadBlocksAsStream(tempFilePath, 4096);
     
-    // Upload part using uploadPartAsStream API with contentLength (REQUIRED)
+    // Upload part using uploadPartAsStream API with contentLength 
     string etag = check s3Client->uploadPartAsStream(
         testBucketName,
         objectKey,
         streamUploadId,
         1,
         byteStream,
-        contentLength = contentLength  // REQUIRED parameter
+        contentLength = contentLength
     );
     test:assertTrue(etag.length() > 0, msg = "Failed to upload part via stream");
     
@@ -1107,7 +1088,7 @@ function testUploadMultiplePartsAsStream() returns error? {
 
     string part2Content = "This is the second part of the multipart upload.";
     
-    // Calculate content lengths before writing files (REQUIRED)
+    // Calculate content lengths before writing files 
     int part1Length = part1Content.length();
     int part2Length = part2Content.toBytes().length();
 
@@ -1119,7 +1100,7 @@ function testUploadMultiplePartsAsStream() returns error? {
     string multiPartUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     test:assertTrue(multiPartUploadId.length() > 0, "Failed to create multipart upload");
     
-    // Upload parts using uploadPartAsStream API with contentLength (REQUIRED)
+    // Upload parts using uploadPartAsStream API with contentLength 
     stream<byte[], error?> part1Stream = check io:fileReadBlocksAsStream(tempFilePath1, 65536);
     string etag1 = check s3Client->uploadPartAsStream(
         testBucketName,
@@ -1127,7 +1108,7 @@ function testUploadMultiplePartsAsStream() returns error? {
         multiPartUploadId,
         1,
         part1Stream,
-        contentLength = part1Length  // REQUIRED
+        contentLength = part1Length
     );
     
     stream<byte[], error?> part2Stream = check io:fileReadBlocksAsStream(tempFilePath2, 4096);
@@ -1137,7 +1118,7 @@ function testUploadMultiplePartsAsStream() returns error? {
         multiPartUploadId,
         2,
         part2Stream,
-        contentLength = part2Length  // REQUIRED
+        contentLength = part2Length
     );
     
     test:assertTrue(etag1.length() > 0, msg = "Failed to upload part 1");
@@ -1156,6 +1137,7 @@ function testUploadMultiplePartsAsStream() returns error? {
     
     int expectedSize = part1Content.length() + part2Content.toBytes().length();
     test:assertEquals(fullDownloadedContent.length(), expectedSize, "Multi-part content size mismatch");
+    check response.close();
     
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
@@ -1188,7 +1170,8 @@ function testAbortMultipartUploadForStreamTest() returns error? {
     dependsOn: [testDeleteMultipartUpload, testDeleteObject]
 }
 function testDeleteBucketApi() returns error? {
-    string tempBucketName = testBucketName + "-temp-delete-test";
+    int randomSuffix = check random:createIntInRange(100000, 999999);
+    string tempBucketName = testBucketName + "-temp-delete-test-" + randomSuffix.toString();
     
     // Create a temporary bucket for deletion test
     CreateBucketConfig bucketConfig = {acl: PRIVATE};
