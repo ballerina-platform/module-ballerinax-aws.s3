@@ -38,7 +38,7 @@ Log into the [AWS Management Console](https://console.aws.amazon.com/console). I
 
 ### Get user access keys
 
-1. Click the user that was created.
+1. Click the user who was created.
 
    ![users.png](../docs/setup/resources/users.jpeg)
 

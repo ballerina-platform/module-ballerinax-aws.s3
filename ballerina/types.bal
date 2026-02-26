@@ -45,7 +45,7 @@ public type ConnectionConfig record {|
     # Authentication configuration
     AuthConfig auth;
      # The AWS Region. If you don't specify an AWS region, Client uses US East as default region
-    Region region;
+    Region region = US_EAST_1;
 |};
 
 
