@@ -184,6 +184,7 @@ public class NativeClientAdaptor {
             S3Client s3Client = S3Client.builder()
                     .region(Region.of(region))
                     .credentialsProvider(credentialsProvider)
+                    .crossRegionAccessEnabled(true)
                     .build();
 
             clientObj.addNativeData(NATIVE_CLIENT, s3Client);
@@ -641,6 +642,14 @@ public class NativeClientAdaptor {
             applyStringConfig(config, "metadataDirective", builder::metadataDirective);
             applyStringConfig(config, "contentType", builder::contentType);
             applyMetadataConfig(config, "metadata", builder::metadata);
+            applyStringConfig(config, "cacheControl", builder::cacheControl);
+            applyStringConfig(config, "contentDisposition", builder::contentDisposition);
+            applyStringConfig(config, "contentEncoding", builder::contentEncoding);
+            applyStringConfig(config, "tagging", builder::tagging);
+            applyStringConfig(config, "copySourceIfMatch", builder::copySourceIfMatch);
+            applyStringConfig(config, "copySourceIfNoneMatch", builder::copySourceIfNoneMatch);
+            applyInstantConfig(config, "copySourceIfModifiedSince", builder::copySourceIfModifiedSince);
+            applyInstantConfig(config, "copySourceIfUnmodifiedSince", builder::copySourceIfUnmodifiedSince);
 
             s3.copyObject(builder.build());
             return null;

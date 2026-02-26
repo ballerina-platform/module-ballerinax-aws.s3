@@ -298,6 +298,19 @@ modules = [
 
 [[package]]
 org = "ballerina"
+name = "random"
+version = "1.7.0"
+scope = "testOnly"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "time"}
+]
+modules = [
+	{org = "ballerina", packageName = "random", moduleName = "random"}
+]
+
+[[package]]
+org = "ballerina"
 name = "task"
 version = "2.7.0"
 scope = "testOnly"
@@ -347,6 +360,7 @@ dependencies = [
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "os"},
+	{org = "ballerina", name = "random"},
 	{org = "ballerina", name = "test"}
 ]
 modules = [

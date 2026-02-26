@@ -30,57 +30,60 @@ public function main() returns error? {
         }
     });
 
-    check s3Client->createBucket(bucketName);
-    io:println("Bucket created: " + bucketName);
+    do {
+        check s3Client->createBucket(bucketName);
+        io:println("Bucket created: " + bucketName);
 
-    // 1. Upload String content
-    string textContent = "Hello from Ballerina S3 Connector!";
-    check s3Client->putObject(bucketName, "sample.txt", textContent);
-    io:println("String object uploaded: sample.txt");
+        // 1. Upload String content
+        string textContent = "Hello from Ballerina S3 Connector!";
+        check s3Client->putObject(bucketName, "sample.txt", textContent);
+        io:println("String object uploaded: sample.txt");
 
-    // 2. Upload JSON content
-    json jsonData = {"name": "John Doe", "age": 30, "city": "New York"};
-    check s3Client->putObject(bucketName, "data.json", jsonData);
-    io:println("JSON object uploaded: data.json");
+        // 2. Upload Byte array
+        byte[] binaryData = [72, 101, 108, 108, 111];
+        check s3Client->putObject(bucketName, "binary.binrror", binaryData);
+        io:println("Binary object uploaded: binary.bin");
 
-    // 3. Upload XML content
-    xml xmlData = xml `<user><name>Jane Doe</name><role>Admin</role></user>`;
-    check s3Client->putObject(bucketName, "config.xml", xmlData);
-    io:println("XML object uploaded: config.xml");
+        // 3. Retrieve String content
+        string retrievedText = check s3Client->getObjectAsText(bucketName, "sample.txt");
+        io:println("Retrieved text: " + retrievedText);
 
-    // 4. Upload Byte array
-    byte[] binaryData = [72, 101, 108, 108, 111];
-    check s3Client->putObject(bucketName, "binary.bin", binaryData);
-    io:println("Binary object uploaded: binary.bin");
+        // 4. Get object metadata
+        s3:ObjectMetadata metadata = check s3Client->getObjectMetadata(bucketName, "sample.txt");
+        io:println("Object metadata - Size: " + metadata.contentLength.toString() + " bytes");
 
-    // 5. Retrieve String content
-    string retrievedText = check s3Client->getObjectAsText(bucketName, "sample.txt");
-    io:println("Retrieved text: " + retrievedText);
+        // 5. Copy object
+        check s3Client->copyObject(bucketName, "sample.txt", bucketName, "sample-copy.txt");
+        io:println("Object copied: sample.txt -> sample-copy.txt");
 
-    // 6. Retrieve JSON content
-    json retrievedJson = check s3Client->getObjectAsJson(bucketName, "data.json");
-    io:println("Retrieved JSON: " + retrievedJson.toJsonString());
+        // 6. List objects in bucket
+        _ = check s3Client->listObjects(bucketName);
+        io:println("Objects listed successfully.");
 
-    // 7. Get object metadata
-    s3:ObjectMetadata metadata = check s3Client->getObjectMetadata(bucketName, "sample.txt");
-    io:println("Object metadata - Size: " + metadata.contentLength.toString() + " bytes");
+        // 7. Delete objects
+        check s3Client->deleteObject(bucketName, "sample.txt");
+        _ = check s3Client->deleteObject(bucketName, "binary.binrror");
+        io:println("All objects deleted.");
 
-    // 8. Copy object
-    check s3Client->copyObject(bucketName, "sample.txt", bucketName, "sample-copy.txt");
-    io:println("Object copied: sample.txt -> sample-copy.txt");
+        check s3Client->deleteBucket(bucketName);
+        io:println("Bucket deleted: " + bucketName);
 
-    // 9. List objects in bucket
-    _ = check s3Client->listObjects(bucketName);
-    io:println("Objects listed successfully.");
+    } on fail error e {
+        // Best-effort cleanup: delete objects and bucket, log warnings on failure
+        error? delErr = s3Client->deleteObject(bucketName, "sample.txt");
+        if delErr is error {
+            io:println("Warning: deleteObject(sample.txt) failed: " + delErr.message());
+        }
+        error? delErr2 = s3Client->deleteObject(bucketName, "binary.binrror");
+        if delErr2 is error {
+            io:println("Warning: deleteObject(binary.binrror) failed: " + delErr2.message());
+        }
 
-    // 10. Delete objects
-    check s3Client->deleteObject(bucketName, "sample.txt");
-    check s3Client->deleteObject(bucketName, "sample-copy.txt");
-    check s3Client->deleteObject(bucketName, "data.json");
-    check s3Client->deleteObject(bucketName, "config.xml");
-    check s3Client->deleteObject(bucketName, "binary.bin");
-    io:println("All objects deleted.");
+        error? bucketDelErr = s3Client->deleteBucket(bucketName);
+        if bucketDelErr is error {
+            io:println("Warning: deleteBucket failed: " + bucketDelErr.message());
+        }
 
-    check s3Client->deleteBucket(bucketName);
-    io:println("Bucket deleted: " + bucketName);
+        return e;
+    }
 }

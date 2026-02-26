@@ -131,10 +131,10 @@ check s3Client->putObjectFromFile("my-s3-bucket", "images/logo.png", "/path/to/l
 #### Download an object (typed)
 ```ballerina
 // Return as byte array
-byte[] bytes = check s3Client->getObject("my-s3-bucket", "docs/readme.txt", Bytes);
+byte[] bytes = check s3Client->getObject("my-s3-bucket", "docs/readme.txt");
 
 // Return as string
-string text = check s3Client->getObject("my-s3-bucket", "docs/readme.txt", string);
+string text = check s3Client->getObjectAsText("my-s3-bucket", "docs/readme.txt");
 ```
 
 #### Download an object as a stream (for large files)

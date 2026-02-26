@@ -72,12 +72,6 @@ public type Bucket record {
 # Represents byte[], string, json and xml
 public type ContentType byte[]|string|json|xml;
 
-# Represents byte array type for getObject return type.
-public type Bytes byte[];
-
-# Represents xml type for getObject return type.
-public type Xml xml;
-
 # Configuration for uploading an object.
 public type PutObjectConfig record {|
     # The MIME type of the content
@@ -304,20 +298,6 @@ public type ObjectMetadata record {|
     string versionId?;
     # Custom data attached to the object
     map<anydata> userMetadata?;
-|};
-
-# Basic information about an S3 object.
-public type ObjectInfo record {|
-    # The object's path/name in the bucket (e.g., "photos/image.jpg")
-    string key;
-    # Size of the object in bytes
-    int size;
-    # When the object was last changed
-    string lastModified;
-    # Represents the hash value of the object, which reflects modifications made exclusively to the contents of the object
-    string eTag;
-    # The Storage class of the object (e.g., "STANDARD", "GLACIER")
-    StorageClass storageClass = STANDARD;
 |};
 
 # Represents an AWS Region used by the Amazon S3 client.
