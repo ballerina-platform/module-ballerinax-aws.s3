@@ -458,6 +458,7 @@ public class NativeClientAdaptor {
         applyStringConfig(config, "tagging", builder::tagging);
         applyStringConfig(config, "serverSideEncryption", builder::serverSideEncryption);
         applyMetadataConfig(config, "metadata", builder::metadata);
+        applyInstantConfig(config, "expires", builder::expires);
     }
 
     public static Object getObjectAsStream(Environment env, BObject clientObj, BString bucket, BString key,
@@ -475,6 +476,8 @@ public class NativeClientAdaptor {
             applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
             applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
             applyIntConfig(config, "partNumber", builder::partNumber);
+            applyStringConfig(config, "responseContentDisposition", builder::responseContentDisposition);
+            applyStringConfig(config, "responseContentType", builder::responseContentType);
 
             ResponseInputStream<GetObjectResponse> s3Stream = s3.getObject(builder.build());
             BObject streamWrapper = ValueCreator.createObjectValue(env.getCurrentModule(), "StreamIterator");
@@ -500,6 +503,8 @@ public class NativeClientAdaptor {
             applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
             applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
             applyIntConfig(config, "partNumber", builder::partNumber);
+            applyStringConfig(config, "responseContentDisposition", builder::responseContentDisposition);
+            applyStringConfig(config, "responseContentType", builder::responseContentType);
 
             ResponseBytes<GetObjectResponse> responseBytes = s3.getObjectAsBytes(builder.build());
             byte[] bytes = responseBytes.asByteArray();
@@ -543,6 +548,7 @@ public class NativeClientAdaptor {
             applyStringConfig(config, "continuationToken", builder::continuationToken);
             applyStringConfig(config, "startAfter", builder::startAfter);
             applyBooleanConfig(config, "fetchOwner", builder::fetchOwner);
+            applyStringConfig(config, "encodingType", builder::encodingType);
 
             ListObjectsV2Response response = s3.listObjectsV2(builder.build());
             MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
@@ -594,6 +600,10 @@ public class NativeClientAdaptor {
 
             applyStringConfig(config, "versionId", builder::versionId);
             applyIntConfig(config, "partNumber", builder::partNumber);
+            applyStringConfig(config, "ifMatch", builder::ifMatch);
+            applyStringConfig(config, "ifNoneMatch", builder::ifNoneMatch);
+            applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
+            applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
 
             HeadObjectResponse response = s3.headObject(builder.build());
             MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
@@ -701,6 +711,9 @@ public class NativeClientAdaptor {
         applyStringConfig(config, "tagging", builder::tagging);
         applyStringConfig(config, "serverSideEncryption", builder::serverSideEncryption);
         applyMetadataConfig(config, "metadata", builder::metadata);
+        applyStringConfig(config, "cacheControl", builder::cacheControl);
+        applyStringConfig(config, "contentDisposition", builder::contentDisposition);
+        applyStringConfig(config, "contentEncoding", builder::contentEncoding);
     }
 
     public static Object uploadPart(BObject clientObj, BString bucket, BString key, BString uploadId,
