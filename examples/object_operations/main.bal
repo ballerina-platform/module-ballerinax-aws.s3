@@ -41,7 +41,7 @@ public function main() returns error? {
 
         // 2. Upload Byte array
         byte[] binaryData = [72, 101, 108, 108, 111];
-        check s3Client->putObject(bucketName, "binary.binrror", binaryData);
+        check s3Client->putObject(bucketName, "binary.bin", binaryData);
         io:println("Binary object uploaded: binary.bin");
 
         // 3. Retrieve String content
@@ -62,7 +62,7 @@ public function main() returns error? {
 
         // 7. Delete objects
         check s3Client->deleteObject(bucketName, "sample.txt");
-        _ = check s3Client->deleteObject(bucketName, "binary.binrror");
+        _ = check s3Client->deleteObject(bucketName, "binary.bin");
         io:println("All objects deleted.");
 
         check s3Client->deleteBucket(bucketName);
@@ -74,9 +74,9 @@ public function main() returns error? {
         if delErr is error {
             io:println("Warning: deleteObject(sample.txt) failed: " + delErr.message());
         }
-        error? delErr2 = s3Client->deleteObject(bucketName, "binary.binrror");
+        error? delErr2 = s3Client->deleteObject(bucketName, "binary.bin");
         if delErr2 is error {
-            io:println("Warning: deleteObject(binary.binrror) failed: " + delErr2.message());
+            io:println("Warning: deleteObject(binary.bin) failed: " + delErr2.message());
         }
 
         error? bucketDelErr = s3Client->deleteBucket(bucketName);

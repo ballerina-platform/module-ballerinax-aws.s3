@@ -26,6 +26,7 @@ import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.utils.StringUtils;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -202,10 +203,11 @@ public class NativeClientAdaptor {
         if (nativeClient instanceof S3Client) {
             try {
                 ((S3Client) nativeClient).close();
-                clientObj.addNativeData(NATIVE_CLIENT, null);
                 return null;
             } catch (Exception e) {
                 return ErrorCreator.createError(e);
+            } finally {
+                clientObj.addNativeData(NATIVE_CLIENT, null);
             }
         }
         return null;
@@ -276,18 +278,18 @@ public class NativeClientAdaptor {
         return ProfileCredentialsProvider.create(profileName);
     }
 
-    private static S3Client getClient(BObject clientObj) {
+    private static Object getClient(BObject clientObj) {
         S3Client client = (S3Client) clientObj.getNativeData(NATIVE_CLIENT);
         if (client == null) {
-            throw ErrorCreator.createError("S3 Client is not initialized");
+            return ErrorCreator.createError("S3 Client is not initialized");
         }
         return client;
     }
 
-    private static ConnectionConfig getConnectionConfig(BObject clientObj) {
+    private static Object getConnectionConfig(BObject clientObj) {
         ConnectionConfig config = (ConnectionConfig) clientObj.getNativeData(NATIVE_CONFIG);
         if (config == null) {
-            throw ErrorCreator.createError("S3 Connection Config is not initialized");
+            return ErrorCreator.createError("S3 Connection Config is not initialized");
         }
         return config;
     }
@@ -295,7 +297,12 @@ public class NativeClientAdaptor {
     // Bucket Operations
 
     public static Object createBucket(BObject clientObj, BString bucketName, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         String bucket = bucketName.getValue();
         try {
             CreateBucketRequest.Builder builder = CreateBucketRequest.builder().bucket(bucket);
@@ -313,7 +320,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object deleteBucket(BObject clientObj, BString bucket) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket.getValue()).build());
             return null;
@@ -324,7 +336,12 @@ public class NativeClientAdaptor {
 
     @SuppressWarnings("unchecked")
     public static Object listBuckets(BObject clientObj) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             List<Bucket> buckets = s3.listBuckets().buckets();
             MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
@@ -368,7 +385,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object getBucketLocation(BObject clientObj, BString bucket) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             GetBucketLocationRequest request = GetBucketLocationRequest.builder()
                     .bucket(bucket.getValue())
@@ -385,7 +407,12 @@ public class NativeClientAdaptor {
 
     public static Object putObjectFromFile(BObject clientObj, BString bucket, BString key, BString filePath,
             BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             PutObjectRequest.Builder builder = PutObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -402,7 +429,12 @@ public class NativeClientAdaptor {
 
     public static Object putObjectWithContent(BObject clientObj, BString bucket, BString key, BArray content,
             BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             PutObjectRequest.Builder builder = PutObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -419,7 +451,12 @@ public class NativeClientAdaptor {
 
     public static Object putObjectWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BStream contentStream, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
 
@@ -463,7 +500,12 @@ public class NativeClientAdaptor {
 
     public static Object getObjectAsStream(Environment env, BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             GetObjectRequest.Builder builder = GetObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -490,7 +532,12 @@ public class NativeClientAdaptor {
 
     public static Object getObject(BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             GetObjectRequest.Builder builder = GetObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -516,7 +563,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object deleteObject(BObject clientObj, BString bucket, BString key, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             DeleteObjectRequest.Builder builder = DeleteObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -537,7 +589,12 @@ public class NativeClientAdaptor {
 
     @SuppressWarnings("unchecked")
     public static Object listObjectsV2(BObject clientObj, BString bucket, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
                     .bucket(bucket.getValue());
@@ -592,7 +649,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object headObject(BObject clientObj, BString bucket, BString key, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             HeadObjectRequest.Builder builder = HeadObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -614,9 +676,13 @@ public class NativeClientAdaptor {
             if (response.contentType() != null) {
                 metadata.put(StringUtils.fromString("contentType"), StringUtils.fromString(response.contentType()));
             }
-            metadata.put(StringUtils.fromString("eTag"), StringUtils.fromString(response.eTag()));
-            metadata.put(StringUtils.fromString("lastModified"),
-                    StringUtils.fromString(response.lastModified().toString()));
+            if (response.eTag() != null) {
+                metadata.put(StringUtils.fromString("eTag"), StringUtils.fromString(response.eTag()));
+            }
+            if (response.lastModified() != null) {
+                metadata.put(StringUtils.fromString("lastModified"),
+                        StringUtils.fromString(response.lastModified().toString()));
+            }
             String storageClass = response.storageClassAsString();
             metadata.put(StringUtils.fromString("storageClass"),
                     StringUtils.fromString(storageClass != null ? storageClass : "STANDARD"));
@@ -639,7 +705,12 @@ public class NativeClientAdaptor {
 
     public static Object copyObject(BObject clientObj, BString sourceBucket, BString sourceKey, BString destBucket,
             BString destKey, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             CopyObjectRequest.Builder builder = CopyObjectRequest.builder()
                     .sourceBucket(sourceBucket.getValue())
@@ -669,7 +740,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object doesObjectExist(BObject clientObj, BString bucket, BString key) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             HeadObjectRequest request = HeadObjectRequest.builder()
                     .bucket(bucket.getValue())
@@ -688,7 +764,12 @@ public class NativeClientAdaptor {
 
     public static Object createMultipartUpload(BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                     .bucket(bucket.getValue())
@@ -718,7 +799,12 @@ public class NativeClientAdaptor {
 
     public static Object uploadPart(BObject clientObj, BString bucket, BString key, BString uploadId,
             long partNumber, BArray content, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             byte[] contentBytes = content.getBytes();
 
@@ -742,9 +828,19 @@ public class NativeClientAdaptor {
 
     public static Object uploadPartWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BString uploadId, long partNumber, BStream contentStream, BMap<BString, Object> config) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
+
+            if (contentLength <= 0) {
+                return ErrorCreator.createError(
+                        "contentLength must be a positive value, got: " + contentLength);
+            }
 
             UploadPartRequest.Builder builder = UploadPartRequest.builder()
                     .bucket(bucket.getValue())
@@ -753,13 +849,13 @@ public class NativeClientAdaptor {
                     .partNumber((int) partNumber)
                     .contentLength(contentLength);
 
-                applyStringConfig(config, "contentMD5", builder::contentMD5);
+            applyStringConfig(config, "contentMD5", builder::contentMD5);
 
-                try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
+            try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
                 UploadPartResponse response = s3.uploadPart(builder.build(),
-                    RequestBody.fromInputStream(inputStream, contentLength));
+                        RequestBody.fromInputStream(inputStream, contentLength));
                 return StringUtils.fromString(response.eTag());
-                }
+            }
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }
@@ -767,11 +863,23 @@ public class NativeClientAdaptor {
 
     public static Object completeMultipartUpload(BObject clientObj, BString bucket, BString key, BString uploadId,
             BArray partNumbers, BArray etags) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
-            List<CompletedPart> parts = new ArrayList<>();
             long[] pNums = partNumbers.getIntArray();
             String[] eTagsStr = etags.getStringArray();
+
+            if (pNums.length != eTagsStr.length) {
+                return ErrorCreator.createError(
+                        "partNumbers and etags arrays must have the same length. Got: " +
+                        pNums.length + " vs " + eTagsStr.length);
+            }
+
+            List<CompletedPart> parts = new ArrayList<>();
 
             for (int i = 0; i < pNums.length; i++) {
                 parts.add(CompletedPart.builder()
@@ -799,7 +907,12 @@ public class NativeClientAdaptor {
     }
 
     public static Object abortMultipartUpload(BObject clientObj, BString bucket, BString key, BString uploadId) {
-        S3Client s3 = getClient(clientObj);
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
         try {
             AbortMultipartUploadRequest request = AbortMultipartUploadRequest.builder()
                     .bucket(bucket.getValue())
@@ -828,7 +941,11 @@ public class NativeClientAdaptor {
                     ? ((BString) methodObj).getValue().toUpperCase()
                     : "GET";
 
-            ConnectionConfig connConfig = getConnectionConfig(clientObj);
+            Object connOrError = getConnectionConfig(clientObj);
+            if (connOrError instanceof BError) {
+                return connOrError;
+            }
+            ConnectionConfig connConfig = (ConnectionConfig) connOrError;
 
             presigner = S3Presigner.builder()
                     .region(connConfig.region)
