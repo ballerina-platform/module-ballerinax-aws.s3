@@ -1162,7 +1162,8 @@ function testAbortMultipartUploadForStreamTest() returns error? {
     check s3Client->abortMultipartUpload(testBucketName, objectKey, abortUploadId);
     
     // Verify the object doesn't exist (upload was aborted, not completed)
-    boolean exists = check s3Client->doesObjectExist(testBucketName, objectKey);
+    boolean|error existsResult = s3Client->doesObjectExist(testBucketName, objectKey);
+    boolean exists = existsResult is boolean && existsResult;
     test:assertFalse(exists, msg = "Object should not exist after aborting multipart upload");
 }
 

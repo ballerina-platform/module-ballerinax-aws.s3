@@ -9,6 +9,9 @@ keywords = ["Content & Files/File Management & Storage", "Cost/Paid", "Vendor/Am
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-aws.s3"
 
+[platform.java21]
+graalvmCompatible = true
+
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib.aws.s3"
 artifactId = "aws.s3-native"
