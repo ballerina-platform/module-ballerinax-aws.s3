@@ -126,7 +126,7 @@ function testCreateObject() returns error? {
 function testPutObjectFromFile() returns error? {
     
     // Create a temporary file with test content
-    string tempFilePath = "./temp/resources/temp_upload_file.txt";
+    string tempFilePath = "./target/temp/resources/temp_upload_file.txt";
     string fileContent = "Content uploaded from file";
     check io:fileWriteString(tempFilePath, fileContent);
     
@@ -155,7 +155,7 @@ function testPutObjectFromFile() returns error? {
 function testPutObjectFromFileWithMetadata() returns error? {
     
     // Create a temporary file with test content
-    string tempFilePath = "./temp/resources/temp_upload_file_meta.txt";
+    string tempFilePath = "./target/temp/resources/temp_upload_file_meta.txt";
     string fileContent = "Content with metadata";
     check io:fileWriteString(tempFilePath, fileContent);
     
@@ -296,7 +296,7 @@ function testPutObjectWithByteArrayContent() returns error? {
 }
 function testPutObjectAsStream() returns error? {
     string objectKey = "test_stream_content.txt";
-    string tempFilePath = "./temp/resources/temp_stream_file.txt";
+    string tempFilePath = "./target/temp/resources/temp_stream_file.txt";
     string streamContent = "This is content uploaded via stream";
     
     // Create a temporary file to stream from
@@ -328,7 +328,7 @@ function testPutObjectAsStream() returns error? {
 }
 function testPutObjectAsStreamWithMetadata() returns error? {
     string objectKey = "test_stream_with_metadata.txt";
-    string tempFilePath = "./temp/resources/temp_stream_meta_file.txt";
+    string tempFilePath = "./target/temp/resources/temp_stream_meta_file.txt";
     string streamContent = "Stream content with metadata";
     
     // Create a temporary file to stream from
@@ -378,7 +378,7 @@ function testPutObjectAsStreamWithMetadata() returns error? {
 }
 function testPutObjectAsStreamLargeFile() returns error? {
     string objectKey = "test_stream_large_content.txt";
-    string tempFilePath = "./temp/resources/temp_large_stream_file.txt";
+    string tempFilePath = "./target/temp/resources/temp_large_stream_file.txt";
     
     // Create a larger content
     string largeContent = "";
@@ -418,7 +418,7 @@ function testPutObjectAsStreamLargeFile() returns error? {
 }
 function testPutObjectAsStreamDirect() returns error? {
     string objectKey = "testputobjectasstreamdirect.txt";
-    string tempFilePath = "./temp/resources/tempstreamdirectfile.txt";
+    string tempFilePath = "./target/temp/resources/tempstreamdirectfile.txt";
     string streamContent = "This is content uploaded directly via putObjectAsStream method.";
     
     // Create a temporary file to stream from
@@ -458,7 +458,7 @@ function testPutObjectAsStreamDirect() returns error? {
 }
 function testPutObjectAsStreamDirectWithMetadata() returns error? {
     string objectKey = "testputobjectasstreamdirectmeta.txt";
-    string tempFilePath = "./temp/resources/tempstreamdirectmetafile.txt";
+    string tempFilePath = "./target/temp/resources/tempstreamdirectmetafile.txt";
     string streamContent = "Stream content with metadata via putObjectAsStream.";
     
     // Create a temporary file to stream from
@@ -507,7 +507,7 @@ function testPutObjectAsStreamDirectWithMetadata() returns error? {
 }
 function testUploadPartAsStreamDirect() returns error? {
     string objectKey = "testuploadpartasstreamdirect.txt";
-    string tempFilePath = "./temp/resources/tempuploadpartstream.txt";
+    string tempFilePath = "./target/temp/resources/tempuploadpartstream.txt";
     
     // Create content for the part (must be at least 5MB for non-last part in multipart)
     // For testing, we'll use this as the only part so size doesn't matter
@@ -559,8 +559,8 @@ function testUploadPartAsStreamDirect() returns error? {
 }
 function testUploadMultiplePartsAsStreamDirect() returns error? {
     string objectKey = "testmultipartstreamdirect.txt";
-    string tempFilePath1 = "./temp/resources/temppart1stream.txt";
-    string tempFilePath2 = "./temp/resources/temppart2stream.txt";
+    string tempFilePath1 = "./target/temp/resources/temppart1stream.txt";
+    string tempFilePath2 = "./target/temp/resources/temppart2stream.txt";
     
     // AWS S3 requires each part (except the last) to be at least 5MB
     // Create 5MB content for part 1
