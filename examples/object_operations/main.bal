@@ -63,6 +63,7 @@ public function main() returns error? {
         // 7. Delete objects
         check s3Client->deleteObject(bucketName, "sample.txt");
         _ = check s3Client->deleteObject(bucketName, "binary.bin");
+        _ = check s3Client->deleteObject(bucketName, "sample-copy.txt");
         io:println("All objects deleted.");
 
         check s3Client->deleteBucket(bucketName);
@@ -77,6 +78,10 @@ public function main() returns error? {
         error? delErr2 = s3Client->deleteObject(bucketName, "binary.bin");
         if delErr2 is error {
             io:println("Warning: deleteObject(binary.bin) failed: " + delErr2.message());
+        }
+        error? delErr3 = s3Client->deleteObject(bucketName, "sample-copy.txt");
+        if delErr3 is error {
+            io:println("Warning: deleteObject(sample-copy.txt) failed: " + delErr3.message());
         }
 
         error? bucketDelErr = s3Client->deleteBucket(bucketName);
