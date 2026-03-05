@@ -1025,7 +1025,7 @@ function testDeleteMultipartUpload() returns error? {
 }
 function testUploadPartAsStream() returns error? {
     string objectKey = "streammultipartupload.txt";
-    string tempFilePath = "./tests/resources/tempstreampart.txt";
+    string tempFilePath = "./target/temp/resources/tempstreampart.txt";
     
     // Create content for the part
     string partContent = "This is part content uploaded via stream for multipart upload test.";
@@ -1076,8 +1076,8 @@ function testUploadPartAsStream() returns error? {
 }
 function testUploadMultiplePartsAsStream() returns error? {
     string objectKey = "multipartstreamupload.txt";
-    string tempFilePath1 = "./tests/resources/tempmultipart1.bin";
-    string tempFilePath2 = "./tests/resources/tempmultipart2.txt";
+    string tempFilePath1 = "./target/temp/resources/tempmultipart1.bin";
+    string tempFilePath2 = "./target/temp/resources/tempmultipart2.txt";
     
     // AWS S3 requires each part (except the last) to be at least 5MB
     int minPartSize = 5 * 1024 * 1024; // 5MB minimum
