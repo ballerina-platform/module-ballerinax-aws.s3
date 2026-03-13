@@ -9,9 +9,9 @@
 
 ## Overview
 
-The Ballerina AWS S3 provides the capability to manage buckets and objects in [AWS S3](https://aws.amazon.com/s3/).
+The Ballerina AWS S3 connector provides the capability to manage buckets and objects in [AWS S3](https://aws.amazon.com/s3/) through a native Ballerina interface. 
 
-This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
+Built on top of the [AWS SDK for Java v2](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html), this connector offers a simplified and idiomatic way to interact with Amazon S3 services.
 
 ## Compatibility
 |                    | Version            |
@@ -42,12 +42,14 @@ Create a `s3:ConnectionConfig` with the tokens obtained, and initialize the conn
 
 ```ballerina
 s3:ConnectionConfig amazonS3Config = {
-    accessKeyId: <ACCESS_KEY_ID>,
-    secretAccessKey: <SECRET_ACCESS_KEY>,
-    region: <REGION>
+    auth: {
+        accessKeyId,
+        secretAccessKey
+    },
+    region
 };
 
-s3:Client amazonS3Client = check new(amazonS3Config);
+final s3:Client amazonS3Client = check new (amazonS3Config);
 ```
 
 ### Step 3: Invoke connector operation
@@ -101,4 +103,3 @@ All contributors are encouraged to read the [Ballerina Code of Conduct](https://
 * Discuss code changes of the Ballerina project via [ballerina-dev@googlegroups.com](mailto:ballerina-dev@googlegroups.com).
 * Chat live with us via our [Discord server](https://discord.gg/ballerinalang).
 * Post all technical questions on Stack Overflow with the [#ballerina](https://stackoverflow.com/questions/tagged/ballerina) tag.
-

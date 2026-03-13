@@ -51,10 +51,162 @@ ballerina {
     isConnector = true
 }
 
+configurations {
+    externalJars
+}
+
+dependencies {
+    externalJars(group: 'software.amazon.awssdk', name: 's3', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-transport-native-unix-common', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-transport-classes-epoll', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-transport', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-resolver', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'netty-nio-client', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-handler', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-common', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-codec-http2', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-codec-http', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-codec', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'io.netty', name:'netty-buffer', version:"${nettyVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'metrics-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'json-utils', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'identity-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'org.apache.httpcomponents', name:'httpcore', version:"${httpCoreVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'org.apache.httpcomponents', name:'httpclient', version:"${httpClientVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'http-client-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'http-auth-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'http-auth-aws', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'http-auth', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.eventstream', name:'eventstream', version:"${eventStreamVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'endpoints-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'crt-core', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'commons-logging', name:'commons-logging', version:"${commonsLoggingVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'commons-codec', name:'commons-codec', version:"${commonsCodecVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'checksums-spi', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'checksums', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'aws-xml-protocol', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'aws-query-protocol', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'aws-core', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'auth', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'arns', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'apache-client', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'annotations', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'profiles', version:"${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'protocol-core', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'org.reactivestreams', name:'reactive-streams', version: "${reactiveStreamsVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'regions', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'sdk-core', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'org.slf4j', name:'slf4j-api', version: "${slf4jVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'third-party-jackson-core', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'utils', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'retries-spi', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+    externalJars(group: 'software.amazon.awssdk', name:'retries', version: "${awsS3SdkVersion}") {
+        transitive = true
+    }
+}
+
 task updateTomlFiles {
     doLast {
         def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
+        newBallerinaToml = newBallerinaToml.replace("@aws.s3.version@", awsS3SdkVersion)
+        newBallerinaToml = newBallerinaToml.replace("@netty.version@", nettyVersion)
+        newBallerinaToml = newBallerinaToml.replace("@http.core.version@", httpCoreVersion)
+        newBallerinaToml = newBallerinaToml.replace("@http.client.version@", httpClientVersion)
+        newBallerinaToml = newBallerinaToml.replace("@event.stream.version@", eventStreamVersion)
+        newBallerinaToml = newBallerinaToml.replace("@commons.logging.version@", commonsLoggingVersion)
+        newBallerinaToml = newBallerinaToml.replace("@commons.codec.version@", commonsCodecVersion)
+        newBallerinaToml = newBallerinaToml.replace("@reactive.streams.version@", reactiveStreamsVersion)
+        newBallerinaToml = newBallerinaToml.replace("@slf4j.version@", slf4jVersion)
+        
         ballerinaTomlFile.text = newBallerinaToml
     }
 }
@@ -96,3 +248,9 @@ clean {
 
 publishToMavenLocal.dependsOn build
 publish.dependsOn build
+
+build.dependsOn ":aws.s3-native:build"
+test.dependsOn ":aws.s3-native:build"
+
+build.dependsOn copyToLib
+test.dependsOn copyToLib
