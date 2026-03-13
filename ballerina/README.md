@@ -1,14 +1,16 @@
 ## Overview
 
-The Ballerina AWS S3 provides the capability to manage buckets and objects in [AWS S3](https://aws.amazon.com/s3/).
+[Amazon S3](https://aws.amazon.com/s3/) (Simple Storage Service) is a highly scalable, durable, and secure object storage service provided by Amazon Web Services (AWS). It is designed to store and retrieve any amount of data from anywhere on the web, making it ideal for a wide range of use cases, including data backup, archiving, content distribution, and big data analytics.
 
-This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
+The Amazon S3 connector provides the capability to manage buckets and objects in Amazon S3. This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
 
-## Compatibility
-|                    | Version            |
-|--------------------|--------------------|
-| Ballerina Language | Swan Lake 2201.12.0|
-| Amazon S3 API      | 2006-03-01         |
+### Key Features
+
+- Create, list, and delete buckets
+- Upload, retrieve, and delete objects
+- Support for multipart uploads
+- Manage object metadata and tagging
+- Support for bucket and object access control lists (ACLs)
 
 ## Prerequisites
 
