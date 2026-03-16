@@ -14,6 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+import ballerina/data.csv;
+import ballerina/data.jsondata;
 import ballerina/jballerina.java;
 
 # The AWS S3 Client Connector.
@@ -190,20 +192,14 @@ public isolated client class Client {
     @display {label: "Get Object As JSON"}
     remote isolated function getObjectAsJson(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
+            *GetObjectConfig config)
             returns @display {label: "JSON"} json|Error {
         byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        var textRes = string:fromBytes(bytes);
-        if textRes is string {
-            var parsed = textRes.fromJsonString();
-            if parsed is json {
-                return parsed;
-            } else {
-                return error Error("Failed to parse JSON: " + parsed.message(), parsed);
-            }
-        } else {
-            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
+        json|jsondata:Error result = jsondata:parseBytes(bytes);
+        if result is jsondata:Error {
+            return error Error("Failed to parse JSON: " + result.message(), result);
         }
+        return result;
     }
 
     # Downloads an S3 object and parses it as XML.
@@ -233,6 +229,26 @@ public isolated client class Client {
         }
     }
 
+    # Downloads an S3 object and parses it as CSV.
+    # This method loads the entire object into memory and is suitable for smaller objects.
+    # For large objects, consider using `getObjectAsStream` instead.
+    #
+    # + bucketName - The name of the bucket
+    # + objectKey - The path of the object
+    # + config - Optional retrieval configuration
+    # + return - The CSV content as `string[][]` or an Error
+    @display {label: "Get Object As CSV"}
+    remote isolated function getObjectAsCsv(@display {label: "Bucket Name"} string bucketName,
+            @display {label: "Object Key"} string objectKey,
+            *GetObjectConfig config)
+            returns @display {label: "CSV"} string[][]|Error {
+        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
+        string[][]|csv:Error result = csv:parseBytes(bytes);
+        if result is csv:Error {
+            return error Error("Failed to parse CSV: " + result.message(), result);
+        }
+        return result;
+    }
 
     # Deletes an S3 object from an S3 bucket.
     #

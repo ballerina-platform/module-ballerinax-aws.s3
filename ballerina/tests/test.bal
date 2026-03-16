@@ -970,6 +970,61 @@ function testGetObjectAsXml() returns error? {
 @test:Config {
     dependsOn: [testGetObjectAsXml]
 }
+function testGetObjectAsCsv() returns error? {
+    string csvContent = "name,age,city\nAlice,30,NY\nBob,25,LA";
+    string csvKey = "test-csv-object.csv";
+    check s3Client->putObject(testBucketName, csvKey, csvContent);
+
+    // Get the object as CSV using the getObjectAsCsv API
+    // csv:parseBytes treats the first row as headers and returns only the data rows
+    string[][] response = check s3Client->getObjectAsCsv(testBucketName, csvKey);
+    test:assertEquals(response.length(), 2, "Expected 2 data rows");
+    test:assertEquals(response[0][0], "Alice", "CSV row1 col1 mismatch");
+    test:assertEquals(response[0][1], "30", "CSV row1 col2 mismatch");
+    test:assertEquals(response[0][2], "NY", "CSV row1 col3 mismatch");
+    test:assertEquals(response[1][0], "Bob", "CSV row2 col1 mismatch");
+    test:assertEquals(response[1][1], "25", "CSV row2 col2 mismatch");
+    test:assertEquals(response[1][2], "LA", "CSV row2 col3 mismatch");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, csvKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsCsv]
+}
+function testGetObjectAsJsonWithInvalidContent() returns error? {
+    string invalidJsonKey = "test-invalid-json.txt";
+    string invalidJsonContent = "this is not valid json {{{";
+    check s3Client->putObject(testBucketName, invalidJsonKey, invalidJsonContent);
+
+    // Expect a ProcessingError when parsing invalid JSON
+    json|Error response = s3Client->getObjectAsJson(testBucketName, invalidJsonKey);
+    test:assertTrue(response is Error, "Expected a parsing error for invalid JSON content");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, invalidJsonKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsJsonWithInvalidContent]
+}
+function testGetObjectAsXmlWithInvalidContent() returns error? {
+    string invalidXmlKey = "test-invalid-xml.txt";
+    string invalidXmlContent = "this is not valid <xml> content <<<";
+    check s3Client->putObject(testBucketName, invalidXmlKey, invalidXmlContent);
+
+    // Expect a ProcessingError when parsing invalid XML
+    xml|Error response = s3Client->getObjectAsXml(testBucketName, invalidXmlKey);
+    test:assertTrue(response is Error, "Expected a parsing error for invalid XML content");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, invalidXmlKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsXmlWithInvalidContent]
+}
 function testListObjects() returns error? {
     ListObjectsConfig listConfig = {fetchOwner: true};
     ListObjectsResponse|error response = s3Client->listObjects(testBucketName, listConfig);
