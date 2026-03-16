@@ -32,8 +32,7 @@ string uploadId = "";
 int[] partNumbers = [];
 string[] etags = [];
 
-@test:Config {
-}
+@test:Config {}
 isolated function testInitUsingStaticAuth() returns error? {
     ConnectionConfig connectionConfig = {
         region: awsRegion,
