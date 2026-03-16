@@ -32,9 +32,9 @@ task testExamples {
                 workingDir project.projectDir
                 println("Working dir: ${workingDir}")
                 if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                    commandLine 'sh', "/c", "chmod +x ./build.sh && ./build.sh run && exit %%ERRORLEVEL%%"
+                    commandLine 'cmd', '/c', "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh run"
                 } else {
-                    commandLine 'sh', "-c", "chmod +x ./build.sh && ./build.sh run"
+                    commandLine 'sh', "-c", "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh run"
                 }
             }
         } catch (Exception e) {
@@ -58,9 +58,9 @@ task buildExamples {
                 workingDir project.projectDir
                 println("Working dir: ${workingDir}")
                 if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                    commandLine 'sh', "/c", "chmod +x ./build.sh && ./build.sh build && exit %%ERRORLEVEL%%"
+                    commandLine 'cmd', '/c', "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh build"
                 } else {
-                    commandLine 'sh', "-c", "chmod +x ./build.sh && ./build.sh build"
+                    commandLine 'sh', "-c", "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh build"
                 }
             }
         } catch (Exception e) {

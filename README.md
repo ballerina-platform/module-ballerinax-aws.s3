@@ -5,13 +5,11 @@
 [![GraalVM Check](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-[Amazon Simple Storage Service (Amazon S3)](https://aws.amazon.com/s3/) is an object storage service that offers industry-leading scalability, data availability, security, and performance. This means customers of all sizes and industries can use it to store and protect any amount of data for a range of use cases, such as data lakes, websites, mobile applications, backup and restore, archive, enterprise applications, IoT devices, and big data analytics.
-
 ## Overview
 
-The Ballerina AWS S3 connector provides the capability to manage buckets and objects in [AWS S3](https://aws.amazon.com/s3/) through a native Ballerina interface. 
+[Amazon Simple Storage Service (Amazon S3)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is a highly scalable, durable object storage service for storing and retrieving any amount of data.
 
-Built on top of the [AWS SDK for Java v2](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html), this connector offers a simplified and idiomatic way to interact with Amazon S3 services.
+The `ballerinax/aws.s3` connector enables Ballerina applications to interact with Amazon S3. It supports bucket management (create, list, delete), object operations (upload, download, copy, delete, metadata), streaming for large files, multipart uploads, presigned URLs, and flexible content retrieval with typed returns.
 
 ## Compatibility
 |                    | Version            |

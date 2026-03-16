@@ -5,7 +5,7 @@ name = "aws.s3"
 version = "@toml.version@"
 license = ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = ["Content & Files/File Management & Storage", "Cost/Paid", "Vendor/Amazon"]
+keywords = ["Cloud/Object Storage", "Cost/Paid", "Vendor/Amazon", "Area/Storage & File Management", "Type/Connector"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-aws.s3"
 
