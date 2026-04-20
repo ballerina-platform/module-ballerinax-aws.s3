@@ -1,10 +1,16 @@
 ## Overview
 
-[Amazon Simple Storage Service (Amazon S3)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is a highly scalable, durable object storage service for storing and retrieving any amount of data.
+[Amazon S3](https://aws.amazon.com/s3/) (Simple Storage Service) is a highly scalable, durable, and secure object storage service provided by Amazon Web Services (AWS). It is designed to store and retrieve any amount of data from anywhere on the web, making it ideal for a wide range of use cases, including data backup, archiving, content distribution, and big data analytics.
 
-The `ballerinax/aws.s3` connector enables Ballerina applications to interact with Amazon S3. It supports bucket management (create, list, delete), object operations (upload, download, copy, delete, metadata), streaming for large files, multipart uploads, presigned URLs, and flexible content retrieval with typed returns.
+The Amazon S3 connector provides the capability to manage buckets and objects in Amazon S3. This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
 
-## Setup guide
+### Key Features
+
+- Create, list, and delete buckets
+- Upload, retrieve, and delete objects
+- Support for multipart uploads
+- Manage object metadata and tagging
+- Support for bucket and object access control lists (ACLs)
 
 ### Login to AWS Console
 
@@ -199,3 +205,4 @@ The `ballerinax/aws.s3` connector provides practical examples illustrating usage
 
 5. [**Stream Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/stream-operations) - Demonstrates memory-efficient streaming operations for uploading and downloading large files.
 
+**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples)**
