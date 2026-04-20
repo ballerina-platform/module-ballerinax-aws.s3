@@ -1,13 +1,289 @@
 [package]
-distribution = "2201.12.0"
+distribution = "2201.12.2"
 org = "ballerinax"
 name = "aws.s3"
-version = "4.0.0"
-license= ["Apache-2.0"]
+version = "5.0.0"
+license = ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["Cloud/Object Storage", "Cost/Paid", "Vendor/Amazon", "Area/Storage & File Management", "Type/Connector"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-aws.s3"
 
-[build-options]
-observabilityIncluded = true
+[platform.java21]
+graalvmCompatible = true
+
+[[platform.java21.dependency]]
+groupId = "io.ballerina.lib.aws.s3"
+artifactId = "aws.s3-native"
+version = "5.0.0"
+path = "../native/build/libs/aws.s3-native-5.0.0-SNAPSHOT.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "s3"
+version = "2.42.0"
+path = "./lib/s3-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "4.1.130.Final"
+path = "./lib/netty-transport-native-unix-common-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-epoll"
+version = "4.1.130.Final"
+path = "./lib/netty-transport-classes-epoll-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport"
+version = "4.1.130.Final"
+path = "./lib/netty-transport-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "4.1.130.Final"
+path = "./lib/netty-resolver-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "netty-nio-client"
+version = "2.42.0"
+path = "./lib/netty-nio-client-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler"
+version = "4.1.130.Final"
+path = "./lib/netty-handler-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "4.1.130.Final"
+path = "./lib/netty-common-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http2"
+version = "4.1.130.Final"
+path = "./lib/netty-codec-http2-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http"
+version = "4.1.130.Final"
+path = "./lib/netty-codec-http-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec"
+version = "4.1.130.Final"
+path = "./lib/netty-codec-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "4.1.130.Final"
+path = "./lib/netty-buffer-4.1.130.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "metrics-spi"
+version = "2.42.0"
+path = "./lib/metrics-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "json-utils"
+version = "2.42.0"
+path = "./lib/json-utils-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "identity-spi"
+version = "2.42.0"
+path = "./lib/identity-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.httpcomponents"
+artifactId = "httpcore"
+version = "4.4.16"
+path = "./lib/httpcore-4.4.16.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.httpcomponents"
+artifactId = "httpclient"
+version = "4.5.13"
+path = "./lib/httpclient-4.5.13.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-client-spi"
+version = "2.42.0"
+path = "./lib/http-client-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth-spi"
+version = "2.42.0"
+path = "./lib/http-auth-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth-aws"
+version = "2.42.0"
+path = "./lib/http-auth-aws-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth"
+version = "2.42.0"
+path = "./lib/http-auth-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.eventstream"
+artifactId = "eventstream"
+version = "1.0.1"
+path = "./lib/eventstream-1.0.1.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "endpoints-spi"
+version = "2.42.0"
+path = "./lib/endpoints-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "crt-core"
+version = "2.42.0"
+path = "./lib/crt-core-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "1.2"
+path = "./lib/commons-logging-1.2.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-codec"
+artifactId = "commons-codec"
+version = "1.17.1"
+path = "./lib/commons-codec-1.17.1.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "checksums-spi"
+version = "2.42.0"
+path = "./lib/checksums-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "checksums"
+version = "2.42.0"
+path = "./lib/checksums-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-xml-protocol"
+version = "2.42.0"
+path = "./lib/aws-xml-protocol-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-query-protocol"
+version = "2.42.0"
+path = "./lib/aws-query-protocol-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-core"
+version = "2.42.0"
+path = "./lib/aws-core-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "auth"
+version = "2.42.0"
+path = "./lib/auth-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "arns"
+version = "2.42.0"
+path = "./lib/arns-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "apache-client"
+version = "2.42.0"
+path = "./lib/apache-client-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "annotations"
+version = "2.42.0"
+path = "./lib/annotations-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "profiles"
+version = "2.42.0"
+path = "./lib/profiles-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "protocol-core"
+version = "2.42.0"
+path = "./lib/protocol-core-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.reactivestreams"
+artifactId = "reactive-streams"
+version = "1.0.4"
+path = "./lib/reactive-streams-1.0.4.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "regions"
+version = "2.42.0"
+path = "./lib/regions-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "sdk-core"
+version = "2.42.0"
+path = "./lib/sdk-core-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.slf4j"
+artifactId = "slf4j-api"
+version = "1.7.36"
+path = "./lib/slf4j-api-1.7.36.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "third-party-jackson-core"
+version = "2.42.0"
+path = "./lib/third-party-jackson-core-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "utils"
+version = "2.42.0"
+path = "./lib/utils-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries-spi"
+version = "2.42.0"
+path = "./lib/retries-spi-2.42.0.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries"
+version = "2.42.0"
+path = "./lib/retries-2.42.0.jar"
