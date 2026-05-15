@@ -2,6 +2,7 @@ import ballerina/file;
 import ballerina/ftp;
 import ballerina/io;
 import ballerina/log;
+import ballerina/lang.'string as strings;
 import ballerinax/aws.s3;
 
 configurable string s3AccessKeyId = ?;
@@ -54,8 +55,10 @@ function downloadFromFtp(ftp:Client ftpClient, string filename, string localPath
     stream<byte[] & readonly, io:Error?> fileStream = check ftpClient->get(remotePath);
 
     // Write stream to local temp file
-    check io:fileWriteBlocksFromStream(localPath, fileStream);
-    check fileStream.close();
+    error? writeErr = io:fileWriteBlocksFromStream(localPath, fileStream);
+    error? closeErr = fileStream.close();
+    check writeErr;
+    check closeErr;
 
     log:printInfo(string `Downloaded: ${filename}`);
 }
@@ -73,6 +76,14 @@ function uploadToS3(s3:Client s3Client, string localFilePath, string filename) r
     check s3Client->putObject(s3BucketName, s3Key, fileContent);
 
     log:printInfo(string `Uploaded: ${s3Key}`);
+}
+
+function validateFilename(string filename) returns error? {
+    if strings:indexOf(filename, "/") >= 0 ||
+        strings:indexOf(filename, "\\") >= 0 ||
+        strings:indexOf(filename, "..") >= 0 {
+        return error("Invalid FTP filename");
+    }
 }
 
 function syncFtpToS3(ftp:Client ftpClient, s3:Client s3Client) returns SyncStats|error {
@@ -100,6 +111,7 @@ function syncFtpToS3(ftp:Client ftpClient, s3:Client s3Client) returns SyncStats
                 continue;
             }
 
+            check validateFilename(filename);
             string localPath = string `${tempDir}/${filename}`;
 
             check downloadFromFtp(ftpClient, filename, localPath);

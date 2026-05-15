@@ -17,6 +17,8 @@
 import ballerina/io;
 import ballerina/log;
 import ballerina/time;
+import ballerina/lang.'string as strings;
+import ballerina/regex;
 import ballerinax/aws.s3;
 
 configurable string s3AccessKeyId = ?;
@@ -72,9 +74,13 @@ public function main() returns error? {
     io:println(string `Processed: ${processedPrefix}`);
     io:println(string `Archive: ${archivePrefix}`);
 
-    ArchiveStats stats = check runArchiver(s3Client);
-    printArchiveStats(stats);
-
+    do {
+        ArchiveStats stats = check runArchiver(s3Client);
+        printArchiveStats(stats);
+    } on fail error e {
+        _ = check s3Client.close();
+        return e;
+    }
     check s3Client.close();
 }
 
@@ -133,6 +139,15 @@ function transformRecords(SalesRecord[] records) returns string[][] {
     return output;
 }
 
+function escapeCsvField(string value) returns string {
+    boolean needsQuotes = strings:indexOf(value, ",") >= 0 || 
+                            strings:indexOf(value, "\"") >= 0 || 
+                            strings:indexOf(value, "\n") >= 0 || 
+                            strings:indexOf(value, "\r") >= 0;
+    string escaped = regex:replaceAll(value, "\"", "\"\"");
+    return needsQuotes ? "\"" + escaped + "\"" : escaped;
+}
+
 function toCsvString(string[][] rows) returns string {
     string result = "";
     foreach int i in 0 ..< rows.length() {
@@ -142,7 +157,7 @@ function toCsvString(string[][] rows) returns string {
             if j > 0 {
                 line += ",";
             }
-            line += row[j];
+            line += escapeCsvField(row[j]);
         }
         if i > 0 {
             result += "\n";

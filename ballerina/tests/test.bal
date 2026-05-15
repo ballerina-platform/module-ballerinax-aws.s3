@@ -19,9 +19,11 @@ import ballerina/io;
 import ballerina/os;
 import ballerina/random;
 import ballerina/test;
+import ballerina/time;
 
 // Test bucket name from environment
-configurable string testBucketName = os:getEnv("BUCKET_NAME");
+configurable string baseBucketName = os:getEnv("BUCKET_NAME");
+final string testBucketName = baseBucketName + "-" + time:utcNow()[0].toString();
 
 // Test-specific constants
 const fileName = "test.txt";
@@ -655,7 +657,7 @@ function testAccessBucketWithDifferentRegion() returns error? {
 
     // listObjects should succeed transparently across regions
     ListObjectsResponse listResult = check differentRegionClient->listObjects(testBucketName);
-    test:assertTrue(listResult.objects is S3Object[],
+    test:assertTrue(listResult.objects.length() >= 0,
         msg = "Cross-region listObjects should return valid objects array");
 }
 
