@@ -121,11 +121,11 @@ public class NativeClientAdaptor {
         return Optional.empty();
     }
 
-    @SuppressWarnings("unchecked")
     private static Optional<Map<String, String>> getMetadataConfig(BMap<BString, Object> config, String key) {
         if (config.containsKey(StringUtils.fromString(key))) {
             Object metaObj = config.get(StringUtils.fromString(key));
             if (metaObj instanceof BMap) {
+                @SuppressWarnings("unchecked")
                 BMap<BString, Object> metaMap = (BMap<BString, Object>) metaObj;
                 Map<String, String> metadata = new HashMap<>();
                 metaMap.entrySet().forEach(entry -> {
@@ -179,8 +179,7 @@ public class NativeClientAdaptor {
                 return ErrorCreator.createError("Invalid auth configuration provided");
             }
 
-            Object auth = authObj;
-            AwsCredentialsProvider credentialsProvider = createCredentialsProvider(auth);
+            AwsCredentialsProvider credentialsProvider = createCredentialsProvider(authObj);
 
             S3Client s3Client = S3Client.builder()
                     .region(Region.of(region))
@@ -351,29 +350,11 @@ public class NativeClientAdaptor {
                 Bucket bucket = buckets.get(i);
                 BMap<BString, Object> bucketRecord = ValueCreator.createMapValue(mapType);
 
-                // Set bucket name
                 bucketRecord.put(StringUtils.fromString("name"), StringUtils.fromString(bucket.name()));
 
-                // Set creation date
                 Instant creationDate = bucket.creationDate();
                 String creationDateStr = creationDate != null ? creationDate.toString() : "";
                 bucketRecord.put(StringUtils.fromString("creationDate"), StringUtils.fromString(creationDateStr));
-
-                // Get bucket region
-                String region = "";
-                try {
-                    GetBucketLocationRequest locationRequest = GetBucketLocationRequest.builder()
-                            .bucket(bucket.name())
-                            .build();
-                    GetBucketLocationResponse locationResponse = s3.getBucketLocation(locationRequest);
-                    region = locationResponse.locationConstraintAsString();
-                    if (region == null || region.isEmpty()) {
-                        region = "us-east-1";
-                    }
-                } catch (Exception e) {
-                    region = "";
-                }
-                bucketRecord.put(StringUtils.fromString("region"), StringUtils.fromString(region));
 
                 bBuckets[i] = bucketRecord;
             }

@@ -65,8 +65,6 @@ public type Bucket record {
     string name;
     # The creation date of the bucket
     string creationDate;
-    # The AWS region of the bucket
-    Region region;
 };
 
 # Represents byte[], string, json and xml
