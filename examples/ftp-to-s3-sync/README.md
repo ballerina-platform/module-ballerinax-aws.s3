@@ -61,22 +61,22 @@ ftpRemoteDir = "/"
 
 **To build the example:**
 ```bash
-cd ftp_to_s3_sync
+cd ftp-to-s3-sync
 bal build
 ```
 
 **To run the example:**
 ```bash
-cd ftp_to_s3_sync
+cd ftp-to-s3-sync
 bal run
 ```
 
 **To build all the examples:**
 ```bash
-./build.sh build
+../build.sh build
 ```
 
 **To run all the examples:**
 ```bash
-./build.sh run
+../build.sh run
 ```

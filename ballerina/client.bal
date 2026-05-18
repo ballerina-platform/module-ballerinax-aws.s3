@@ -337,7 +337,7 @@ public isolated client class Client {
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + return - True if exists, false otherwise
+    # + return - True if the object exists, false if not found, or an Error on request/transport failures
     @display {label: "Does Object Exist"}
     remote isolated function doesObjectExist(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey)

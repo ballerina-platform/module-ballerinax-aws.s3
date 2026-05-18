@@ -1,3 +1,19 @@
+// Copyright (c) 2026 WSO2 LLC. (http://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 import ballerina/file;
 import ballerina/ftp;
 import ballerina/io;
@@ -98,34 +114,39 @@ function syncFtpToS3(ftp:Client ftpClient, s3:Client s3Client) returns SyncStats
     string tempDir = "./ftp_sync_temp";
     check file:createDir(tempDir, file:RECURSIVE);
 
-    string[] ftpFiles = check listFtpFiles(ftpClient);
-    stats.totalFiles = ftpFiles.length();
+    do {
+        string[] ftpFiles = check listFtpFiles(ftpClient);
+        stats.totalFiles = ftpFiles.length();
 
-    foreach string filename in ftpFiles {
-        do {
-            // Skip if already uploaded
-            boolean exists = check existsInS3(s3Client, filename);
-            if exists {
-                log:printInfo(string `Skipping (already in S3): ${filename}`);
-                stats.skippedFiles += 1;
-                continue;
+        foreach string filename in ftpFiles {
+            do {
+                // Skip if already uploaded
+                boolean exists = check existsInS3(s3Client, filename);
+                if exists {
+                    log:printInfo(string `Skipping (already in S3): ${filename}`);
+                    stats.skippedFiles += 1;
+                    continue;
+                }
+
+                check validateFilename(filename);
+                string localPath = string `${tempDir}/${filename}`;
+
+                check downloadFromFtp(ftpClient, filename, localPath);
+                check uploadToS3(s3Client, localPath, filename);
+                stats.successfulUploads += 1;
+
+                // Clean up temp file immediately after upload
+                check file:remove(localPath);
+
+            } on fail error e {
+                log:printError(string `Failed: ${filename} — ${e.message()}`, 'error = e);
+                stats.failedUploads += 1;
+                stats.errors.push(string `${filename}: ${e.message()}`);
             }
-
-            check validateFilename(filename);
-            string localPath = string `${tempDir}/${filename}`;
-
-            check downloadFromFtp(ftpClient, filename, localPath);
-            check uploadToS3(s3Client, localPath, filename);
-            stats.successfulUploads += 1;
-
-            // Clean up temp file immediately after upload
-            check file:remove(localPath);
-
-        } on fail error e {
-            log:printError(string `Failed: ${filename} — ${e.message()}`, 'error = e);
-            stats.failedUploads += 1;
-            stats.errors.push(string `${filename}: ${e.message()}`);
         }
+    } on fail error e {
+        file:Error? remove = file:remove(tempDir, file:RECURSIVE);
+        return e;
     }
 
     // Clean up temp dir
@@ -158,4 +179,5 @@ public function main() returns error? {
     });
 
     _ = check syncFtpToS3(ftpClient, s3Client);
+    check s3Client.close();
 }

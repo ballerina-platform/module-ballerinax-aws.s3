@@ -170,8 +170,6 @@ public class NativeClientAdaptor {
     // Client Initialization Method
     public static Object initClient(Environment env, BObject clientObj, BMap<BString, Object> config) {
         try {
-            ErrorCreator.initModule(env);
-
             String region = config.getStringValue(StringUtils.fromString("region")).getValue();
             Object authObj = config.get(StringUtils.fromString("auth"));
 
@@ -602,10 +600,12 @@ public class NativeClientAdaptor {
 
                 objMap.put(StringUtils.fromString("key"), StringUtils.fromString(obj.key()));
                 objMap.put(StringUtils.fromString("size"), (long) obj.size());
-                objMap.put(StringUtils.fromString("lastModified"),
-                        StringUtils.fromString(obj.lastModified().toString()));
-                objMap.put(StringUtils.fromString("eTag"), StringUtils.fromString(obj.eTag()));
-                objMap.put(StringUtils.fromString("storageClass"), StringUtils.fromString(obj.storageClassAsString()));
+                String lastModified = obj.lastModified() != null ? obj.lastModified().toString() : "";
+                objMap.put(StringUtils.fromString("lastModified"), StringUtils.fromString(lastModified));
+                String eTag = obj.eTag() != null ? obj.eTag() : "";
+                objMap.put(StringUtils.fromString("eTag"), StringUtils.fromString(eTag));
+                String storageClass = obj.storageClassAsString() != null ? obj.storageClassAsString() : "STANDARD";
+                objMap.put(StringUtils.fromString("storageClass"), StringUtils.fromString(storageClass));
 
                 objArray[i] = objMap;
             }
