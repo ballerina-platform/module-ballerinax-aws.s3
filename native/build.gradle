@@ -32,9 +32,6 @@ dependencies {
     
 }
 
-tasks.withType(JavaCompile) {    
-    options.encoding = 'UTF-8'
-}
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn configurations.dist
@@ -42,6 +39,12 @@ jar {
         exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     }
 }
+
 compileJava {
-    options.encoding = 'UTF-8'
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+        ]
+        classpath = files()
+    }
 }
