@@ -12,49 +12,197 @@ The Amazon S3 connector provides the capability to manage buckets and objects in
 - Manage object metadata and tagging
 - Support for bucket and object access control lists (ACLs)
 
-## Prerequisites
+### Login to AWS Console
 
-Before using this connector in your Ballerina application, complete the following:
-1. Create an [AWS account](https://portal.aws.amazon.com/billing/signup?nc2=h_ct&src=default&redirect_url=https%3A%2F%2Faws.amazon.com%2Fregistration-confirmation#/start)
-2. [Obtain tokens](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+Log into the [AWS Management Console](https://console.aws.amazon.com/console). If you don’t have an AWS account yet, you can create one by visiting the AWS [sign-up](https://aws.amazon.com/free/) page. Sign up is free, and you can explore many services under the Free Tier.
+
+### Create a user
+
+1. In the AWS Management Console, search for IAM in the services search bar.
+2. Click on IAM
+
+   ![create-user-1.png](../docs/setup/resources/create-user-1.jpeg)
+
+3. Click Users
+
+   ![create-user-2.png](../docs/setup/resources/create-user-2.jpeg)
+
+4. Click Create User
+
+   ![create-user-3.png](../docs/setup/resources/create-user-3.jpeg)
+
+5. Provide a suitable name for the user and continue
+
+   ![specify-user-details.png](../docs/setup/resources/specify-user-details.jpeg)
+
+6. Add necessary permissions by adding the user to a user group, copy permissions or directly attach the policies. For S3, attach policies such as `AmazonS3FullAccess` (for development) or a least-privilege custom policy scoped to your buckets. Then click next.
+
+   ![set-user-permissions.png](../docs/setup/resources/set-user-permissions.jpeg)
+7. Review and create the user
+
+   ![review-create-user.png](../docs/setup/resources/review-create-user.jpeg)
+
+### Get user access keys
+
+1. Click the user who was created.
+
+   ![users.png](../docs/setup/resources/users.jpeg)
+
+2. Click `Create access key`.
+
+   ![create-access-key-1.png](../docs/setup/resources/create-access-key-1.png)
+
+3. Select your use case and click next.
+
+   ![select-usecase.png](../docs/setup/resources/select-usecase.png)
+
+4. Record the Access Key ID and Secret Access Key. These credentials will be used to authenticate your Ballerina application with Amazon S3.
+
+   ![retrieve-access-key.png](../docs/setup/resources/retrieve-access-key.png)
 
 ## Quickstart
 
-To use the AWS S3 connector in your Ballerina application, update the .bal file as follows:
+To use the `aws.s3` connector in your Ballerina project, modify the `.bal` file as follows.
 
-### Step 1: Import connector
+### Step 1: Import the module
 
-Import the `ballerinax/aws.s3` module into the Ballerina project.
 ```ballerina
 import ballerinax/aws.s3;
 ```
 
-### Step 2: Create a new connector instance
+### Step 2: Instantiate a new connector
 
-Create a `s3:ConnectionConfig` with the tokens obtained, and initialize the connector with it.
+Create a new `s3:Client` by providing the region and authentication configurations.
 
 ```ballerina
-s3:ConnectionConfig amazonS3Config = {
-    accessKeyId: <ACCESS_KEY_ID>,
-    secretAccessKey: <SECRET_ACCESS_KEY>,
-    region: <REGION>
-};
+configurable string accessKeyId = ?;
+configurable string secretAccessKey = ?;
 
-s3:Client amazonS3Client = check new(amazonS3Config);
+s3:Client s3Client = check new ({
+   region: "us-east-1",
+   auth: {
+      accessKeyId,
+      secretAccessKey
+   }
+});
 ```
 
-### Step 3: Invoke connector operation
+#### Alternative authentication methods
 
-1. Now you can use the operations available within the connector. Note that they are in the form of remote operations.
-Following is an example on how to create a bucket using the connector.
+##### Profile-based authentication
 
-    ```ballerina
-    string bucketName = "name";
+You can use AWS profile-based authentication as an alternative to static credentials.
 
-    public function main() returns error? {
-        _ = check amazonS3Client->createBucket(bucketName);
-    }
-    ```
-2. Use `bal run` command to compile and run the Ballerina program.
+```ballerina
+s3:Client s3Client = check new ({
+   region: "us-east-1",
+   auth: {
+      profileName: "myAwsProfile",
+      credentialsFilePath: "/path/to/custom/credentials"
+   }
+});
+```
+
+> **Note:** Ensure your AWS credentials file follows the standard format.
+>
+> ```ini
+> [default]
+> aws_access_key_id = YOUR_ACCESS_KEY_ID
+> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
+>
+> [myAwsProfile]
+> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
+> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
+> ```
+
+
+### Step 3: Invoke the connector operations
+
+Now, utilize the available connector operations.
+
+#### Create a bucket
+```ballerina
+check s3Client->createBucket("my-s3-bucket");
+```
+
+#### Upload an object
+```ballerina
+// Upload from content
+check s3Client->putObject("my-s3-bucket", "docs/readme.txt", "Hello from Ballerina!");
+
+// Upload from a file path
+check s3Client->putObjectFromFile("my-s3-bucket", "images/logo.png", "/path/to/logo.png");
+```
+
+#### Download an object (typed)
+```ballerina
+// Return as byte array
+byte[] bytes = check s3Client->getObject("my-s3-bucket", "docs/readme.txt");
+
+// Return as string
+string text = check s3Client->getObjectAsText("my-s3-bucket", "docs/readme.txt");
+```
+
+#### Download an object as a stream (for large files)
+```ballerina
+stream<byte[], error?> content = check s3Client->getObjectAsStream("my-s3-bucket", "videos/movie.mp4");
+// Consume the stream in chunks
+final byte[]? next = (); // placeholder to illustrate stream consumption
+```
+
+#### List and delete objects
+```ballerina
+// List objects in a bucket
+s3:ListObjectsResponse resp = check s3Client->listObjects("my-s3-bucket", {
+   prefix: "docs/",
+   maxKeys: 100
+});
+
+// Delete an object
+check s3Client->deleteObject("my-s3-bucket", "docs/readme.txt");
+```
+
+#### Bucket utilities
+```ballerina
+// List buckets
+s3:Bucket[] buckets = check s3Client->listBuckets();
+
+// Get bucket region
+string region = check s3Client->getBucketLocation("my-s3-bucket");
+
+// Delete a bucket
+check s3Client->deleteBucket("my-s3-bucket");
+```
+
+#### Presigned URLs
+```ballerina
+// Generate a presigned URL for downloading an object
+string url = check s3Client->createPresignedUrl("my-s3-bucket", "docs/readme.txt", {
+   expirationMinutes: 30,
+   httpMethod: "GET"
+});
+```
+
+### Step 4: Run the Ballerina application
+
+Use the following command to compile and run the Ballerina program.
+
+```bash
+bal run
+```
+
+## Examples
+
+The `ballerinax/aws.s3` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples):
+
+1. [**Authentication**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/authentication) - Demonstrates how to authenticate with AWS S3 using static credentials.
+
+2. [**Bucket Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/bucket-operations) - Shows how to create, list, get location, and delete S3 buckets.
+
+3. [**Object Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/object-operations) - Demonstrates comprehensive object operations including upload/download with different content types (String, JSON, XML, Byte[]), metadata retrieval, copying, and existence checks.
+
+4. [**Multipart Uploads**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/multipart-uploads) - Shows how to handle large file uploads using S3 multipart upload API with multiple parts.
+
+5. [**Stream Operations**](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/stream-operations) - Demonstrates memory-efficient streaming operations for uploading and downloading large files.
 
 **[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples)**

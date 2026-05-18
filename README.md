@@ -5,13 +5,11 @@
 [![GraalVM Check](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-[Amazon Simple Storage Service (Amazon S3)](https://aws.amazon.com/s3/) is an object storage service that offers industry-leading scalability, data availability, security, and performance. This means customers of all sizes and industries can use it to store and protect any amount of data for a range of use cases, such as data lakes, websites, mobile applications, backup and restore, archive, enterprise applications, IoT devices, and big data analytics.
-
 ## Overview
 
-The Ballerina AWS S3 provides the capability to manage buckets and objects in [AWS S3](https://aws.amazon.com/s3/).
+[Amazon Simple Storage Service (Amazon S3)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is a highly scalable, durable object storage service for storing and retrieving any amount of data.
 
-This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
+The `ballerinax/aws.s3` connector enables Ballerina applications to interact with Amazon S3. It supports bucket management (create, list, delete), object operations (upload, download, copy, delete, metadata), streaming for large files, multipart uploads, presigned URLs, and flexible content retrieval with typed returns.
 
 ## Compatibility
 |                    | Version            |
@@ -42,12 +40,14 @@ Create a `s3:ConnectionConfig` with the tokens obtained, and initialize the conn
 
 ```ballerina
 s3:ConnectionConfig amazonS3Config = {
-    accessKeyId: <ACCESS_KEY_ID>,
-    secretAccessKey: <SECRET_ACCESS_KEY>,
-    region: <REGION>
+    auth: {
+        accessKeyId,
+        secretAccessKey
+    },
+    region
 };
 
-s3:Client amazonS3Client = check new(amazonS3Config);
+final s3:Client amazonS3Client = check new (amazonS3Config);
 ```
 
 ### Step 3: Invoke connector operation
@@ -101,4 +101,3 @@ All contributors are encouraged to read the [Ballerina Code of Conduct](https://
 * Discuss code changes of the Ballerina project via [ballerina-dev@googlegroups.com](mailto:ballerina-dev@googlegroups.com).
 * Chat live with us via our [Discord server](https://discord.gg/ballerinalang).
 * Post all technical questions on Stack Overflow with the [#ballerina](https://stackoverflow.com/questions/tagged/ballerina) tag.
-

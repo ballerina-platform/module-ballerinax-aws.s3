@@ -42,6 +42,10 @@ BAL_SOURCE_DIR="$HOME/.ballerina/repositories/local/bala/ballerinax/$BAL_PACKAGE
 echo "Successfully updated the local central repositories"
 
 # Loop through examples in the examples directory
-find "$BAL_EXAMPLES_DIR" -type f -name "*.bal" | while read -r BAL_EXAMPLE_FILE; do
-  bal "$BAL_CMD" --offline "$BAL_EXAMPLE_FILE"
+find "$BAL_EXAMPLES_DIR" -mindepth 2 -maxdepth 2 -name "Ballerina.toml" | while read -r BAL_TOML_FILE; do
+  BAL_EXAMPLE_DIR="$(dirname "$BAL_TOML_FILE")"
+  (
+    cd "$BAL_EXAMPLE_DIR"
+    bal "$BAL_CMD" --offline
+  )
 done
