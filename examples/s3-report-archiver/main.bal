@@ -296,6 +296,7 @@ function runArchiver(s3:Client s3Client) returns ArchiveStats|error {
         select obj;
 
     stats.totalFound = csvFiles.length();
+    stats.skipped = allObjects.length() - csvFiles.length();
     log:printInfo(string `Found ${stats.totalFound} CSV files to process`);
 
     if stats.totalFound == 0 {

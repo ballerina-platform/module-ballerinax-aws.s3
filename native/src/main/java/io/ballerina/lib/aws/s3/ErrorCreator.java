@@ -51,6 +51,15 @@ public class ErrorCreator {
     }
 
     /**
+     * Gets the module reference. Returns the cached module set during initialization.
+     *
+     * @return Module instance for the aws.s3 module
+     */
+    private static Module getModule() {
+        return s3Module;
+    }
+
+    /**
      * Creates a Ballerina Error of type `ballerinax/aws.s3:Error`.
      *
      * @param message The error message
@@ -68,11 +77,9 @@ public class ErrorCreator {
      * @return BError instance of the specified type
      */
     public static BError createError(String errorType, String message) {
-        if (s3Module != null) {
-            return io.ballerina.runtime.api.creators.ErrorCreator.createError(s3Module, errorType,
-                StringUtils.fromString(message), null, null);
-        }
-        return io.ballerina.runtime.api.creators.ErrorCreator.createError(StringUtils.fromString(message));
+        Module module = getModule();
+        return io.ballerina.runtime.api.creators.ErrorCreator.createError(module, errorType,
+            StringUtils.fromString(message), null, null);
     }
 
     /**
@@ -83,11 +90,9 @@ public class ErrorCreator {
      * @return BError instance of module's Error type
      */
     public static BError createError(String message, BError cause) {
-        if (s3Module != null) {
-            return io.ballerina.runtime.api.creators.ErrorCreator.createError(s3Module, ERROR,
-                StringUtils.fromString(message), cause, null);
-        }
-        return io.ballerina.runtime.api.creators.ErrorCreator.createError(StringUtils.fromString(message), cause);
+        Module module = getModule();
+        return io.ballerina.runtime.api.creators.ErrorCreator.createError(module, ERROR,
+            StringUtils.fromString(message), cause, null);
     }
 
     /**

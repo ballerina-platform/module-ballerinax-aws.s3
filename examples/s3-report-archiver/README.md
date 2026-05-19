@@ -86,13 +86,13 @@ maxFileSizeBytes = 10000000
 
 **To build the example:**
 ```bash
-cd s3_report_archiver
+cd s3-report-archiver
 bal build
 ```
 
 **To run the example:**
 ```bash
-cd s3_report_archiver
+cd s3-report-archiver
 bal run
 ```
 
