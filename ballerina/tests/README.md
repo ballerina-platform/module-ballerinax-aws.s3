@@ -151,6 +151,6 @@ To run a specific initialization test, set `enable: true` for the relevant test 
 
 ## Notes
 
-- All tests run against a real AWS S3 bucket. There is no mock server involved except when no credentials are provided at all (in that case a `test:mock(Client)` is returned and live tests are skipped).
+- All tests run against a real AWS S3 bucket.
 - The test bucket is created at the start of the suite and deleted in the `@test:AfterSuite` cleanup function, which also deletes any remaining objects first.
 - Multipart upload tests use a minimum part size of 5MB as required by the AWS S3 API for all parts except the last.
