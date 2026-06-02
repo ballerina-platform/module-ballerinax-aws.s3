@@ -63,10 +63,7 @@ public isolated client class Client {
     remote isolated function listBuckets() returns @display {label: "Bucket Names"} Bucket[]|Error {
         json result = check nativeListBuckets(self);
         Bucket[]|error buckets = result.fromJsonWithType();
-        if buckets is error {
-            return error Error(buckets.message(), buckets);
-        }
-        return buckets;
+        return buckets is error ? error Error(buckets.message(), buckets) : buckets;
     }
 
     # Gets the AWS region of a bucket.
