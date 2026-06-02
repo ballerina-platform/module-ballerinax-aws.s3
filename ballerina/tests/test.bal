@@ -771,10 +771,10 @@ function testCopyObjectWithNewName() returns error? {
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey);
     
     // Verify both objects exist
-    boolean|error sourceExists = s3Client->doesObjectExist(testBucketName, sourceKey);
-    boolean|error destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
-    test:assertTrue(sourceExists is boolean && sourceExists, msg = "Source object should still exist after copy");
-    test:assertTrue(destExists is boolean && destExists, msg = "Destination object should exist after copy");
+    boolean sourceExists = check s3Client->doesObjectExist(testBucketName, sourceKey);
+    boolean destExists = check s3Client->doesObjectExist(testBucketName, destinationKey);
+    test:assertTrue(sourceExists, msg = "Source object should still exist after copy");
+    test:assertTrue(destExists, msg = "Destination object should exist after copy");
     
     // Clean up
     check s3Client->deleteObject(testBucketName, sourceKey);
@@ -808,8 +808,8 @@ function testCopyObjectWithMetadata() returns error? {
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey, copyConfig);
     
     // Verify the copied object exists
-    boolean|error destExists = s3Client->doesObjectExist(testBucketName, destinationKey);
-    test:assertTrue(destExists is boolean && destExists, msg = "Destination object should exist after copy");
+    boolean destExists = check s3Client->doesObjectExist(testBucketName, destinationKey);
+    test:assertTrue(destExists, msg = "Destination object should exist after copy");
     
     // Clean up
     check s3Client->deleteObject(testBucketName, sourceKey);
@@ -829,16 +829,16 @@ function testCopyObjectFromNonExistentSource() returns error? {
 }
 function testDoesObjectExist() returns error? {
     // Test with existing object
-    boolean|error exists = s3Client->doesObjectExist(testBucketName, fileName);
-    test:assertTrue(exists is boolean && exists, msg = "Object should exist");
+    boolean exists = check s3Client->doesObjectExist(testBucketName, fileName);
+    test:assertTrue(exists, msg = "Object should exist");
 }
 
 @test:Config {
     dependsOn: [testCreateBucket]
 }
 function testDoesObjectExistForNonExistentObject() returns error? {
-    boolean|error exists = s3Client->doesObjectExist(testBucketName, "non-existent-object-xyz-123.txt");
-    test:assertFalse(exists is boolean && exists, msg = "Non-existent object should return false");
+    boolean exists = check s3Client->doesObjectExist(testBucketName, "non-existent-object-xyz-123.txt");
+    test:assertFalse(exists, msg = "Non-existent object should return false");
 }
 
 @test:Config {
@@ -849,22 +849,22 @@ function testDoesObjectExistAfterUploadAndDelete() returns error? {
     byte[] objectContent = "Test content for existence check".toBytes();
     
     // Initially object should not exist
-    boolean|error existsBefore = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertFalse(existsBefore is boolean && existsBefore, msg = "Object should not exist before upload");
-    
+    boolean existsBefore = check s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertFalse(existsBefore, msg = "Object should not exist before upload");
+
     // Upload the object
     check s3Client->putObject(testBucketName, objectKey, objectContent);
-    
+
     // Now object should exist
-    boolean|error existsAfterUpload = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertTrue(existsAfterUpload is boolean && existsAfterUpload, msg = "Object should exist after upload");
-    
+    boolean existsAfterUpload = check s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertTrue(existsAfterUpload, msg = "Object should exist after upload");
+
     // Delete the object
     check s3Client->deleteObject(testBucketName, objectKey);
-    
+
     // Object should not exist after deletion
-    boolean|error existsAfterDelete = s3Client->doesObjectExist(testBucketName, objectKey);
-    test:assertFalse(existsAfterDelete is boolean && existsAfterDelete, msg = "Object should not exist after deletion");
+    boolean existsAfterDelete = check s3Client->doesObjectExist(testBucketName, objectKey);
+    test:assertFalse(existsAfterDelete, msg = "Object should not exist after deletion");
 }
 
 @test:Config {
@@ -1234,8 +1234,7 @@ function testAbortMultipartUploadForStreamTest() returns error? {
     check s3Client->abortMultipartUpload(testBucketName, objectKey, abortUploadId);
     
     // Verify the object doesn't exist (upload was aborted, not completed)
-    boolean|error existsResult = s3Client->doesObjectExist(testBucketName, objectKey);
-    boolean exists = existsResult is boolean && existsResult;
+    boolean exists = check s3Client->doesObjectExist(testBucketName, objectKey);
     test:assertFalse(exists, msg = "Object should not exist after aborting multipart upload");
 }
 

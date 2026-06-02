@@ -137,7 +137,10 @@ public class BallerinaStreamInputStream extends InputStream {
                 if (value instanceof BArray) {
                     currentChunk = ((BArray) value).getBytes();
                     chunkPosition = 0;
-                    return currentChunk.length > 0;
+                    if (currentChunk.length == 0) {
+                        return fetchNextChunk();
+                    }
+                    return true;
                 } else {
                     throw new IOException("Unexpected value type in stream");
                 }
@@ -151,18 +154,17 @@ public class BallerinaStreamInputStream extends InputStream {
 
     @Override
     public void close() throws IOException {
+        endOfStream = true;
+        currentChunk = null;
         if (!hasCloseMethod) {
             return;
         }
-        
+
         Object result = environment.getRuntime().callMethod(
                 ballerinaStream.getIteratorObj(), BAL_STREAM_CLOSE, null);
-        
+
         if (result instanceof BError) {
             throw new IOException(((BError) result).getMessage());
         }
-        
-        endOfStream = true;
-        currentChunk = null;
     }
 }

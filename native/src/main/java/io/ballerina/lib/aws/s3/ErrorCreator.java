@@ -51,8 +51,9 @@ public class ErrorCreator {
      * @return BError instance of the specified type
      */
     public static BError createError(String errorType, String message) {
+        String safeMessage = message != null ? message : "Unknown error";
         return io.ballerina.runtime.api.creators.ErrorCreator.createError(ModuleUtils.getModule(), errorType,
-            StringUtils.fromString(message), null, null);
+            StringUtils.fromString(safeMessage), null, null);
     }
 
     /**

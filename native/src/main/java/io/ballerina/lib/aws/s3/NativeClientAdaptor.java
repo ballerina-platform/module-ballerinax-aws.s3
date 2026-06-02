@@ -49,6 +49,8 @@ import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.BucketLocationConstraint;
+import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
@@ -307,6 +309,15 @@ public class NativeClientAdaptor {
             applyStringConfig(config, "acl", builder::acl);
             applyStringConfig(config, "objectOwnership", builder::objectOwnership);
             applyBooleanConfig(config, "objectLockEnabled", builder::objectLockEnabledForBucket);
+
+            Object configOrError = getConnectionConfig(clientObj);
+            if (configOrError instanceof ConnectionConfig connectionConfig
+                    && connectionConfig.region != null
+                    && !Region.US_EAST_1.equals(connectionConfig.region)) {
+                builder.createBucketConfiguration(CreateBucketConfiguration.builder()
+                        .locationConstraint(BucketLocationConstraint.fromValue(connectionConfig.region.id()))
+                        .build());
+            }
 
             s3.createBucket(builder.build());
 
@@ -787,6 +798,9 @@ public class NativeClientAdaptor {
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
+            if (partNumber < 1 || partNumber > 10000) {
+                return ErrorCreator.createError("Part number must be between 1 and 10000, got: " + partNumber);
+            }
             byte[] contentBytes = content.getBytes();
 
             UploadPartRequest.Builder builder = UploadPartRequest.builder()
@@ -816,6 +830,9 @@ public class NativeClientAdaptor {
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
+            if (partNumber < 1 || partNumber > 10000) {
+                return ErrorCreator.createError("Part number must be between 1 and 10000, got: " + partNumber);
+            }
             long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
 
             if (contentLength <= 0) {
@@ -863,6 +880,10 @@ public class NativeClientAdaptor {
             List<CompletedPart> parts = new ArrayList<>();
 
             for (int i = 0; i < pNums.length; i++) {
+                if (pNums[i] < 1 || pNums[i] > 10000) {
+                    return ErrorCreator.createError(
+                            "Part number must be between 1 and 10000, got: " + pNums[i]);
+                }
                 parts.add(CompletedPart.builder()
                         .partNumber((int) pNums[i])
                         .eTag(eTagsStr[i])

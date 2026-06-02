@@ -15,7 +15,6 @@
 // under the License.
 
 import ballerina/os;
-import ballerina/test;
 
 // Environment variables for authentication
 final string authType = os:getEnv("AUTH_TYPE");
@@ -59,7 +58,7 @@ function initS3Client() returns Client|error {
             auth: staticAuth
         });
     }
-    return test:mock(Client);
+    return error("AWS test credentials are not configured. Set ACCESS_KEY_ID and SECRET_ACCESS_KEY, or AUTH_TYPE=default/profile.");
 }
 
 // Helper function to create a client with a different region
@@ -81,5 +80,5 @@ function createS3ClientWithRegion(Region targetRegion) returns Client|error {
             auth: staticAuth
         });
     }
-    return test:mock(Client);
+    return error("AWS test credentials are not configured. Set ACCESS_KEY_ID and SECRET_ACCESS_KEY, or AUTH_TYPE=default/profile.");
 }

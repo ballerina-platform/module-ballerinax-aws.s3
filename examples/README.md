@@ -23,6 +23,7 @@ Each example requires a `Config.toml` file with your AWS credentials. Refer to t
 ```toml
 s3AccessKeyId     = "<YOUR_ACCESS_KEY_ID>"
 s3SecretAccessKey = "<YOUR_SECRET_ACCESS_KEY>"
+s3Region          = "<YOUR_AWS_REGION>"
 s3BucketName      = "<YOUR_BUCKET_NAME>"
 ```
 

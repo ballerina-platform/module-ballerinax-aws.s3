@@ -32,7 +32,7 @@ task testExamples {
                 workingDir project.projectDir
                 println("Working dir: ${workingDir}")
                 if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                    commandLine 'cmd', '/c', "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh run"
+                    commandLine 'bash', '-c', "${project.projectDir}/build.sh run"
                 } else {
                     commandLine 'sh', "-c", "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh run"
                 }
@@ -58,7 +58,7 @@ task buildExamples {
                 workingDir project.projectDir
                 println("Working dir: ${workingDir}")
                 if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                    commandLine 'cmd', '/c', "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh build"
+                    commandLine 'bash', '-c', "${project.projectDir}/build.sh build"
                 } else {
                     commandLine 'sh', "-c", "chmod +x ${project.projectDir}/build.sh && ${project.projectDir}/build.sh build"
                 }
