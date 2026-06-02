@@ -246,11 +246,13 @@ function processReport(s3:Client s3Client, string objectKey) returns ReportSumma
 
     SalesRecord[] records = check parseSalesRecords(rawRows);
     int totalRows = records.length();
-    string topProduct = findTopProduct(records);
-    float totalRevenue = sumRevenue(records);
 
     string[][] transformed = transformRecords(records);
     int skippedRows = totalRows - (transformed.length() - 1);
+
+    SalesRecord[] filteredRecords = records.filter(r => r.revenue > 0.0);
+    string topProduct = findTopProduct(filteredRecords);
+    float totalRevenue = sumRevenue(filteredRecords);
     string csvContent = toCsvString(transformed);
 
     string processedKey = buildProcessedKey(filename);

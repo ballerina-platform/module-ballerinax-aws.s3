@@ -27,7 +27,7 @@ For each incoming CSV report the archiver:
 4. Writes the result as a new CSV to the processed prefix
 
 **Input (`sales_january.csv`):**
-```
+```csv
 date,product,region,units,revenue
 2025-01-01,Widget A,North,120,2400.00
 2025-01-02,Widget C,East,0,0.00        ← filtered out (zero revenue)
@@ -36,7 +36,7 @@ date,product,region,units,revenue
 ```
 
 **Output (`sales_january_processed.csv`):**
-```
+```csv
 date,product,region,units,revenue,running_total
 2025-01-03,Widget D,South,310,9300.0,9300.0    ← sorted by revenue desc
 2025-01-02,Widget A,West,200,4000.0,13300.0
