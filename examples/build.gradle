@@ -46,7 +46,7 @@ task testExamples {
 
 task buildExamples {
     gradle.taskGraph.whenReady { graph ->
-        if (graph.hasTask(":s3-examples:test")) {
+        if (graph.hasTask(":aws.s3-examples:test")) {
             buildExamples.enabled = false
         } else {
             testExamples.enabled = false
