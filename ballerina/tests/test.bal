@@ -16,14 +16,11 @@
 
 import ballerina/http;
 import ballerina/io;
-import ballerina/os;
 import ballerina/random;
 import ballerina/test;
-import ballerina/time;
 
 // Test bucket name from environment
-configurable string baseBucketName = os:getEnv("BUCKET_NAME");
-final string testBucketName = baseBucketName + "-" + time:utcNow()[0].toString();
+const testBucketName = "ballerina-test-bucket";
 
 // Test-specific constants
 const fileName = "test.txt";
@@ -58,7 +55,7 @@ isolated function testInitUsingProfileAuth() returns error? {
 }
 
 @test:Config {
-    enable: false
+    enable: true
 }
 isolated function testInitUsingDefaultCredentials() returns error? {
     ConnectionConfig connectionConfig = {
@@ -72,10 +69,7 @@ isolated function testInitUsingDefaultCredentials() returns error? {
 function testCreateBucket() returns error? {
     CreateBucketConfig bucketConfig = {acl: PRIVATE};
     error? result = s3Client->createBucket(testBucketName, bucketConfig);
-    // Ignore error if bucket already exists (owned by us)
-    if result is error && result !is BucketAlreadyOwnedByYouError {
-        return result;
-    }
+    test:assertTrue(result !is error);
 }
 
 @test:Config {
@@ -352,30 +346,16 @@ function testPutObjectAsStreamWithMetadata() returns error? {
     PutObjectConfig putConfig = {metadata: metadata};
     check s3Client->putObject(testBucketName, objectKey, fileContent, putConfig);
     
-    // Verify metadata via presigned URL
-    PresignedUrlConfig urlConfig = {expirationMinutes: 60, httpMethod: "GET"};
-    string url = check s3Client->createPresignedUrl(testBucketName, objectKey, urlConfig);
-    http:Client httpClient = check new (url);
-    http:Response httpResponse = check httpClient->get("", {"Range": "bytes=0-0"});
-    // Check both lowercase and original case since AWS behavior may vary
-    string|http:HeaderNotFoundError uploadTypeResult = httpResponse.getHeader("x-amz-meta-uploadtype");
-    string uploadTypeHeader = "";
-    if uploadTypeResult is string {
-        uploadTypeHeader = uploadTypeResult;
+    // Verify metadata via getObjectMetadata
+    ObjectMetadata objectMetadata = check s3Client->getObjectMetadata(testBucketName, objectKey);
+    map<anydata>? userMeta = objectMetadata.userMetadata;
+    if userMeta is () {
+        test:assertFail("User metadata not found");
     } else {
-        // Try original case
-        string|http:HeaderNotFoundError originalCaseResult = httpResponse.getHeader("x-amz-meta-UploadType");
-        if originalCaseResult is string {
-            uploadTypeHeader = originalCaseResult;
-        }
+        test:assertEquals(userMeta["uploadtype"], "Stream", "Metadata mismatch for uploadtype");
+        test:assertEquals(userMeta["version"], "1.0", "Metadata mismatch for version");
     }
-    
-    if uploadTypeHeader == "" {
-        test:assertFail("Metadata header not found");
-    } else {
-        test:assertEquals(uploadTypeHeader, "Stream", "Metadata mismatch");
-    }
-    
+
     // Clean up
     check s3Client->deleteObject(testBucketName, objectKey);
 }
