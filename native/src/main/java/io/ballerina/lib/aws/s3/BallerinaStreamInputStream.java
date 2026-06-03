@@ -130,8 +130,7 @@ public class BallerinaStreamInputStream extends InputStream {
                 return false;
             }
             
-            if (result instanceof BMap) {
-                BMap<?, ?> record = (BMap<?, ?>) result;
+            if (result instanceof BMap<?, ?> record) {
                 Object value = record.get(StringUtils.fromString(STREAM_VALUE));
                 
                 if (value instanceof BArray) {

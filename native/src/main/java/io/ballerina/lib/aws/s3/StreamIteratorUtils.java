@@ -35,8 +35,8 @@ public class StreamIteratorUtils {
     // Stream Operations
     @SuppressWarnings("unchecked")
     public static Object readStreamBytes(BObject streamWrapper) {
-        ResponseInputStream<GetObjectResponse> input = (ResponseInputStream<GetObjectResponse>) streamWrapper
-                .getNativeData(NATIVE_STREAM);
+        ResponseInputStream<GetObjectResponse> input =
+                (ResponseInputStream<GetObjectResponse>) streamWrapper.getNativeData(NATIVE_STREAM);
         if (input == null)
             return ErrorCreator.createError("Stream is closed.");
 

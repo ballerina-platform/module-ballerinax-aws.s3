@@ -89,6 +89,72 @@ public class NativeClientAdaptor {
 
     private static final String NATIVE_CLIENT = "NATIVE_S3_CLIENT";
     private static final String NATIVE_CONFIG = "NATIVE_CONNECTION_CONFIG";
+    public static final BString AUTH = StringUtils.fromString("auth");
+    public static final BString REGION = StringUtils.fromString("region");
+    public static final BString ACCESS_KEY_ID = StringUtils.fromString("accessKeyId");
+    public static final BString PROFILE_NAME = StringUtils.fromString("profileName");
+    public static final BString SECRET_ACCESS_KEY = StringUtils.fromString("secretAccessKey");
+    public static final BString SESSION_TOKEN = StringUtils.fromString("sessionToken");
+    public static final BString CREDENTIALS_FILE_PATH = StringUtils.fromString("credentialsFilePath");
+    public static final String ACL = "acl";
+    public static final String OBJECT_OWNERSHIP_KEY = "objectOwnership";
+    public static final String OBJECT_LOCK_ENABLED_KEY = "objectLockEnabled";
+    public static final BString NAME = StringUtils.fromString("name");
+    public static final BString CREATION_DATE = StringUtils.fromString("creationDate");
+    public static final String US_EAST_1 = "us-east-1";
+    public static final String CONTENT_LENGTH_KEY = "contentLength";
+    public static final BString CONTENT_LENGTH = StringUtils.fromString(CONTENT_LENGTH_KEY);
+    public static final String CONTENT_TYPE = "contentType";
+    public static final String STORAGE_CLASS = "storageClass";
+    public static final String CACHE_CONTROL = "cacheControl";
+    public static final String CONTENT_DISPOSITION = "contentDisposition";
+    public static final String CONTENT_ENCODING = "contentEncoding";
+    public static final String CONTENT_LANGUAGE = "contentLanguage";
+    public static final String TAGGING = "tagging";
+    public static final String SERVER_SIDE_ENCRYPTION = "serverSideEncryption";
+    public static final String METADATA = "metadata";
+    public static final String EXPIRES = "expires";
+    public static final String VERSION_ID = "versionId";
+    public static final String RANGE = "range";
+    public static final String IF_MATCH = "ifMatch";
+    public static final String IF_NONE_MATCH = "ifNoneMatch";
+    public static final String IF_MODIFIED_SINCE = "ifModifiedSince";
+    public static final String IF_UNMODIFIED_SINCE = "ifUnmodifiedSince";
+    public static final String PART_NUMBER = "partNumber";
+    public static final String RESPONSE_CONTENT_DISPOSITION = "responseContentDisposition";
+    public static final String RESPONSE_CONTENT_TYPE = "responseContentType";
+    public static final String NATIVE_STREAM = "NATIVE_STREAM";
+    public static final String STREAM_ITERATOR = "StreamIterator";
+    public static final String MFA = "mfa";
+    public static final String BYPASS_GOVERNANCE_RETENTION = "bypassGovernanceRetention";
+    public static final String PREFIX = "prefix";
+    public static final String DELIMITER = "delimiter";
+    public static final String MAX_KEYS = "maxKeys";
+    public static final String CONTINUATION_TOKEN = "continuationToken";
+    public static final String START_AFTER = "startAfter";
+    public static final String FETCH_OWNER = "fetchOwner";
+    public static final String ENCODING_TYPE = "encodingType";
+    public static final BString KEY = StringUtils.fromString("key");
+    public static final BString SIZE = StringUtils.fromString("size");
+    public static final BString LAST_MODIFIED = StringUtils.fromString("lastModified");
+    public static final BString E_TAG = StringUtils.fromString("eTag");
+    public static final String EMPTY_STRING = "";
+    public static final String STANDARD = "STANDARD";
+    public static final BString OBJECTS = StringUtils.fromString("objects");
+    public static final BString COUNT = StringUtils.fromString("count");
+    public static final BString IS_TRUNCATED = StringUtils.fromString("isTruncated");
+    public static final BString NEXT_CONTINUATION_TOKEN = StringUtils.fromString("nextContinuationToken");
+    public static final BString USER_METADATA = StringUtils.fromString("userMetadata");
+    public static final String METADATA_DIRECTIVE = "metadataDirective";
+    public static final String COPY_SOURCE_IF_MATCH = "copySourceIfMatch";
+    public static final String COPY_SOURCE_IF_NONE_MATCH = "copySourceIfNoneMatch";
+    public static final String COPY_SOURCE_IF_MODIFIED_SINCE = "copySourceIfModifiedSince";
+    public static final String COPY_SOURCE_IF_UNMODIFIED_SINCE = "copySourceIfUnmodifiedSince";
+    public static final String CONTENT_MD_5 = "contentMD5";
+    public static final BString EXPIRATION_MINUTES = StringUtils.fromString("expirationMinutes");
+    public static final BString HTTP_METHOD = StringUtils.fromString("httpMethod");
+    public static final String GET = "GET";
+    public static final String PUT = "PUT";
 
     private static Optional<String> getStringConfig(BMap<BString, Object> config, String key) {
         if (config.containsKey(StringUtils.fromString(key))) {
@@ -172,8 +238,8 @@ public class NativeClientAdaptor {
     // Client Initialization Method
     public static Object initClient(Environment env, BObject clientObj, BMap<BString, Object> config) {
         try {
-            String region = config.getStringValue(StringUtils.fromString("region")).getValue();
-            Object authObj = config.get(StringUtils.fromString("auth"));
+            String region = config.getStringValue(REGION).getValue();
+            Object authObj = config.get(AUTH);
 
             if (!(authObj instanceof BMap) && !(authObj instanceof BString)) {
                 return ErrorCreator.createError("Invalid auth configuration provided");
@@ -219,9 +285,9 @@ public class NativeClientAdaptor {
             return DefaultCredentialsProvider.create();
         } else if (auth instanceof BMap) {
             BMap<BString, Object> authMap = (BMap<BString, Object>) auth;
-            if (authMap.containsKey(StringUtils.fromString("accessKeyId"))) {
+            if (authMap.containsKey(ACCESS_KEY_ID)) {
                 return createStaticCredentialsProvider(authMap);
-            } else if (authMap.containsKey(StringUtils.fromString("profileName"))) {
+            } else if (authMap.containsKey(PROFILE_NAME)) {
                 return createProfileCredentialsProvider(authMap);
             }
         }
@@ -230,35 +296,32 @@ public class NativeClientAdaptor {
 
     // Handle static credentials with optional session token
     private static AwsCredentialsProvider createStaticCredentialsProvider(BMap<BString, Object> auth) {
-        String accessKeyId = auth.getStringValue(StringUtils.fromString("accessKeyId")).getValue();
-        String secretAccessKey = auth.getStringValue(StringUtils.fromString("secretAccessKey")).getValue();
+        String accessKeyId = auth.getStringValue(ACCESS_KEY_ID).getValue();
+        String secretAccessKey = auth.getStringValue(SECRET_ACCESS_KEY).getValue();
 
         AwsCredentials credentials;
-        if (auth.containsKey(StringUtils.fromString("sessionToken"))) {
-            Object sessionTokenObj = auth.get(StringUtils.fromString("sessionToken"));
+        if (auth.containsKey(SESSION_TOKEN)) {
+            Object sessionTokenObj = auth.get(SESSION_TOKEN);
             if (sessionTokenObj instanceof BString) {
                 String sessionToken = ((BString) sessionTokenObj).getValue();
-                if (!sessionToken.isEmpty()) {
-                    credentials = AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken);
-                } else {
-                    credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
-                }
+                credentials = (!sessionToken.isEmpty())
+                        ? AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken)
+                        : AwsBasicCredentials.create(accessKeyId, secretAccessKey);
             } else {
                 credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
             }
         } else {
             credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
         }
-
         return StaticCredentialsProvider.create(credentials);
     }
 
     // Handle profile-based credentials with optional custom file path
     private static AwsCredentialsProvider createProfileCredentialsProvider(BMap<BString, Object> auth) {
-        String profileName = auth.getStringValue(StringUtils.fromString("profileName")).getValue();
+        String profileName = auth.getStringValue(PROFILE_NAME).getValue();
 
-        if (auth.containsKey(StringUtils.fromString("credentialsFilePath"))) {
-            Object credentialsFilePathObj = auth.get(StringUtils.fromString("credentialsFilePath"));
+        if (auth.containsKey(CREDENTIALS_FILE_PATH)) {
+            Object credentialsFilePathObj = auth.get(CREDENTIALS_FILE_PATH);
             if (credentialsFilePathObj instanceof BString) {
                 String credentialsFilePath = ((BString) credentialsFilePathObj).getValue();
                 if (!credentialsFilePath.isEmpty()) {
@@ -306,9 +369,9 @@ public class NativeClientAdaptor {
         try {
             CreateBucketRequest.Builder builder = CreateBucketRequest.builder().bucket(bucket);
 
-            applyStringConfig(config, "acl", builder::acl);
-            applyStringConfig(config, "objectOwnership", builder::objectOwnership);
-            applyBooleanConfig(config, "objectLockEnabled", builder::objectLockEnabledForBucket);
+            applyStringConfig(config, ACL, builder::acl);
+            applyStringConfig(config, OBJECT_OWNERSHIP_KEY, builder::objectOwnership);
+            applyBooleanConfig(config, OBJECT_LOCK_ENABLED_KEY, builder::objectLockEnabledForBucket);
 
             Object configOrError = getConnectionConfig(clientObj);
             if (configOrError instanceof ConnectionConfig connectionConfig
@@ -359,11 +422,11 @@ public class NativeClientAdaptor {
                 Bucket bucket = buckets.get(i);
                 BMap<BString, Object> bucketRecord = ValueCreator.createMapValue(mapType);
 
-                bucketRecord.put(StringUtils.fromString("name"), StringUtils.fromString(bucket.name()));
+                bucketRecord.put(NAME, StringUtils.fromString(bucket.name()));
 
                 Instant creationDate = bucket.creationDate();
-                String creationDateStr = creationDate != null ? creationDate.toString() : "";
-                bucketRecord.put(StringUtils.fromString("creationDate"), StringUtils.fromString(creationDateStr));
+                String creationDateStr = creationDate != null ? creationDate.toString() : EMPTY_STRING;
+                bucketRecord.put(CREATION_DATE, StringUtils.fromString(creationDateStr));
 
                 bBuckets[i] = bucketRecord;
             }
@@ -387,7 +450,7 @@ public class NativeClientAdaptor {
                     .build();
             GetBucketLocationResponse response = s3.getBucketLocation(request);
             String location = response.locationConstraintAsString();
-            return StringUtils.fromString(location != null ? location : "us-east-1");
+            return StringUtils.fromString(location != null ? location : US_EAST_1);
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }
@@ -448,7 +511,7 @@ public class NativeClientAdaptor {
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
-            long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
+            long contentLength = config.getIntValue(CONTENT_LENGTH);
 
             // Validate contentLength is positive
             if (contentLength <= 0) {
@@ -460,7 +523,6 @@ public class NativeClientAdaptor {
                     .bucket(bucket.getValue())
                     .key(key.getValue())
                     .contentLength(contentLength);
-
             applyPutObjectConfig(builder, config);
 
             try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
@@ -475,17 +537,17 @@ public class NativeClientAdaptor {
     }
 
     private static void applyPutObjectConfig(PutObjectRequest.Builder builder, BMap<BString, Object> config) {
-        applyStringConfig(config, "contentType", builder::contentType);
-        applyStringConfig(config, "acl", builder::acl);
-        applyStringConfig(config, "storageClass", builder::storageClass);
-        applyStringConfig(config, "cacheControl", builder::cacheControl);
-        applyStringConfig(config, "contentDisposition", builder::contentDisposition);
-        applyStringConfig(config, "contentEncoding", builder::contentEncoding);
-        applyStringConfig(config, "contentLanguage", builder::contentLanguage);
-        applyStringConfig(config, "tagging", builder::tagging);
-        applyStringConfig(config, "serverSideEncryption", builder::serverSideEncryption);
-        applyMetadataConfig(config, "metadata", builder::metadata);
-        applyInstantConfig(config, "expires", builder::expires);
+        applyStringConfig(config, CONTENT_TYPE, builder::contentType);
+        applyStringConfig(config, ACL, builder::acl);
+        applyStringConfig(config, STORAGE_CLASS, builder::storageClass);
+        applyStringConfig(config, CACHE_CONTROL, builder::cacheControl);
+        applyStringConfig(config, CONTENT_DISPOSITION, builder::contentDisposition);
+        applyStringConfig(config, CONTENT_ENCODING, builder::contentEncoding);
+        applyStringConfig(config, CONTENT_LANGUAGE, builder::contentLanguage);
+        applyStringConfig(config, TAGGING, builder::tagging);
+        applyStringConfig(config, SERVER_SIDE_ENCRYPTION, builder::serverSideEncryption);
+        applyMetadataConfig(config, METADATA, builder::metadata);
+        applyInstantConfig(config, EXPIRES, builder::expires);
     }
 
     public static Object getObjectAsStream(Environment env, BObject clientObj, BString bucket, BString key,
@@ -501,19 +563,19 @@ public class NativeClientAdaptor {
                     .bucket(bucket.getValue())
                     .key(key.getValue());
 
-            applyStringConfig(config, "versionId", builder::versionId);
-            applyStringConfig(config, "range", builder::range);
-            applyStringConfig(config, "ifMatch", builder::ifMatch);
-            applyStringConfig(config, "ifNoneMatch", builder::ifNoneMatch);
-            applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
-            applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
-            applyIntConfig(config, "partNumber", builder::partNumber);
-            applyStringConfig(config, "responseContentDisposition", builder::responseContentDisposition);
-            applyStringConfig(config, "responseContentType", builder::responseContentType);
+            applyStringConfig(config, VERSION_ID, builder::versionId);
+            applyStringConfig(config, RANGE, builder::range);
+            applyStringConfig(config, IF_MATCH, builder::ifMatch);
+            applyStringConfig(config, IF_NONE_MATCH, builder::ifNoneMatch);
+            applyInstantConfig(config, IF_MODIFIED_SINCE, builder::ifModifiedSince);
+            applyInstantConfig(config, IF_UNMODIFIED_SINCE, builder::ifUnmodifiedSince);
+            applyIntConfig(config, PART_NUMBER, builder::partNumber);
+            applyStringConfig(config, RESPONSE_CONTENT_DISPOSITION, builder::responseContentDisposition);
+            applyStringConfig(config, RESPONSE_CONTENT_TYPE, builder::responseContentType);
 
             ResponseInputStream<GetObjectResponse> s3Stream = s3.getObject(builder.build());
-            BObject streamWrapper = ValueCreator.createObjectValue(env.getCurrentModule(), "StreamIterator");
-            streamWrapper.addNativeData("NATIVE_STREAM", s3Stream);
+            BObject streamWrapper = ValueCreator.createObjectValue(env.getCurrentModule(), STREAM_ITERATOR);
+            streamWrapper.addNativeData(NATIVE_STREAM, s3Stream);
             return streamWrapper;
         } catch (Exception e) {
             return ErrorCreator.createError(e);
@@ -533,15 +595,15 @@ public class NativeClientAdaptor {
                     .bucket(bucket.getValue())
                     .key(key.getValue());
 
-            applyStringConfig(config, "versionId", builder::versionId);
-            applyStringConfig(config, "range", builder::range);
-            applyStringConfig(config, "ifMatch", builder::ifMatch);
-            applyStringConfig(config, "ifNoneMatch", builder::ifNoneMatch);
-            applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
-            applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
-            applyIntConfig(config, "partNumber", builder::partNumber);
-            applyStringConfig(config, "responseContentDisposition", builder::responseContentDisposition);
-            applyStringConfig(config, "responseContentType", builder::responseContentType);
+            applyStringConfig(config, VERSION_ID, builder::versionId);
+            applyStringConfig(config, RANGE, builder::range);
+            applyStringConfig(config, IF_MATCH, builder::ifMatch);
+            applyStringConfig(config, IF_NONE_MATCH, builder::ifNoneMatch);
+            applyInstantConfig(config, IF_MODIFIED_SINCE, builder::ifModifiedSince);
+            applyInstantConfig(config, IF_UNMODIFIED_SINCE, builder::ifUnmodifiedSince);
+            applyIntConfig(config, PART_NUMBER, builder::partNumber);
+            applyStringConfig(config, RESPONSE_CONTENT_DISPOSITION, builder::responseContentDisposition);
+            applyStringConfig(config, RESPONSE_CONTENT_TYPE, builder::responseContentType);
 
             ResponseBytes<GetObjectResponse> responseBytes = s3.getObjectAsBytes(builder.build());
             byte[] bytes = responseBytes.asByteArray();
@@ -564,9 +626,9 @@ public class NativeClientAdaptor {
                     .bucket(bucket.getValue())
                     .key(key.getValue());
 
-            applyStringConfig(config, "versionId", builder::versionId);
-            applyStringConfig(config, "mfa", builder::mfa);
-            applyBooleanConfig(config, "bypassGovernanceRetention", builder::bypassGovernanceRetention);
+            applyStringConfig(config, VERSION_ID, builder::versionId);
+            applyStringConfig(config, MFA, builder::mfa);
+            applyBooleanConfig(config, BYPASS_GOVERNANCE_RETENTION, builder::bypassGovernanceRetention);
 
             s3.deleteObject(builder.build());
             return null;
@@ -589,13 +651,13 @@ public class NativeClientAdaptor {
             ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
                     .bucket(bucket.getValue());
 
-            applyStringConfig(config, "prefix", builder::prefix);
-            applyStringConfig(config, "delimiter", builder::delimiter);
-            applyIntConfig(config, "maxKeys", builder::maxKeys);
-            applyStringConfig(config, "continuationToken", builder::continuationToken);
-            applyStringConfig(config, "startAfter", builder::startAfter);
-            applyBooleanConfig(config, "fetchOwner", builder::fetchOwner);
-            applyStringConfig(config, "encodingType", builder::encodingType);
+            applyStringConfig(config, PREFIX, builder::prefix);
+            applyStringConfig(config, DELIMITER, builder::delimiter);
+            applyIntConfig(config, MAX_KEYS, builder::maxKeys);
+            applyStringConfig(config, CONTINUATION_TOKEN, builder::continuationToken);
+            applyStringConfig(config, START_AFTER, builder::startAfter);
+            applyBooleanConfig(config, FETCH_OWNER, builder::fetchOwner);
+            applyStringConfig(config, ENCODING_TYPE, builder::encodingType);
 
             ListObjectsV2Response response = s3.listObjectsV2(builder.build());
             MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
@@ -609,14 +671,14 @@ public class NativeClientAdaptor {
                 S3Object obj = objects.get(i);
                 BMap<BString, Object> objMap = ValueCreator.createMapValue(mapType);
 
-                objMap.put(StringUtils.fromString("key"), StringUtils.fromString(obj.key()));
-                objMap.put(StringUtils.fromString("size"), (long) obj.size());
-                String lastModified = obj.lastModified() != null ? obj.lastModified().toString() : "";
-                objMap.put(StringUtils.fromString("lastModified"), StringUtils.fromString(lastModified));
-                String eTag = obj.eTag() != null ? obj.eTag() : "";
-                objMap.put(StringUtils.fromString("eTag"), StringUtils.fromString(eTag));
-                String storageClass = obj.storageClassAsString() != null ? obj.storageClassAsString() : "STANDARD";
-                objMap.put(StringUtils.fromString("storageClass"), StringUtils.fromString(storageClass));
+                objMap.put(KEY, StringUtils.fromString(obj.key()));
+                objMap.put(SIZE, obj.size());
+                String lastModified = obj.lastModified() != null ? obj.lastModified().toString() : EMPTY_STRING;
+                objMap.put(LAST_MODIFIED, StringUtils.fromString(lastModified));
+                String eTag = obj.eTag() != null ? obj.eTag() : EMPTY_STRING;
+                objMap.put(E_TAG, StringUtils.fromString(eTag));
+                String storageClass = obj.storageClassAsString() != null ? obj.storageClassAsString() : STANDARD;
+                objMap.put(StringUtils.fromString(STORAGE_CLASS), StringUtils.fromString(storageClass));
 
                 objArray[i] = objMap;
             }
@@ -625,13 +687,12 @@ public class NativeClientAdaptor {
             BArray objectsArray = ValueCreator.createArrayValue(objArray,
                     TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON));
 
-            result.put(StringUtils.fromString("objects"), objectsArray);
-            result.put(StringUtils.fromString("count"), (long) size);
-            result.put(StringUtils.fromString("isTruncated"), response.isTruncated());
+            result.put(OBJECTS, objectsArray);
+            result.put(COUNT, (long) size);
+            result.put(IS_TRUNCATED, response.isTruncated());
 
             if (response.nextContinuationToken() != null) {
-                result.put(StringUtils.fromString("nextContinuationToken"),
-                        StringUtils.fromString(response.nextContinuationToken()));
+                result.put(NEXT_CONTINUATION_TOKEN, StringUtils.fromString(response.nextContinuationToken()));
             }
 
             return result;
@@ -652,41 +713,41 @@ public class NativeClientAdaptor {
                     .bucket(bucket.getValue())
                     .key(key.getValue());
 
-            applyStringConfig(config, "versionId", builder::versionId);
-            applyIntConfig(config, "partNumber", builder::partNumber);
-            applyStringConfig(config, "ifMatch", builder::ifMatch);
-            applyStringConfig(config, "ifNoneMatch", builder::ifNoneMatch);
-            applyInstantConfig(config, "ifModifiedSince", builder::ifModifiedSince);
-            applyInstantConfig(config, "ifUnmodifiedSince", builder::ifUnmodifiedSince);
+            applyStringConfig(config, VERSION_ID, builder::versionId);
+            applyIntConfig(config, PART_NUMBER, builder::partNumber);
+            applyStringConfig(config, IF_MATCH, builder::ifMatch);
+            applyStringConfig(config, IF_NONE_MATCH, builder::ifNoneMatch);
+            applyInstantConfig(config, IF_MODIFIED_SINCE, builder::ifModifiedSince);
+            applyInstantConfig(config, IF_UNMODIFIED_SINCE, builder::ifUnmodifiedSince);
 
             HeadObjectResponse response = s3.headObject(builder.build());
             MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
             BMap<BString, Object> metadata = ValueCreator.createMapValue(mapType);
 
-            metadata.put(StringUtils.fromString("key"), key);
-            metadata.put(StringUtils.fromString("contentLength"), response.contentLength());
+            metadata.put(KEY, key);
+            metadata.put(CONTENT_LENGTH, response.contentLength());
             if (response.contentType() != null) {
-                metadata.put(StringUtils.fromString("contentType"), StringUtils.fromString(response.contentType()));
+                metadata.put(StringUtils.fromString(CONTENT_TYPE), StringUtils.fromString(response.contentType()));
             }
             if (response.eTag() != null) {
-                metadata.put(StringUtils.fromString("eTag"), StringUtils.fromString(response.eTag()));
+                metadata.put(E_TAG, StringUtils.fromString(response.eTag()));
             }
             if (response.lastModified() != null) {
-                metadata.put(StringUtils.fromString("lastModified"),
+                metadata.put(LAST_MODIFIED,
                         StringUtils.fromString(response.lastModified().toString()));
             }
             String storageClass = response.storageClassAsString();
-            metadata.put(StringUtils.fromString("storageClass"),
-                    StringUtils.fromString(storageClass != null ? storageClass : "STANDARD"));
+            metadata.put(StringUtils.fromString(STORAGE_CLASS),
+                    StringUtils.fromString(storageClass != null ? storageClass : STANDARD));
             if (response.versionId() != null) {
-                metadata.put(StringUtils.fromString("versionId"), StringUtils.fromString(response.versionId()));
+                metadata.put(StringUtils.fromString(VERSION_ID), StringUtils.fromString(response.versionId()));
             }
 
             if (response.metadata() != null && !response.metadata().isEmpty()) {
                 BMap<BString, Object> userMeta = ValueCreator.createMapValue(mapType);
                 response.metadata()
                         .forEach((k, v) -> userMeta.put(StringUtils.fromString(k), StringUtils.fromString(v)));
-                metadata.put(StringUtils.fromString("userMetadata"), userMeta);
+                metadata.put(USER_METADATA, userMeta);
             }
 
             return metadata;
@@ -710,19 +771,19 @@ public class NativeClientAdaptor {
                     .destinationBucket(destBucket.getValue())
                     .destinationKey(destKey.getValue());
 
-            applyStringConfig(config, "acl", builder::acl);
-            applyStringConfig(config, "storageClass", builder::storageClass);
-            applyStringConfig(config, "metadataDirective", builder::metadataDirective);
-            applyStringConfig(config, "contentType", builder::contentType);
-            applyMetadataConfig(config, "metadata", builder::metadata);
-            applyStringConfig(config, "cacheControl", builder::cacheControl);
-            applyStringConfig(config, "contentDisposition", builder::contentDisposition);
-            applyStringConfig(config, "contentEncoding", builder::contentEncoding);
-            applyStringConfig(config, "tagging", builder::tagging);
-            applyStringConfig(config, "copySourceIfMatch", builder::copySourceIfMatch);
-            applyStringConfig(config, "copySourceIfNoneMatch", builder::copySourceIfNoneMatch);
-            applyInstantConfig(config, "copySourceIfModifiedSince", builder::copySourceIfModifiedSince);
-            applyInstantConfig(config, "copySourceIfUnmodifiedSince", builder::copySourceIfUnmodifiedSince);
+            applyStringConfig(config, ACL, builder::acl);
+            applyStringConfig(config, STORAGE_CLASS, builder::storageClass);
+            applyStringConfig(config, METADATA_DIRECTIVE, builder::metadataDirective);
+            applyStringConfig(config, CONTENT_TYPE, builder::contentType);
+            applyMetadataConfig(config, METADATA, builder::metadata);
+            applyStringConfig(config, CACHE_CONTROL, builder::cacheControl);
+            applyStringConfig(config, CONTENT_DISPOSITION, builder::contentDisposition);
+            applyStringConfig(config, CONTENT_ENCODING, builder::contentEncoding);
+            applyStringConfig(config, TAGGING, builder::tagging);
+            applyStringConfig(config, COPY_SOURCE_IF_MATCH, builder::copySourceIfMatch);
+            applyStringConfig(config, COPY_SOURCE_IF_NONE_MATCH, builder::copySourceIfNoneMatch);
+            applyInstantConfig(config, COPY_SOURCE_IF_MODIFIED_SINCE, builder::copySourceIfModifiedSince);
+            applyInstantConfig(config, COPY_SOURCE_IF_UNMODIFIED_SINCE, builder::copySourceIfUnmodifiedSince);
 
             s3.copyObject(builder.build());
             return null;
@@ -778,15 +839,15 @@ public class NativeClientAdaptor {
 
     private static void applyMultipartConfig(CreateMultipartUploadRequest.Builder builder,
             BMap<BString, Object> config) {
-        applyStringConfig(config, "contentType", builder::contentType);
-        applyStringConfig(config, "acl", builder::acl);
-        applyStringConfig(config, "storageClass", builder::storageClass);
-        applyStringConfig(config, "tagging", builder::tagging);
-        applyStringConfig(config, "serverSideEncryption", builder::serverSideEncryption);
-        applyMetadataConfig(config, "metadata", builder::metadata);
-        applyStringConfig(config, "cacheControl", builder::cacheControl);
-        applyStringConfig(config, "contentDisposition", builder::contentDisposition);
-        applyStringConfig(config, "contentEncoding", builder::contentEncoding);
+        applyStringConfig(config, CONTENT_TYPE, builder::contentType);
+        applyStringConfig(config, ACL, builder::acl);
+        applyStringConfig(config, STORAGE_CLASS, builder::storageClass);
+        applyStringConfig(config, TAGGING, builder::tagging);
+        applyStringConfig(config, SERVER_SIDE_ENCRYPTION, builder::serverSideEncryption);
+        applyMetadataConfig(config, METADATA, builder::metadata);
+        applyStringConfig(config, CACHE_CONTROL, builder::cacheControl);
+        applyStringConfig(config, CONTENT_DISPOSITION, builder::contentDisposition);
+        applyStringConfig(config, CONTENT_ENCODING, builder::contentEncoding);
     }
 
     public static Object uploadPart(BObject clientObj, BString bucket, BString key, BString uploadId,
@@ -809,8 +870,8 @@ public class NativeClientAdaptor {
                     .uploadId(uploadId.getValue())
                     .partNumber((int) partNumber);
 
-            applyLongConfig(config, "contentLength", builder::contentLength);
-            applyStringConfig(config, "contentMD5", builder::contentMD5);
+            applyLongConfig(config, CONTENT_LENGTH_KEY, builder::contentLength);
+            applyStringConfig(config, CONTENT_MD_5, builder::contentMD5);
 
             UploadPartRequest request = builder.build();
             UploadPartResponse response = s3.uploadPart(request, RequestBody.fromBytes(contentBytes));
@@ -833,11 +894,10 @@ public class NativeClientAdaptor {
             if (partNumber < 1 || partNumber > 10000) {
                 return ErrorCreator.createError("Part number must be between 1 and 10000, got: " + partNumber);
             }
-            long contentLength = config.getIntValue(StringUtils.fromString("contentLength"));
+            long contentLength = config.getIntValue(CONTENT_LENGTH);
 
             if (contentLength <= 0) {
-                return ErrorCreator.createError(
-                        "contentLength must be a positive value, got: " + contentLength);
+                return ErrorCreator.createError("contentLength must be a positive value, got: " + contentLength);
             }
 
             UploadPartRequest.Builder builder = UploadPartRequest.builder()
@@ -847,7 +907,7 @@ public class NativeClientAdaptor {
                     .partNumber((int) partNumber)
                     .contentLength(contentLength);
 
-            applyStringConfig(config, "contentMD5", builder::contentMD5);
+            applyStringConfig(config, CONTENT_MD_5, builder::contentMD5);
 
             try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
                 UploadPartResponse response = s3.uploadPart(builder.build(),
@@ -936,12 +996,12 @@ public class NativeClientAdaptor {
         S3Presigner presigner = null;
 
         try {
-            long expirationMinutes = config.getIntValue(StringUtils.fromString("expirationMinutes"));
+            long expirationMinutes = config.getIntValue(EXPIRATION_MINUTES);
 
-            Object methodObj = config.get(StringUtils.fromString("httpMethod"));
-            String httpMethod = (methodObj instanceof BString)
-                    ? ((BString) methodObj).getValue().toUpperCase()
-                    : "GET";
+            Object methodObj = config.get(HTTP_METHOD);
+            String httpMethod = (methodObj instanceof BString method)
+                    ? method.getValue().toUpperCase()
+                    : GET;
 
             Object connOrError = getConnectionConfig(clientObj);
             if (connOrError instanceof BError) {
@@ -954,20 +1014,17 @@ public class NativeClientAdaptor {
                     .credentialsProvider(connConfig.credentialsProvider)
                     .build();
 
-            String presignedUrl = "GET".equals(httpMethod)
+            String preSignedUrl = GET.equals(httpMethod)
                     ? generateGetPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes, config)
-                    : "PUT".equals(httpMethod)
+                    : PUT.equals(httpMethod)
                             ? generatePutPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes,
                                     config)
                             : null;
-
-            if (presignedUrl == null) {
+            if (preSignedUrl == null) {
                 return ErrorCreator.createError(
                         "Unsupported HTTP method: " + httpMethod + ". Supported methods: GET, PUT");
             }
-
-            return StringUtils.fromString(presignedUrl);
-
+            return StringUtils.fromString(preSignedUrl);
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         } finally {
@@ -984,9 +1041,9 @@ public class NativeClientAdaptor {
                 .bucket(bucket)
                 .key(key);
 
-        applyStringConfig(config, "versionId", getBuilder::versionId);
-        applyStringConfig(config, "responseContentType", getBuilder::responseContentType);
-        applyStringConfig(config, "contentDisposition", getBuilder::responseContentDisposition);
+        applyStringConfig(config, VERSION_ID, getBuilder::versionId);
+        applyStringConfig(config, RESPONSE_CONTENT_TYPE, getBuilder::responseContentType);
+        applyStringConfig(config, CONTENT_DISPOSITION, getBuilder::responseContentDisposition);
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(expirationMinutes))
@@ -1004,8 +1061,8 @@ public class NativeClientAdaptor {
                 .bucket(bucket)
                 .key(key);
 
-        applyStringConfig(config, "contentType", putBuilder::contentType);
-        applyStringConfig(config, "contentDisposition", putBuilder::contentDisposition);
+        applyStringConfig(config, CONTENT_TYPE, putBuilder::contentType);
+        applyStringConfig(config, CONTENT_DISPOSITION, putBuilder::contentDisposition);
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(expirationMinutes))

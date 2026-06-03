@@ -32,6 +32,11 @@ public class ErrorCreator {
     private static final String BUCKET_ALREADY_OWNED_BY_YOU_ERROR = "BucketAlreadyOwnedByYouError";
     private static final String NO_SUCH_BUCKET_ERROR = "NoSuchBucketError";
     private static final String BUCKET_NOT_EMPTY_ERROR = "BucketNotEmptyError";
+    public static final String NO_SUCH_KEY = "NoSuchKey";
+    public static final String BUCKET_ALREADY_EXISTS = "BucketAlreadyExists";
+    public static final String BUCKET_ALREADY_OWNED_BY_YOU = "BucketAlreadyOwnedByYou";
+    public static final String NO_SUCH_BUCKET = "NoSuchBucket";
+    public static final String BUCKET_NOT_EMPTY = "BucketNotEmpty";
 
     /**
      * Creates a Ballerina Error of type `ballerinax/aws.s3:Error`.
@@ -102,11 +107,11 @@ public class ErrorCreator {
             return ERROR;
         }
         return switch (errorCode) {
-            case "NoSuchKey" -> NO_SUCH_KEY_ERROR;
-            case "BucketAlreadyExists" -> BUCKET_ALREADY_EXISTS_ERROR;
-            case "BucketAlreadyOwnedByYou" -> BUCKET_ALREADY_OWNED_BY_YOU_ERROR;
-            case "NoSuchBucket" -> NO_SUCH_BUCKET_ERROR;
-            case "BucketNotEmpty" -> BUCKET_NOT_EMPTY_ERROR;
+            case NO_SUCH_KEY -> NO_SUCH_KEY_ERROR;
+            case BUCKET_ALREADY_EXISTS -> BUCKET_ALREADY_EXISTS_ERROR;
+            case BUCKET_ALREADY_OWNED_BY_YOU -> BUCKET_ALREADY_OWNED_BY_YOU_ERROR;
+            case NO_SUCH_BUCKET -> NO_SUCH_BUCKET_ERROR;
+            case BUCKET_NOT_EMPTY -> BUCKET_NOT_EMPTY_ERROR;
             default -> ERROR;
         };
     }
