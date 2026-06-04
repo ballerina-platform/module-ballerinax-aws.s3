@@ -15,6 +15,7 @@
 // under the License.
 
 import ballerina/os;
+import ballerina/random;
 
 // Environment variables for authentication
 final string authType = os:getEnv("AUTH_TYPE");
@@ -37,6 +38,9 @@ final readonly & ProfileAuthConfig profileAuth = {
     profileName: profileName,
     credentialsFilePath: credentialsFilePath
 };
+
+// Test bucket name with random suffix to avoid global S3 name collisions across parallel runs
+final string testBucketName = "ballerina-s3-test-" + (check random:createIntInRange(100, 999999)).toString();
 
 // Initialize S3 client with appropriate auth strategy
 final Client s3Client = check initS3Client();

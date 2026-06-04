@@ -19,9 +19,6 @@ import ballerina/io;
 import ballerina/random;
 import ballerina/test;
 
-// Test bucket name from environment
-const testBucketName = "ballerina-test-bucket";
-
 // Test-specific constants
 const fileName = "test.txt";
 const fileName2 = "test2.txt";
