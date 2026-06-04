@@ -18,7 +18,6 @@ import ballerina/os;
 import ballerina/random;
 
 // Environment variables for authentication
-final string authType = os:getEnv("AUTH_TYPE");
 final string accessKeyId = os:getEnv("ACCESS_KEY_ID");
 final string secretAccessKey = os:getEnv("SECRET_ACCESS_KEY");
 final string profileName = os:getEnv("AWS_PROFILE_NAME");
@@ -43,46 +42,16 @@ final readonly & ProfileAuthConfig profileAuth = {
 final string testBucketName = "ballerina-s3-test-" + (check random:createIntInRange(100, 999999)).toString();
 
 // Initialize S3 client with appropriate auth strategy
-final Client s3Client = check initS3Client();
-
-function initS3Client() returns Client|error {
-    if authType == "default" {
-        return new ({
-            region: awsRegion,
-            auth: DEFAULT_CREDENTIALS
-        });
-    } else if authType == "profile" {
-        return new ({
-            region: awsRegion,
-            auth: profileAuth
-        });
-    } else if accessKeyId != "" && secretAccessKey != "" {
-        return new ({
-            region: awsRegion,
-            auth: staticAuth
-        });
-    }
-    return error("AWS test credentials are not configured. Set ACCESS_KEY_ID and SECRET_ACCESS_KEY, or AUTH_TYPE=default/profile.");
-}
+final Client s3Client = check new ({
+    region: awsRegion,
+    auth: staticAuth
+});
 
 // Helper function to create a client with a different region
 // Uses the same auth approach as the main client
 function createS3ClientWithRegion(Region targetRegion) returns Client|error {
-    if authType == "default" {
-        return new ({
-            region: targetRegion,
-            auth: DEFAULT_CREDENTIALS
-        });
-    } else if authType == "profile" {
-        return new ({
-            region: targetRegion,
-            auth: profileAuth
-        });
-    } else if accessKeyId != "" && secretAccessKey != "" {
-        return new ({
-            region: targetRegion,
-            auth: staticAuth
-        });
-    }
-    return error("AWS test credentials are not configured. Set ACCESS_KEY_ID and SECRET_ACCESS_KEY, or AUTH_TYPE=default/profile.");
+    return new ({
+        region: targetRegion,
+        auth: staticAuth
+    });
 }
