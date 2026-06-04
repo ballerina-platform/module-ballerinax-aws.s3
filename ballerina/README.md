@@ -86,7 +86,7 @@ configurable string accessKeyId = ?;
 configurable string secretAccessKey = ?;
 
 final s3:Client s3Client = check new ({
-   region: "us-east-1",
+   region: s3:US_EAST_1,
    auth: {
       accessKeyId,
       secretAccessKey
@@ -100,8 +100,7 @@ Now, utilize the available connector operations. A sample use case is shown belo
 
 ```ballerina
 public function main() returns error? {
-   check s3Client->createBucket("my-s3-bucket");
-   io:println("Bucket created successfully.");
+   check s3Client->createBucket("add-unique-bucket-name");
 }
 ```
 

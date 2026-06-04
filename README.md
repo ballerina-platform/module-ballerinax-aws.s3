@@ -8,7 +8,7 @@
 
 [Amazon S3](https://aws.amazon.com/s3/) (Simple Storage Service) is a highly scalable, durable, and secure object storage service provided by Amazon Web Services (AWS). It is designed to store and retrieve any amount of data from anywhere on the web, making it ideal for a wide range of use cases, including data backup, archiving, content distribution, and big data analytics.
 
-The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html), specifically based on the `2006-03-01` version of the Amazon S3 REST API. It supports creating, listing, and deleting buckets, uploading, retrieving, and deleting objects, managing object metadata and tagging, multipart uploads, and bucket and object access control lists (ACLs).
+The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Type_API_Reference.html), built on the AWS SDK v2. It supports creating, listing, and deleting buckets, uploading, retrieving, and deleting objects, managing object metadata and tagging, multipart uploads, and bucket and object access control lists (ACLs).
 
 ## Setup guide
 
@@ -92,7 +92,7 @@ configurable string accessKeyId = ?;
 configurable string secretAccessKey = ?;
 
 final s3:Client s3Client = check new ({
-   region: "us-east-1",
+   region: s3:US_EAST_1,
    auth: {
       accessKeyId,
       secretAccessKey
@@ -106,8 +106,7 @@ Now, utilize the available connector operations. A sample use case is shown belo
 
 ```ballerina
 public function main() returns error? {
-   check s3Client->createBucket("my-s3-bucket");
-   io:println("Bucket created successfully.");
+   check s3Client->createBucket("add-unique-bucket-name");
 }
 ```
 
@@ -126,7 +125,6 @@ The `ballerinax/aws.s3` connector provides practical examples illustrating usage
 1. [S3 Report Archiver](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/s3-report-archiver): Implements an ETL-style workflow that processes CSV reports and archives them to Amazon S3. Reads report data, transforms it, and uploads the results to a designated S3 bucket for long-term storage.
 
 2. [FTP to S3 Sync](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/ftp-to-s3-sync): Syncs files from an FTP server to Amazon S3. Downloads files from the FTP source, uploads them to an S3 bucket, and generates a summary report of skipped or failed transfers.
-
 
 ## Build from the source
 
