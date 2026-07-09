@@ -340,6 +340,15 @@ public class NativeClientAdaptor {
         return ProfileCredentialsProvider.create(profileName);
     }
 
+    static S3Client buildS3Client(Object authObj, String region) {
+        AwsCredentialsProvider credentialsProvider = createCredentialsProvider(authObj);
+        return S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider)
+                .crossRegionAccessEnabled(true)
+                .build();
+    }
+
     private static Object getClient(BObject clientObj) {
         S3Client client = (S3Client) clientObj.getNativeData(NATIVE_CLIENT);
         if (client == null) {

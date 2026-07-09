@@ -23,4 +23,5 @@ module io.ballerina.lib.aws.s3 {
     requires software.amazon.awssdk.core;
     requires software.amazon.awssdk.profiles;
     requires software.amazon.awssdk.regions;
+    requires java.logging;
 }
