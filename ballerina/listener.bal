@@ -151,9 +151,6 @@ public isolated class Listener {
     }
 }
 
-// S3PollingJob implements task:Job (structurally) to drive the polling loop via
-// task:scheduleJobRecurByFrequency. Unlike task:Service, task:Job.execute() is
-// public so it can be implemented across modules without restriction.
 isolated class S3PollingJob {
     private final Listener s3Listener;
 
@@ -161,9 +158,8 @@ isolated class S3PollingJob {
         self.s3Listener = s3Listener;
     }
 
-    // Called by the task scheduler on each interval. Fatal errors (e.g. bucket
-    // deleted) are dispatched to the service's onError handler inside poll() before
-    // returning, so they are handled at the Ballerina level rather than surfaced here.
+    // Called by the task scheduler on each interval.
+    // Errors are dispatched to the service's onError handler before returning
     public function execute() {
         do {
             check self.s3Listener.poll();
