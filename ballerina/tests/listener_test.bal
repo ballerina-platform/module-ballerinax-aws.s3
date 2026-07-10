@@ -170,7 +170,37 @@ function testListenerNoModifyEventForSameContent() returns error? {
     runtime:sleep(POLL_WAIT);
 }
 
-// ─── Prefix filtering ────────────────────────────────────────────────────────────────────────
+
+@ServiceConfig {
+    path: "uploads/"
+}
+isolated service class PrefixedListenerTestService {
+    *Service;
+
+    isolated remote function onCreate(CreatedEvent event) returns error? {
+        lock {
+            listenerCreatedKeys.push(event.'object.key);
+        }
+    }
+
+    isolated remote function onUpdate(UpdatedEvent event) returns error? {
+        lock {
+            listenerModifiedKeys.push(event.'object.key);
+        }
+    }
+
+    isolated remote function onDelete(DeletedEvent event) returns error? {
+        lock {
+            listenerDeletedKeys.push(event.objectKey);
+        }
+    }
+
+    isolated remote function onError(error err) returns error? {
+        lock {
+            listenerErrors.push(err.message());
+        }
+    }
+}
 
 @test:Config {
     dependsOn: [testListenerNoModifyEventForSameContent]
@@ -179,7 +209,6 @@ function testListenerPrefixFilterSetup() returns error? {
     if accessKeyId == "" {
         return;
     }
-    // Stop the default listener and start a new one scoped to "uploads/" prefix.
     Listener? l = testS3Listener;
     if l is Listener {
         check l.gracefulStop();
@@ -192,10 +221,9 @@ function testListenerPrefixFilterSetup() returns error? {
         listenerBucketName,
         auth = staticAuth,
         region = awsRegion,
-        pollingInterval = POLL_INTERVAL,
-        prefix = "uploads/"
+        pollingInterval = POLL_INTERVAL
     );
-    check prefixListener.attach(new ListenerTestService());
+    check prefixListener.attach(new PrefixedListenerTestService());
     check prefixListener.'start();
     testS3Listener = prefixListener;
 }
