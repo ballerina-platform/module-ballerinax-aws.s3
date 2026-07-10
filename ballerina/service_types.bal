@@ -17,11 +17,24 @@
 # Configuration for the AWS S3 Listener.
 public type ListenerConfiguration record {|
     *ConnectionConfig;
-    # How often the listener polls the bucket for changes, in seconds (default: 60)
-    decimal pollingInterval = 60;
-    # Only listen for objects whose keys start with this prefix (e.g., "uploads/")
-    string prefix?;
+# Annotation configuration for an S3 `Service`.
+# Use this to scope the service to a specific key prefix within the bucket.
+#
+# ```ballerina
+# @s3:ServiceConfig {
+#     path: "uploads/"
+# }
+# service s3:Service on s3Listener {
+#     ...
+# }
+# ```
+public type ServiceConfiguration record {|
+    # Only receive events for objects whose keys start with this path prefix (e.g., `"uploads/"`)
+    string path?;
 |};
+
+# Annotation to configure an S3 service.
+public annotation ServiceConfiguration ServiceConfig on service, class;
 
 # Event dispatched when a new object is created in the bucket.
 public type CreatedEvent record {|

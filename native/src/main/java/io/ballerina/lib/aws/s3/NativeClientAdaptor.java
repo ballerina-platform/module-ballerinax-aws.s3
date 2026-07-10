@@ -43,6 +43,7 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
@@ -250,7 +251,9 @@ public class NativeClientAdaptor {
             S3Client s3Client = S3Client.builder()
                     .region(Region.of(region))
                     .credentialsProvider(credentialsProvider)
-                    .crossRegionAccessEnabled(true)
+                    .serviceConfiguration(S3Configuration.builder()
+                            .crossRegionAccessEnabled(true)
+                            .build())
                     .build();
 
             clientObj.addNativeData(NATIVE_CLIENT, s3Client);
@@ -345,7 +348,9 @@ public class NativeClientAdaptor {
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(credentialsProvider)
-                .crossRegionAccessEnabled(true)
+                .serviceConfiguration(S3Configuration.builder()
+                        .crossRegionAccessEnabled(true)
+                        .build())
                 .build();
     }
 

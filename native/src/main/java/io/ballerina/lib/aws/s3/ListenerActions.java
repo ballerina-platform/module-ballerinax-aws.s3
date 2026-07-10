@@ -19,7 +19,9 @@ package io.ballerina.lib.aws.s3;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.concurrent.StrandMetadata;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ObjectType;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -34,18 +36,19 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * Native implementation of the S3 Listener.
  */
 public class ListenerActions {
-    private static final Logger LOGGER = Logger.getLogger(ListenerActions.class.getName());
 
     private static final String NATIVE_S3_CLIENT = "NATIVE_LISTENER_S3_CLIENT";
     private static final String NATIVE_BUCKET_NAME = "NATIVE_BUCKET_NAME";
-    private static final String NATIVE_PREFIX = "NATIVE_PREFIX";
     private static final String NATIVE_KNOWN_OBJECTS = "NATIVE_KNOWN_OBJECTS";
+    private static final String NATIVE_IS_INITIALIZED = "NATIVE_IS_INITIALIZED";
+
+    private static final String SERVICE_CONFIG_ANNOTATION = "ServiceConfig";
+    private static final BString SERVICE_CONFIG_PATH = StringUtils.fromString("path");
 
     private static final String ON_CREATE = "onCreate";
     private static final String ON_MODIFY = "onUpdate";
@@ -57,6 +60,8 @@ public class ListenerActions {
     private static final BString OBJECT_FIELD = StringUtils.fromString("object");
     private static final BString OBJECT_KEY_FIELD = StringUtils.fromString("objectKey");
     private static final BString PREVIOUS_ETAG_FIELD = StringUtils.fromString("previousETag");
+    public static final String SLASH = "/";
+    public static final String S3_OBJECT = "S3Object";
 
     private ListenerActions() {}
 
@@ -70,13 +75,10 @@ public class ListenerActions {
             String region = config.getStringValue(NativeClientAdaptor.REGION).getValue();
             S3Client s3Client = NativeClientAdaptor.buildS3Client(authObj, region);
 
-            Object prefixObj = config.get(StringUtils.fromString("prefix"));
-            String prefix = (prefixObj instanceof BString bPrefix) ? bPrefix.getValue() : null;
-
             listenerObj.addNativeData(NATIVE_S3_CLIENT, s3Client);
             listenerObj.addNativeData(NATIVE_BUCKET_NAME, bucketName.getValue());
-            listenerObj.addNativeData(NATIVE_PREFIX, prefix);
             listenerObj.addNativeData(NATIVE_KNOWN_OBJECTS, new HashMap<String, String>());
+            listenerObj.addNativeData(NATIVE_IS_INITIALIZED, false);
             return null;
         } catch (Exception e) {
             return ErrorCreator.createError(e);
@@ -86,8 +88,9 @@ public class ListenerActions {
     public static Object poll(Environment env, BObject listenerObj, BObject service) {
         S3Client s3 = (S3Client) listenerObj.getNativeData(NATIVE_S3_CLIENT);
         String bucketName = (String) listenerObj.getNativeData(NATIVE_BUCKET_NAME);
-        String prefix = (String) listenerObj.getNativeData(NATIVE_PREFIX);
+        String prefix = getServiceConfigPrefix(service);
         Map<String, String> knownObjects = (Map<String, String>) listenerObj.getNativeData(NATIVE_KNOWN_OBJECTS);
+        boolean isInitialized = Boolean.TRUE.equals(listenerObj.getNativeData(NATIVE_IS_INITIALIZED));
 
         try {
             Map<String, String> current = new HashMap<>();
@@ -107,25 +110,32 @@ public class ListenerActions {
                 }
                 ListObjectsV2Response response = s3.listObjectsV2(req.build());
                 for (S3Object obj : response.contents()) {
-                    current.put(obj.key(), obj.eTag() != null ? obj.eTag() : "");
+                    current.put(obj.key(), objectSnapshot(obj));
                     currentObjects.put(obj.key(), obj);
                 }
                 isTruncated = Boolean.TRUE.equals(response.isTruncated());
                 continuationToken = response.nextContinuationToken();
             }
+
+            if (!isInitialized) {
+                knownObjects.putAll(current);
+                listenerObj.addNativeData(NATIVE_IS_INITIALIZED, true);
+                return null;
+            }
+
             for (Map.Entry<String, S3Object> entry : currentObjects.entrySet()) {
                 String key = entry.getKey();
                 S3Object obj = entry.getValue();
                 if (!knownObjects.containsKey(key)) {
-                    dispatch(env, service, ON_CREATE, createCreatedEvent(bucketName, obj), key);
+                    dispatch(env, service, ON_CREATE, createCreatedEvent(bucketName, obj));
                 } else if (!knownObjects.get(key).equals(current.get(key))) {
                     dispatch(env, service, ON_MODIFY,
-                            createModifiedEvent(bucketName, obj, knownObjects.get(key)), key);
+                            createModifiedEvent(bucketName, obj, eTagFromSnapshot(knownObjects.get(key))));
                 }
             }
             for (String key : knownObjects.keySet()) {
                 if (!current.containsKey(key)) {
-                    dispatch(env, service, ON_DELETE, createDeletedEvent(bucketName, key), key);
+                    dispatch(env, service, ON_DELETE, createDeletedEvent(bucketName, key));
                 }
             }
             knownObjects.clear();
@@ -140,8 +150,48 @@ public class ListenerActions {
         return null;
     }
 
-    private static void dispatch(Environment env, BObject service, String method,
-            BMap<BString, Object> event, String key) {
+    /**
+     * Combines ETag and LastModified into a single snapshot string so that a change in
+     * either signals an update. This guards against multipart-upload ETags, which are
+     * computed as an MD5 of part checksums rather than of the full object and can
+     * therefore be non-deterministic across re-uploads of the same content.
+     */
+    private static String objectSnapshot(S3Object obj) {
+        String eTag = obj.eTag() != null ? obj.eTag() : "";
+        long lastModified = obj.lastModified() != null ? obj.lastModified().toEpochMilli() : 0L;
+        return eTag + "|" + lastModified;
+    }
+
+    /** Extracts the ETag portion from a snapshot string produced by {@link #objectSnapshot}. */
+    private static String eTagFromSnapshot(String snapshot) {
+        int sep = snapshot.indexOf('|');
+        return sep >= 0 ? snapshot.substring(0, sep) : snapshot;
+    }
+
+    private static String getServiceConfigPrefix(BObject service) {
+        ObjectType serviceType = (ObjectType) TypeUtils.getReferredType(TypeUtils.getType(service));
+        BMap<BString, Object> annotations = serviceType.getAnnotations();
+        if (annotations == null) {
+            return null;
+        }
+        for (BString key : annotations.getKeys()) {
+            if (key.getValue().endsWith(SERVICE_CONFIG_ANNOTATION)) {
+                Object value = annotations.get(key);
+                if (value instanceof BMap<?, ?> annotationMap) {
+                    @SuppressWarnings("unchecked")
+                    Object prefixObj = ((BMap<BString, Object>) annotationMap).get(SERVICE_CONFIG_PATH);
+                    if (prefixObj instanceof BString bPrefix) {
+                        String path = bPrefix.getValue();
+                        return path.endsWith(SLASH) ? path : path + SLASH;
+                    }
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void dispatch(Environment env, BObject service, String method, BMap<BString, Object> event) {
         Object result = env.getRuntime().callMethod(service, method, DISPATCH_METADATA, event);
         if (result instanceof BError error) {
             dispatchError(env, service, error);
@@ -149,15 +199,12 @@ public class ListenerActions {
     }
 
     private static void dispatchError(Environment env, BObject service, BError error) {
-        Object result = env.getRuntime().callMethod(service, ON_ERROR, DISPATCH_METADATA, error);
-        if (result instanceof BError handlerError) {
-            LOGGER.warning("Error in onError handler: " + handlerError.getMessage());
-        }
+        env.getRuntime().callMethod(service, ON_ERROR, DISPATCH_METADATA, error);
     }
 
     private static BMap<BString, Object> buildS3ObjectRecord(S3Object obj) {
         @SuppressWarnings("unchecked")
-        BMap<BString, Object> record = ValueCreator.createRecordValue(ModuleUtils.getModule(), "S3Object");
+        BMap<BString, Object> record = ValueCreator.createRecordValue(ModuleUtils.getModule(), S3_OBJECT);
         record.put(NativeClientAdaptor.KEY, StringUtils.fromString(obj.key()));
         record.put(NativeClientAdaptor.SIZE, obj.size() != null ? obj.size() : 0L);
         record.put(NativeClientAdaptor.LAST_MODIFIED,
