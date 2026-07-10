@@ -17,6 +17,10 @@
 # Configuration for the AWS S3 Listener.
 public type ListenerConfiguration record {|
     *ConnectionConfig;
+    # How often the listener polls the bucket for changes
+    decimal pollingInterval = 30;
+|};
+
 # Annotation configuration for an S3 `Service`.
 # Use this to scope the service to a specific key prefix within the bucket.
 #
