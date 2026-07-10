@@ -73,6 +73,19 @@ public type DeletedEvent record {|
 # dispatches `onCreate`, `onUpdate`, and `onDelete` events as the bucket state changes.
 #
 # ```ballerina
+# listener s3:Listener s3Listener = check new (
+#     "my-bucket",
+#     auth = {
+#         accessKeyId: accessKeyId,
+#         secretAccessKey: secretAccessKey
+#     },
+#     region = s3:US_EAST_1,
+#     pollingInterval = 10
+# );
+#
+# @s3:ServiceConfig {
+#     path: "uploads"
+# }
 # service s3:Service on s3Listener {
 #     isolated remote function onCreate(s3:CreatedEvent event) returns error? {
 #         log:printInfo("New object: " + event.'object.key);
