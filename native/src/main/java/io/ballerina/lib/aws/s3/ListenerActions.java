@@ -110,7 +110,7 @@ public class ListenerActions {
                 }
                 ListObjectsV2Response response = s3.listObjectsV2(req.build());
                 for (S3Object obj : response.contents()) {
-                    current.put(obj.key(), objectSnapshot(obj));
+                    current.put(obj.key(), obj.eTag() != null ? obj.eTag() : "");
                     currentObjects.put(obj.key(), obj);
                 }
                 isTruncated = Boolean.TRUE.equals(response.isTruncated());
@@ -130,7 +130,7 @@ public class ListenerActions {
                     dispatch(env, service, ON_CREATE, createCreatedEvent(bucketName, obj));
                 } else if (!knownObjects.get(key).equals(current.get(key))) {
                     dispatch(env, service, ON_MODIFY,
-                            createModifiedEvent(bucketName, obj, eTagFromSnapshot(knownObjects.get(key))));
+                            createModifiedEvent(bucketName, obj, knownObjects.get(key)));
                 }
             }
             for (String key : knownObjects.keySet()) {
@@ -148,24 +148,6 @@ public class ListenerActions {
             dispatchError(env, service, ErrorCreator.createError(e));
         }
         return null;
-    }
-
-    /**
-     * Combines ETag and LastModified into a single snapshot string so that a change in
-     * either signals an update. This guards against multipart-upload ETags, which are
-     * computed as an MD5 of part checksums rather than of the full object and can
-     * therefore be non-deterministic across re-uploads of the same content.
-     */
-    private static String objectSnapshot(S3Object obj) {
-        String eTag = obj.eTag() != null ? obj.eTag() : "";
-        long lastModified = obj.lastModified() != null ? obj.lastModified().toEpochMilli() : 0L;
-        return eTag + "|" + lastModified;
-    }
-
-    /** Extracts the ETag portion from a snapshot string produced by {@link #objectSnapshot}. */
-    private static String eTagFromSnapshot(String snapshot) {
-        int sep = snapshot.indexOf('|');
-        return sep >= 0 ? snapshot.substring(0, sep) : snapshot;
     }
 
     private static String getServiceConfigPrefix(BObject service) {
