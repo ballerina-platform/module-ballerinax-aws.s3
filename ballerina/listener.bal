@@ -93,6 +93,8 @@ public isolated class Listener {
     #
     # + return - An `Error` if starting fails, otherwise `()`
     public isolated function 'start() returns Error? {
+        check self.poll();
+
         decimal interval;
         lock {
             interval = self.pollingInterval;
