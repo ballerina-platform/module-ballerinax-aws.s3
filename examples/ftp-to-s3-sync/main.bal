@@ -145,7 +145,7 @@ function syncFtpToS3(ftp:Client ftpClient, s3:Client s3Client) returns SyncStats
             }
         }
     } on fail error e {
-        file:Error? remove = file:remove(tempDir, file:RECURSIVE);
+        _ = file:remove(tempDir, file:RECURSIVE);
         return e;
     }
 
