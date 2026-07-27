@@ -24,33 +24,33 @@ To use the Ballerina AWS S3 connector, you need an AWS account with necessary cr
 
 1. In the AWS Management Console, search for **IAM** in the services search bar and click on it.
 
-   ![create-user-1.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-1.jpeg)
+   ![create-user-1.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-1.jpeg)
 
 2. Click **Users**.
 
-   ![create-user-2.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-2.jpeg)
+   ![create-user-2.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-2.jpeg)
 
 3. Click **Create User**.
 
-   ![create-user-3.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-3.jpeg)
+   ![create-user-3.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-3.jpeg)
 
 4. Provide a suitable name for the user and continue.
 
-   ![specify-user-details.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/specify-user-details.jpeg)
+   ![specify-user-details.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/specify-user-details.jpeg)
 
 5. Add necessary permissions by adding the user to a user group, copying permissions, or directly attaching policies. For S3, attach policies such as `AmazonS3FullAccess` (for development) or a least-privilege custom policy scoped to your buckets. Then click **Next**.
 
-   ![set-user-permissions.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/set-user-permissions.jpeg)
+   ![set-user-permissions.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/set-user-permissions.jpeg)
 
 6. Review and create the user.
 
-   ![review-create-user.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/review-create-user.jpeg)
+   ![review-create-user.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/review-create-user.jpeg)
 
 ### Step 3: Get user access keys
 
 1. Click the user who was created.
 
-   ![users.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/users.jpeg)
+   ![users.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/users.jpeg)
 
 2. Click **Create access key**.
 
