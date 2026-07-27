@@ -16,18 +16,23 @@
 
 package io.ballerina.lib.aws.s3;
 
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BString;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 /**
- * Holds the AWS S3 connection configuration including region and credentials provider.
+ * Holds the AWS S3 connection configuration including region, credentials provider, and endpoint configuration.
  */
 public class ConnectionConfig {
     public final Region region;
     public final AwsCredentialsProvider credentialsProvider;
+    public final BMap<BString, Object> endpointConfig;
 
-    public ConnectionConfig(Region region, AwsCredentialsProvider credentialsProvider) {
+    public ConnectionConfig(Region region, AwsCredentialsProvider credentialsProvider,
+                            BMap<BString, Object> endpointConfig) {
         this.region = region;
         this.credentialsProvider = credentialsProvider;
+        this.endpointConfig = endpointConfig;
     }
 }

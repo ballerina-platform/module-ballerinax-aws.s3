@@ -1023,17 +1023,12 @@ function testGetObjectAsXmlWithInvalidContent() returns error? {
 }
 function testListObjects() returns error? {
     ListObjectsConfig listConfig = {fetchOwner: true};
-    ListObjectsResponse|error response = s3Client->listObjects(testBucketName, listConfig);
-    if response is error {
-        // Handle error from native method type mismatch
-        test:assertTrue(true, msg = "listObjects() returned an error (expected due to type mismatch in client)");
-    } else {
-        test:assertTrue(response.objects.length() > 0, msg = "Failed to call listObjects()");
-    }
+    ListObjectsResponse response = check s3Client->listObjects(testBucketName, listConfig);
+    test:assertTrue(response.objects.length() > 0, msg = "Failed to call listObjects()");
 }
 
 @test:Config {
-    dependsOn: [testCreateObject]
+    dependsOn: [testListObjects, testGetObjectMetadata, testDoesObjectExist, testCopyObject]
 }
 function testDeleteObject() returns error? {
     check s3Client->deleteObject(testBucketName, fileName);
@@ -1248,8 +1243,7 @@ function testDeleteBucketWithInvalidName() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testCreateBucket],
-    before: testCreateMultipartUpload
+    dependsOn: [testCreateBucket]
 }
 function testAbortFileUpload() returns error? {
     // Create a multipart upload and abort it within this test to avoid relying on

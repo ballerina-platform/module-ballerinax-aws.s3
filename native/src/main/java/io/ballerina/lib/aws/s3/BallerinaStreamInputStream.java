@@ -118,34 +118,37 @@ public class BallerinaStreamInputStream extends InputStream {
 
     private boolean fetchNextChunk() throws IOException {
         try {
-            // Call next() method on the stream using Ballerina runtime
-            Object result = environment.getRuntime().callMethod(
-                    ballerinaStream.getIteratorObj(), BAL_STREAM_NEXT, null);
-            
-            if (result instanceof BError) {
-                throw new IOException("Error reading from stream: " + ((BError) result).getMessage());
-            }
-            
-            if (result == null) {
-                return false;
-            }
-            
-            if (result instanceof BMap<?, ?> record) {
+            while (true) {
+                // Call next() method on the stream using Ballerina runtime
+                Object result = environment.getRuntime().callMethod(
+                        ballerinaStream.getIteratorObj(), BAL_STREAM_NEXT, null);
+
+                if (result instanceof BError error) {
+                    throw new IOException("Error reading from stream: " + error.getMessage());
+                }
+
+                if (result == null) {
+                    return false;
+                }
+
+                if (!(result instanceof BMap<?, ?> record)) {
+                    throw new IOException("Unexpected result type from stream.next()");
+                }
+
                 Object value = record.get(StringUtils.fromString(STREAM_VALUE));
-                
-                if (value instanceof BArray) {
-                    currentChunk = ((BArray) value).getBytes();
+                if (value instanceof BArray array) {
+                    currentChunk = array.getBytes();
                     chunkPosition = 0;
-                    if (currentChunk.length == 0) {
-                        return fetchNextChunk();
+                    if (currentChunk.length > 0) {
+                        return true;
                     }
-                    return true;
+                    // Empty chunk — continue to next iteration
                 } else {
                     throw new IOException("Unexpected value type in stream");
                 }
-            } else {
-                throw new IOException("Unexpected result type from stream.next()");
             }
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             throw new IOException("Error reading from Ballerina stream: " + e.getMessage(), e);
         }

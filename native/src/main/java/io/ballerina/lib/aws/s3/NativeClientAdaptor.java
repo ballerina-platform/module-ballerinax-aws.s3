@@ -233,28 +233,36 @@ public class NativeClientAdaptor {
         try {
             String region = config.getStringValue(REGION).getValue();
             Object authObj = config.get(AUTH);
+            Region awsRegion = Region.of(region);
 
             AwsCredentialsProvider credentialsProvider = ProviderFactory.buildProvider(authObj);
+            try {
+                S3ClientBuilder builder = S3Client.builder()
+                        .region(awsRegion)
+                        .credentialsProvider(credentialsProvider)
+                        .crossRegionAccessEnabled(true);
 
-            S3ClientBuilder builder = S3Client.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(credentialsProvider)
-                    .crossRegionAccessEnabled(true);
+                BMap<BString, Object> endpointConfig = null;
+                Object endpointObj = config.get(ENDPOINT);
+                if (endpointObj instanceof BMap) {
+                    @SuppressWarnings("unchecked")
+                    BMap<BString, Object> typedEndpointConfig = (BMap<BString, Object>) endpointObj;
+                    endpointConfig = typedEndpointConfig;
+                    EndpointConfigUtils.applyEndpointConfig(builder, endpointConfig);
+                }
 
-            Object endpointObj = config.get(ENDPOINT);
-            if (endpointObj instanceof BMap) {
-                @SuppressWarnings("unchecked")
-                BMap<BString, Object> endpointConfig = (BMap<BString, Object>) endpointObj;
-                EndpointConfigUtils.applyEndpointConfig(builder, endpointConfig);
+                S3Client s3Client = builder.build();
+
+                clientObj.addNativeData(NATIVE_CLIENT, s3Client);
+                clientObj.addNativeData(NATIVE_CREDENTIALS_PROVIDER, credentialsProvider);
+                ConnectionConfig connConfig = new ConnectionConfig(awsRegion, credentialsProvider,
+                        endpointConfig);
+                clientObj.addNativeData(NATIVE_CONFIG, connConfig);
+                return null;
+            } catch (Exception e) {
+                ProviderFactory.closeProvider(credentialsProvider);
+                throw e;
             }
-
-            S3Client s3Client = builder.build();
-
-            clientObj.addNativeData(NATIVE_CLIENT, s3Client);
-            clientObj.addNativeData(NATIVE_CREDENTIALS_PROVIDER, credentialsProvider);
-            ConnectionConfig connConfig = new ConnectionConfig(Region.of(region), credentialsProvider);
-            clientObj.addNativeData(NATIVE_CONFIG, connConfig);
-            return null;
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }
@@ -622,7 +630,7 @@ public class NativeClientAdaptor {
                 BMap<BString, Object> objMap = ValueCreator.createMapValue(mapType);
 
                 objMap.put(KEY, StringUtils.fromString(obj.key()));
-                objMap.put(SIZE, obj.size());
+                objMap.put(SIZE, obj.size() != null ? obj.size() : 0L);
                 String lastModified = obj.lastModified() != null ? obj.lastModified().toString() : EMPTY_STRING;
                 objMap.put(LAST_MODIFIED, StringUtils.fromString(lastModified));
                 String eTag = obj.eTag() != null ? obj.eTag() : EMPTY_STRING;
@@ -639,7 +647,7 @@ public class NativeClientAdaptor {
 
             result.put(OBJECTS, objectsArray);
             result.put(COUNT, (long) size);
-            result.put(IS_TRUNCATED, response.isTruncated());
+            result.put(IS_TRUNCATED, Boolean.TRUE.equals(response.isTruncated()));
 
             if (response.nextContinuationToken() != null) {
                 result.put(NEXT_CONTINUATION_TOKEN, StringUtils.fromString(response.nextContinuationToken()));
@@ -959,10 +967,11 @@ public class NativeClientAdaptor {
             }
             ConnectionConfig connConfig = (ConnectionConfig) connOrError;
 
-            presigner = S3Presigner.builder()
+            S3Presigner.Builder presignerBuilder = S3Presigner.builder()
                     .region(connConfig.region)
-                    .credentialsProvider(connConfig.credentialsProvider)
-                    .build();
+                    .credentialsProvider(connConfig.credentialsProvider);
+            applyEndpointConfigToPresigner(presignerBuilder, connConfig.endpointConfig);
+            presigner = presignerBuilder.build();
 
             String preSignedUrl = GET.equals(httpMethod)
                     ? generateGetPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes, config)
@@ -981,6 +990,27 @@ public class NativeClientAdaptor {
             if (presigner != null) {
                 presigner.close();
             }
+        }
+    }
+
+    private static void applyEndpointConfigToPresigner(S3Presigner.Builder builder,
+            BMap<BString, Object> endpointConfig) {
+        if (endpointConfig == null) {
+            return;
+        }
+        BString customEndpoint = StringUtils.fromString("customEndpoint");
+        BString fips = StringUtils.fromString("fips");
+        BString dualstack = StringUtils.fromString("dualstack");
+        if (endpointConfig.containsKey(customEndpoint)) {
+            builder.endpointOverride(java.net.URI.create(
+                    endpointConfig.getStringValue(customEndpoint).getValue()));
+            return;
+        }
+        if (endpointConfig.getBooleanValue(fips)) {
+            builder.fipsEnabled(true);
+        }
+        if (endpointConfig.getBooleanValue(dualstack)) {
+            builder.dualstackEnabled(true);
         }
     }
 

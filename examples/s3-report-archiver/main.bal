@@ -144,7 +144,7 @@ function escapeCsvField(string value) returns string {
                             string:indexOf(value, "\"") >= 0 || 
                             string:indexOf(value, "\n") >= 0 || 
                             string:indexOf(value, "\r") >= 0;
-    string escaped = regexp:replaceAll(check regexp:fromString(value), "\"", "\"\"");
+    string escaped = regexp:replaceAll(re `"`, value, "\"\"");
     return needsQuotes ? "\"" + escaped + "\"" : escaped;
 }
 
