@@ -257,7 +257,7 @@ function testPutObjectWithJsonContent() returns error? {
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
-        test:assertEquals(downloadedContent, jsonContent.toString(), "JSON content mismatch");
+        test:assertEquals(downloadedContent, jsonContent.toJsonString(), "JSON content mismatch");
     } else {
         test:assertFail("Failed to read uploaded JSON content");
     }
