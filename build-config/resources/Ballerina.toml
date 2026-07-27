@@ -1,13 +1,289 @@
 [package]
-distribution = "2201.12.0"
+distribution = "2201.12.2"
 org = "ballerinax"
 name = "aws.s3"
 version = "@toml.version@"
-license= ["Apache-2.0"]
+license = ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["Cloud/Object Storage", "Cost/Paid", "Vendor/Amazon", "Area/Storage & File Management", "Type/Connector"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-aws.s3"
 
-[build-options]
-observabilityIncluded = true
+[platform.java21]
+graalvmCompatible = true
+
+[[platform.java21.dependency]]
+groupId = "io.ballerina.lib.aws.s3"
+artifactId = "aws.s3-native"
+version = "@toml.version@"
+path = "../native/build/libs/aws.s3-native-@project.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "s3"
+version = "@aws.s3.version@"
+path = "./lib/s3-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-unix-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-epoll"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-epoll-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport"
+version = "@netty.version@"
+path = "./lib/netty-transport-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "@netty.version@"
+path = "./lib/netty-resolver-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "netty-nio-client"
+version = "@aws.s3.version@"
+path = "./lib/netty-nio-client-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler"
+version = "@netty.version@"
+path = "./lib/netty-handler-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "@netty.version@"
+path = "./lib/netty-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http2"
+version = "@netty.version@"
+path = "./lib/netty-codec-http2-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http"
+version = "@netty.version@"
+path = "./lib/netty-codec-http-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec"
+version = "@netty.version@"
+path = "./lib/netty-codec-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "@netty.version@"
+path = "./lib/netty-buffer-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "metrics-spi"
+version = "@aws.s3.version@"
+path = "./lib/metrics-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "json-utils"
+version = "@aws.s3.version@"
+path = "./lib/json-utils-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "identity-spi"
+version = "@aws.s3.version@"
+path = "./lib/identity-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.httpcomponents"
+artifactId = "httpcore"
+version = "@http.core.version@"
+path = "./lib/httpcore-@http.core.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.httpcomponents"
+artifactId = "httpclient"
+version = "@http.client.version@"
+path = "./lib/httpclient-@http.client.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-client-spi"
+version = "@aws.s3.version@"
+path = "./lib/http-client-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth-spi"
+version = "@aws.s3.version@"
+path = "./lib/http-auth-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth-aws"
+version = "@aws.s3.version@"
+path = "./lib/http-auth-aws-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "http-auth"
+version = "@aws.s3.version@"
+path = "./lib/http-auth-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.eventstream"
+artifactId = "eventstream"
+version = "@event.stream.version@"
+path = "./lib/eventstream-@event.stream.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "endpoints-spi"
+version = "@aws.s3.version@"
+path = "./lib/endpoints-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "crt-core"
+version = "@aws.s3.version@"
+path = "./lib/crt-core-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "@commons.logging.version@"
+path = "./lib/commons-logging-@commons.logging.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-codec"
+artifactId = "commons-codec"
+version = "@commons.codec.version@"
+path = "./lib/commons-codec-@commons.codec.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "checksums-spi"
+version = "@aws.s3.version@"
+path = "./lib/checksums-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "checksums"
+version = "@aws.s3.version@"
+path = "./lib/checksums-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-xml-protocol"
+version = "@aws.s3.version@"
+path = "./lib/aws-xml-protocol-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-query-protocol"
+version = "@aws.s3.version@"
+path = "./lib/aws-query-protocol-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-core"
+version = "@aws.s3.version@"
+path = "./lib/aws-core-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "auth"
+version = "@aws.s3.version@"
+path = "./lib/auth-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "arns"
+version = "@aws.s3.version@"
+path = "./lib/arns-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "apache-client"
+version = "@aws.s3.version@"
+path = "./lib/apache-client-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "annotations"
+version = "@aws.s3.version@"
+path = "./lib/annotations-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "profiles"
+version = "@aws.s3.version@"
+path = "./lib/profiles-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "protocol-core"
+version = "@aws.s3.version@"
+path = "./lib/protocol-core-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.reactivestreams"
+artifactId = "reactive-streams"
+version = "@reactive.streams.version@"
+path = "./lib/reactive-streams-@reactive.streams.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "regions"
+version = "@aws.s3.version@"
+path = "./lib/regions-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "sdk-core"
+version = "@aws.s3.version@"
+path = "./lib/sdk-core-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.slf4j"
+artifactId = "slf4j-api"
+version = "@slf4j.version@"
+path = "./lib/slf4j-api-@slf4j.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "third-party-jackson-core"
+version = "@aws.s3.version@"
+path = "./lib/third-party-jackson-core-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "utils"
+version = "@aws.s3.version@"
+path = "./lib/utils-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries-spi"
+version = "@aws.s3.version@"
+path = "./lib/retries-spi-@aws.s3.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "retries"
+version = "@aws.s3.version@"
+path = "./lib/retries-@aws.s3.version@.jar"

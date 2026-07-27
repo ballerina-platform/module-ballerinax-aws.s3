@@ -2,59 +2,120 @@
 
 [Amazon S3](https://aws.amazon.com/s3/) (Simple Storage Service) is a highly scalable, durable, and secure object storage service provided by Amazon Web Services (AWS). It is designed to store and retrieve any amount of data from anywhere on the web, making it ideal for a wide range of use cases, including data backup, archiving, content distribution, and big data analytics.
 
-The Amazon S3 connector provides the capability to manage buckets and objects in Amazon S3. This module supports [Amazon S3 REST API](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) `2006-03-01` version.
+The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html), specifically based on the `2006-03-01` version of the Amazon S3 REST API. It supports creating, listing, and deleting buckets, uploading, retrieving, and deleting objects, managing object metadata and tagging, multipart uploads, and bucket and object access control lists (ACLs).
 
-### Key Features
+## Setup guide
 
-- Create, list, and delete buckets
-- Upload, retrieve, and delete objects
-- Support for multipart uploads
-- Manage object metadata and tagging
-- Support for bucket and object access control lists (ACLs)
+To use the Ballerina AWS S3 connector, you need an AWS account with necessary credentials.
 
-## Prerequisites
+### Step 1: Sign in to AWS Console
 
-Before using this connector in your Ballerina application, complete the following:
-1. Create an [AWS account](https://portal.aws.amazon.com/billing/signup?nc2=h_ct&src=default&redirect_url=https%3A%2F%2Faws.amazon.com%2Fregistration-confirmation#/start)
-2. [Obtain tokens](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+1. If you don't have an AWS account yet, you can create one by visiting the AWS [sign-up](https://aws.amazon.com/free/) page. Sign up is free, and you can explore many services under the Free Tier.
+
+2. If you already have an account, log into the [AWS Management Console](https://console.aws.amazon.com/console).
+
+### Step 2: Create a user
+
+1. In the AWS Management Console, search for **IAM** in the services search bar and click on it.
+
+   ![create-user-1.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-1.jpeg)
+
+2. Click **Users**.
+
+   ![create-user-2.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-2.jpeg)
+
+3. Click **Create User**.
+
+   ![create-user-3.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-3.jpeg)
+
+4. Provide a suitable name for the user and continue.
+
+   ![specify-user-details.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/specify-user-details.jpeg)
+
+5. Add necessary permissions by adding the user to a user group, copying permissions, or directly attaching policies. For S3, attach policies such as `AmazonS3FullAccess` (for development) or a least-privilege custom policy scoped to your buckets. Then click **Next**.
+
+   ![set-user-permissions.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/set-user-permissions.jpeg)
+
+6. Review and create the user.
+
+   ![review-create-user.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/review-create-user.jpeg)
+
+### Step 3: Get user access keys
+
+1. Click the user who was created.
+
+   ![users.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/users.jpeg)
+
+2. Click **Create access key**.
+
+   ![create-access-key-1.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-access-key-1.png)
+
+3. Select your use case and click **Next**.
+
+   ![select-usecase.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/select-usecase.png)
+
+4. Copy the **Access Key ID** and **Secret Access Key**. These credentials will be used to authenticate your Ballerina application with Amazon S3.
+
+   ![retrieve-access-key.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/retrieve-access-key.png)
 
 ## Quickstart
 
-To use the AWS S3 connector in your Ballerina application, update the .bal file as follows:
+To use the `aws.s3` connector in your Ballerina application, update your `.bal` file as follows.
 
-### Step 1: Import connector
+### Step 1: Import the module
 
-Import the `ballerinax/aws.s3` module into the Ballerina project.
+Import the `aws.s3` module.
+
 ```ballerina
 import ballerinax/aws.s3;
 ```
 
-### Step 2: Create a new connector instance
+### Step 2: Instantiate a new connector
 
-Create a `s3:ConnectionConfig` with the tokens obtained, and initialize the connector with it.
+1. Create a `Config.toml` file and configure the credentials obtained above:
 
-```ballerina
-s3:ConnectionConfig amazonS3Config = {
-    accessKeyId: <ACCESS_KEY_ID>,
-    secretAccessKey: <SECRET_ACCESS_KEY>,
-    region: <REGION>
-};
-
-s3:Client amazonS3Client = check new(amazonS3Config);
+```toml
+accessKeyId = "<ACCESS_KEY_ID>"
+secretAccessKey = "<SECRET_ACCESS_KEY>"
 ```
 
-### Step 3: Invoke connector operation
+2. Instantiate an `s3:Client` with the obtained credentials and initialize the connector with it.
 
-1. Now you can use the operations available within the connector. Note that they are in the form of remote operations.
-Following is an example on how to create a bucket using the connector.
+```ballerina
+configurable string accessKeyId = ?;
+configurable string secretAccessKey = ?;
 
-    ```ballerina
-    string bucketName = "name";
+final s3:Client s3Client = check new ({
+   region: s3:US_EAST_1,
+   auth: {
+      accessKeyId,
+      secretAccessKey
+   }
+});
+```
 
-    public function main() returns error? {
-        _ = check amazonS3Client->createBucket(bucketName);
-    }
-    ```
-2. Use `bal run` command to compile and run the Ballerina program.
+### Step 3: Invoke the connector operations
 
-**[You can find a list of samples here](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples)**
+Now, utilize the available connector operations. A sample use case is shown below.
+
+```ballerina
+public function main() returns error? {
+   check s3Client->createBucket("add-unique-bucket-name");
+}
+```
+
+### Step 4: Run the Ballerina application
+
+Use the following command to compile and run the Ballerina program.
+
+```bash
+bal run
+```
+
+## Examples
+
+The `ballerinax/aws.s3` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples), covering the following use cases.
+
+1. [S3 Report Archiver](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/s3-report-archiver): Implements an ETL-style workflow that processes CSV reports and archives them to Amazon S3. Reads report data, transforms it, and uploads the results to a designated S3 bucket for long-term storage.
+
+2. [FTP to S3 Sync](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/ftp-to-s3-sync): Syncs files from an FTP server to Amazon S3. Downloads files from the FTP source, uploads them to an S3 bucket, and generates a summary report of skipped or failed transfers.
