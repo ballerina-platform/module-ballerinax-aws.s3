@@ -64,9 +64,10 @@ To use the `aws.s3` connector in your Ballerina application, update your `.bal` 
 
 ### Step 1: Import the module
 
-Import the `aws.s3` module.
+Import the `aws.s3` module and the `aws` module.
 
 ```ballerina
+import ballerinax/aws;
 import ballerinax/aws.s3;
 ```
 
@@ -86,13 +87,59 @@ configurable string accessKeyId = ?;
 configurable string secretAccessKey = ?;
 
 final s3:Client s3Client = check new ({
-   region: s3:US_EAST_1,
+   region: aws:US_EAST_1,
    auth: {
       accessKeyId,
       secretAccessKey
    }
 });
 ```
+
+#### Alternative authentication methods
+
+##### Profile-based authentication
+
+You can use AWS profile-based authentication as an alternative to static credentials.
+
+```ballerina
+final s3:Client s3Client = check new ({
+   region: aws:US_EAST_1,
+   auth: {
+      profileName: "myAwsProfile",
+      credentialsFilePath: "/path/to/custom/credentials"
+   }
+});
+```
+
+##### Default credential provider chain
+
+The standard default credential provider chain, trying each of the following in order and taking the first source that yields credentials:
+
+1. Environment variables (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, and `AWS_WEB_IDENTITY_TOKEN_FILE` if set)
+2. The shared config/credentials file's active profile (`AWS_PROFILE`, or `default` if unset) — which may itself resolve via SSO, an external process, or a chained `AssumeRole` call, depending on that profile's configuration
+3. Container credentials (ECS/EKS)
+4. EC2 instance profile (IMDS)
+
+```ballerina
+import ballerinax/aws.auth;
+
+final s3:Client s3Client = check new ({
+   region: aws:US_EAST_1,
+   auth: auth:DEFAULT_CREDENTIALS
+});
+```
+
+> **Note:** Ensure your AWS credentials file follows the standard format.
+>
+> ```ini
+> [default]
+> aws_access_key_id = YOUR_ACCESS_KEY_ID
+> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
+>
+> [myAwsProfile]
+> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
+> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
+> ```
 
 ### Step 3: Invoke the connector operations
 
