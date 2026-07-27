@@ -17,14 +17,14 @@
 import ballerina/io;
 import ballerina/log;
 import ballerina/time;
-import ballerina/lang.'string as strings;
-import ballerina/regex;
+import ballerina/lang.regexp;
+import ballerinax/aws;
 import ballerinax/aws.s3;
 
 configurable string s3AccessKeyId = ?;
 configurable string s3SecretAccessKey = ?;
 configurable string s3BucketName = ?;
-configurable s3:Region s3Region = ?;
+configurable aws:Region s3Region = ?;
 
 configurable string incomingPrefix = "reports/incoming/";
 configurable string processedPrefix = "reports/processed/";
@@ -140,11 +140,11 @@ function transformRecords(SalesRecord[] records) returns string[][] {
 }
 
 function escapeCsvField(string value) returns string {
-    boolean needsQuotes = strings:indexOf(value, ",") >= 0 || 
-                            strings:indexOf(value, "\"") >= 0 || 
-                            strings:indexOf(value, "\n") >= 0 || 
-                            strings:indexOf(value, "\r") >= 0;
-    string escaped = regex:replaceAll(value, "\"", "\"\"");
+    boolean needsQuotes = string:indexOf(value, ",") >= 0 || 
+                            string:indexOf(value, "\"") >= 0 || 
+                            string:indexOf(value, "\n") >= 0 || 
+                            string:indexOf(value, "\r") >= 0;
+    string escaped = regexp:replaceAll(check regexp:fromString(value), "\"", "\"\"");
     return needsQuotes ? "\"" + escaped + "\"" : escaped;
 }
 

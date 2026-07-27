@@ -16,6 +16,8 @@
 
 import ballerina/os;
 import ballerina/random;
+import ballerinax/aws;
+import ballerinax/aws.auth;
 
 // Environment variables for authentication
 final string accessKeyId = os:getEnv("ACCESS_KEY_ID");
@@ -24,16 +26,16 @@ final string profileName = os:getEnv("AWS_PROFILE_NAME");
 final string credentialsFilePath = os:getEnv("AWS_CREDENTIALS_FILE");
 
 // AWS Region for testing
-final Region awsRegion = EU_NORTH_1;
+final aws:Region awsRegion = aws:EU_NORTH_1;
 
 // Static credentials configuration
-final readonly & StaticAuthConfig staticAuth = {
+final readonly & auth:StaticAuthConfig staticAuth = {
     accessKeyId,
     secretAccessKey
 };
 
 // Profile-based credentials configuration
-final readonly & ProfileAuthConfig profileAuth = {
+final readonly & auth:ProfileAuthConfig profileAuth = {
     profileName: profileName,
     credentialsFilePath: credentialsFilePath
 };
@@ -49,7 +51,7 @@ final Client s3Client = check new ({
 
 // Helper function to create a client with a different region
 // Uses the same auth approach as the main client
-function createS3ClientWithRegion(Region targetRegion) returns Client|error {
+function createS3ClientWithRegion(aws:Region targetRegion) returns Client|error {
     return new ({
         region: targetRegion,
         auth: staticAuth

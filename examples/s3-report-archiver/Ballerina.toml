@@ -3,3 +3,6 @@ org = "ballerinax"
 name = "aws.s3.report.archiver"
 version = "1.0.0"
 distribution = "2201.12.2"
+
+[dependencies]
+"ballerinax/aws" = "0.1.0"

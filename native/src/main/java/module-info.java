@@ -18,9 +18,9 @@
 
 module io.ballerina.lib.aws.s3 {
     requires io.ballerina.runtime;
+    requires io.ballerina.lib.aws.auth;
     requires software.amazon.awssdk.services.s3;
     requires software.amazon.awssdk.auth;
     requires software.amazon.awssdk.core;
-    requires software.amazon.awssdk.profiles;
     requires software.amazon.awssdk.regions;
 }

@@ -18,6 +18,8 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/random;
 import ballerina/test;
+import ballerinax/aws;
+import ballerinax/aws.auth;
 
 // Test-specific constants
 const fileName = "test.txt";
@@ -57,7 +59,7 @@ isolated function testInitUsingProfileAuth() returns error? {
 isolated function testInitUsingDefaultCredentials() returns error? {
     ConnectionConfig connectionConfig = {
         region: awsRegion,
-        auth: DEFAULT_CREDENTIALS
+        auth: auth:DEFAULT_CREDENTIALS
     };
     Client _ = check new (connectionConfig);
 }
@@ -625,7 +627,7 @@ function testGetBucketLocation() returns error? {
 }
 function testAccessBucketWithDifferentRegion() returns error? {
     // Create a client configured with a different region than where the bucket exists
-    Region differentRegion = awsRegion == US_EAST_1 ? US_WEST_2 : US_EAST_1;
+    aws:Region differentRegion = awsRegion == aws:US_EAST_1 ? aws:US_WEST_2 : aws:US_EAST_1;
 
     // Use helper function to create client with proper auth handling
     Client differentRegionClient = check createS3ClientWithRegion(differentRegion);
