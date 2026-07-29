@@ -22,7 +22,7 @@ public type ConnectionConfig record {|
     # Authentication configuration
     auth:AuthConfig auth;
     # The AWS Region. If you don't specify an AWS region, Client uses US East (N. Virginia) as default region
-    aws:Region region = aws:US_EAST_1;
+    aws:Region|string region = aws:US_EAST_1;
     # Optional endpoint configuration for FIPS, dualstack, or custom endpoint overrides (e.g., LocalStack)
     aws:EndpointConfig endpoint?;
 |};

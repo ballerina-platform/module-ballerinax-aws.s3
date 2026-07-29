@@ -288,6 +288,7 @@ public class NativeClientAdaptor {
             if (provider instanceof AwsCredentialsProvider credentialsProvider) {
                 ProviderFactory.closeProvider(credentialsProvider);
             }
+            clientObj.addNativeData(NATIVE_CREDENTIALS_PROVIDER, null);
         } catch (Exception e) {
             if (closeException == null) {
                 closeException = e;
