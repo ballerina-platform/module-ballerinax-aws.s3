@@ -8,4 +8,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - [Revamp the S3 connector](https://github.com/ballerina-platform/ballerina-library/issues/8500)
-- [Add AWS native authentication support for the AWS S3 connector](https://github.com/ballerina-platform/module-ballerinax-aws.s3/pull/XXX)
+- Add AWS native authentication support for the AWS S3 connector

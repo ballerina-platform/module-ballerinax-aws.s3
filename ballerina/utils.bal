@@ -47,8 +47,6 @@ isolated function toByteArray(anydata content) returns byte[] {
         return content;
     } else if content is string {
         return content.toBytes();
-    } else if content is xml {
-        return content.toString().toBytes();
     } else if content is json {
         return content.toJsonString().toBytes();
     }
