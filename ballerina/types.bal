@@ -48,6 +48,10 @@ public type Bucket record {
 
 # Represents byte[], string, json and xml
 public type ContentType byte[]|string|json|xml;
+
+# Represents the content types supported for uploading an S3 object.
+public type UploadContent byte[]|string|json|xml|record {}|record {}[]|stream<byte[], error?>|stream<record {}, error?>;
+
 # Represents the types that can be returned when retrieving an S3 object.
 public type RetrievableType byte[]|string|json|xml|record {}|record {}[]|stream<byte[], error?>|stream<record {}, error?>;
 

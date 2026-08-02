@@ -14,8 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/data.csv;
-import ballerina/data.jsondata;
 import ballerina/jballerina.java;
 
 # The AWS S3 Client Connector.
@@ -94,18 +92,37 @@ public isolated client class Client {
     } external;
 
     # Uploads an S3 object from content.
+    # Supported content types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
+    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
+    #
+    # `record {}` content is serialized as JSON. `record {}[]` and `stream<record {}, error?>`
+    # content is serialized as CSV (field names as headers).
+    # `stream<byte[], error?>` content is collected into bytes before uploading.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + content - The object content (string | xml | json | byte[])
+    # + content - The object content
     # + config - Optional upload configuration
     # + return - An Error if the upload fails
     @display {label: "Put Object"}
     remote isolated function putObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            @display {label: "Content"} ContentType content,
+            @display {label: "Content"} UploadContent content,
             *PutObjectConfig config) returns Error? {
-        byte[] converted = toByteArray(content);
+
+        byte[] converted;
+        if content is stream<byte[], error?> {
+            converted = check collectByteStream(content);
+        } else if content is stream<record {}, error?> {
+            record {}[] records = check collectRecordStream(content);
+            converted = convertRecordsToCsv(records);
+        } else if content is record {}[] {
+            converted = convertRecordsToCsv(content);
+        } else if content is record {} {
+            converted = content.toJsonString().toBytes();
+        } else {
+            converted = toByteArray(<ContentType>content);
+        }
         check nativePutObjectWithContent(self, bucketName, objectKey, converted, config);
     }
 
@@ -361,16 +378,6 @@ isolated function nativeListBuckets(Client clientObj) returns json|Error = @java
 
 isolated function nativePutObjectWithContent(Client clientObj, string bucket, string key, byte[] content, PutObjectConfig config) returns Error? = @java:Method {
     name: "putObjectWithContent",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
-} external;
-
-isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns byte[]|Error = @java:Method {
-    name: "getObject",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
-} external;
-
-isolated function nativeGetObjectAsStream(Client clientObj, string bucket, string key, GetObjectConfig config) returns StreamIterator|Error = @java:Method {
-    name: "getObjectAsStream",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 

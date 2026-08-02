@@ -14,6 +14,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+const string CSV_SEPARATOR = ",";
+const string CSV_LINE_SEPARATOR = "\n";
+const string EMPTY_STRING = "";
+
 # Validates if a bucket name follows AWS naming conventions.
 #
 # + bucketName - The name of the bucket
@@ -51,4 +55,54 @@ isolated function toByteArray(anydata content) returns byte[] {
         return content.toJsonString().toBytes();
     }
     return content.toString().toBytes();
+}
+
+# Collects all chunks from a byte stream into a single byte array.
+#
+# + byteStream - The byte stream to collect
+# + return - The collected bytes or an Error
+isolated function collectByteStream(stream<byte[], error?> byteStream) returns byte[]|Error {
+    byte[] collected = [];
+    error? e = from byte[] chunk in byteStream
+        do {
+            collected.push(...chunk);
+        };
+    if e is error {
+        return error Error("Failed to read byte stream: " + e.message(), e);
+    }
+    return collected;
+}
+
+# Collects all records from a record stream into an array.
+#
+# + recordStream - The record stream to collect
+# + return - The collected records or an Error
+isolated function collectRecordStream(stream<record {}, error?> recordStream) returns record {}[]|Error {
+    record {}[] records = [];
+    error? e = from record {} rec in recordStream
+        do {
+            records.push(rec);
+        };
+    if e is error {
+        return error Error("Failed to read record stream: " + e.message(), e);
+    }
+    return records;
+}
+
+isolated function convertRecordsToCsv(record {}[] records) returns byte[] {
+    if records.length() == 0 {
+        return [];
+    }
+    string[] headers = records[0].keys();
+    string[] lines = [];
+    lines.push(string:'join(CSV_SEPARATOR, ...headers));
+    foreach record {} rec in records {
+        string[] values = [];
+        foreach string header in headers {
+            anydata val = rec[header];
+            values.push(val is () ? EMPTY_STRING : val.toString());
+        }
+        lines.push(string:'join(CSV_SEPARATOR, ...values));
+    }
+    return string:'join(CSV_LINE_SEPARATOR, ...lines).toBytes();
 }
