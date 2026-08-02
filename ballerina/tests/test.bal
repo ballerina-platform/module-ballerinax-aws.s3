@@ -21,6 +21,24 @@ import ballerina/test;
 import ballerinax/aws;
 import ballerinax/aws.auth;
 
+type PersonRecord record {|
+    string name;
+    int age;
+    string city;
+|};
+
+type XmlPersonRecord record {|
+    string name;
+    string age;
+    string city;
+|};
+
+type CsvPersonRecord record {|
+    string name;
+    string age;
+    string city;
+|};
+
 // Test-specific constants
 const fileName = "test.txt";
 const fileName2 = "test2.txt";
@@ -132,7 +150,7 @@ function testPutObjectFromFile() returns error? {
     check s3Client->putObjectFromFile(testBucketName, fileFromPath, tempFilePath);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, fileFromPath);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, fileFromPath);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -196,7 +214,7 @@ function testPutObjectWithStringContent() returns error? {
     check s3Client->putObject(testBucketName, objectKey, stringContent);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -221,7 +239,7 @@ function testPutObjectWithXmlContent() returns error? {
     check s3Client->putObject(testBucketName, objectKey, xmlContent);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -253,7 +271,7 @@ function testPutObjectWithJsonContent() returns error? {
     check s3Client->putObject(testBucketName, objectKey, jsonContent);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -278,7 +296,7 @@ function testPutObjectWithByteArrayContent() returns error? {
     check s3Client->putObject(testBucketName, objectKey, byteContent);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         test:assertEquals(chunk.value, byteContent, "Byte array content mismatch");
@@ -288,6 +306,69 @@ function testPutObjectWithByteArrayContent() returns error? {
     check response.close();
     
     // Clean up
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithRecordContent() returns error? {
+    string objectKey = "test_record_put.json";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+    check s3Client->putObject(testBucketName, objectKey, person);
+    PersonRecord response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response, person, "Record content mismatch");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithRecordArrayContent() returns error? {
+    string objectKey = "test_record_array_put.csv";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+    check s3Client->putObject(testBucketName, objectKey, people);
+    CsvPersonRecord[] response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response.length(), 2, "Expected 2 records");
+    test:assertEquals(response[0].name, "Alice", "Record[0] name mismatch");
+    test:assertEquals(response[0].age, "30", "Record[0] age mismatch");
+    test:assertEquals(response[1].name, "Bob", "Record[1] name mismatch");
+    test:assertEquals(response[1].age, "25", "Record[1] age mismatch");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithByteStream() returns error? {
+    string objectKey = "test_byte_stream_put.txt";
+    string textContent = "Hello from byte stream upload";
+    byte[][] chunks = [textContent.toBytes()];
+    stream<byte[], error?> byteStream = chunks.toStream();
+    check s3Client->putObject(testBucketName, objectKey, byteStream);
+    string response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response, textContent, "Byte stream content mismatch");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithRecordStream() returns error? {
+    string objectKey = "test_record_stream_put.csv";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+    stream<CsvPersonRecord, error?> recordStream = people.toStream();
+    check s3Client->putObject(testBucketName, objectKey, recordStream);
+    CsvPersonRecord[] response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response.length(), 2, "Expected 2 records from stream upload");
+    test:assertEquals(response[0].name, "Alice", "Stream record[0] name mismatch");
+    test:assertEquals(response[1].name, "Bob", "Stream record[1] name mismatch");
     check s3Client->deleteObject(testBucketName, objectKey);
 }
 
@@ -309,7 +390,7 @@ function testPutObjectAsStream() returns error? {
     check s3Client->putObject(testBucketName, objectKey, fileContent);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -384,7 +465,7 @@ function testPutObjectAsStreamLargeFile() returns error? {
     check s3Client->putObject(testBucketName, objectKey, fileContent);
     
     // Verify by downloading and checking content length
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     byte[] fullContent = [];
     check from byte[] bytes in response
         do {
@@ -423,7 +504,7 @@ function testPutObjectAsStreamDirect() returns error? {
     check s3Client->putObjectAsStream(testBucketName, objectKey, fileStream, config);
     
     // Verify by downloading and checking content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
 
     byte[] fullContent = [];
     check from byte[] bytes in response
@@ -525,7 +606,7 @@ function testUploadPartAsStreamDirect() returns error? {
     check s3Client->completeMultipartUpload(testBucketName, objectKey, streamUploadId, [1], [etag]);
     
     // Verify the uploaded object
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {byte[] value;}? chunk = check response.next();
 
     if chunk is record {byte[] value;} {
@@ -599,7 +680,7 @@ function testUploadMultiplePartsAsStreamDirect() returns error? {
     check s3Client->completeMultipartUpload(testBucketName, objectKey, multiPartUploadId, [1, 2], [etag1, etag2]);
     
     // Verify the uploaded object size
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     byte[] fullDownloadedContent = [];
     check from byte[] bytes in response
         do {
@@ -720,7 +801,7 @@ function testCopyObject() returns error? {
     check s3Client->copyObject(testBucketName, sourceKey, testBucketName, destinationKey);
     
     // Verify the copied object exists and has same content
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, destinationKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, destinationKey);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
@@ -901,7 +982,7 @@ function testCreatePresignedUrlWithInvalidBucketName() returns error? {
     dependsOn: [testCreateObject]
 }
 function testGetObjectAsStream() returns error? {
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, fileName);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, fileName);
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string resContent = check string:fromBytes(chunk.value);
@@ -924,9 +1005,9 @@ function testGetObject() returns error? {
     dependsOn: [testCreateObject]
 }
 function testGetObjectAsString() returns error? {
-    // Test getting object as string using the getObjectAsText API
-    string stringResponse = check s3Client->getObjectAsText(testBucketName, fileName);
-    test:assertEquals(check string:fromBytes(content), stringResponse, "Content mismatch in getObjectAsText");
+    // Test getting object as string using getObject with string type inference
+    string stringResponse = check s3Client->getObject(testBucketName, fileName);
+    test:assertEquals(check string:fromBytes(content), stringResponse, "Content mismatch in getObject as string");
 }
 
 @test:Config {
@@ -938,8 +1019,8 @@ function testGetObjectAsJson() returns error? {
     string jsonKey = "test-json-object.json";
     check s3Client->putObject(testBucketName, jsonKey, jsonContent);
     
-    // Get the object as JSON using the getObjectAsJson API
-    json response = check s3Client->getObjectAsJson(testBucketName, jsonKey);
+    // Get the object as JSON using getObject with json type inference
+    json response = check s3Client->getObject(testBucketName, jsonKey);
     test:assertEquals(response, jsonContent, "JSON content mismatch");
     
     // Cleanup
@@ -955,8 +1036,8 @@ function testGetObjectAsXml() returns error? {
     string xmlKey = "test-xml-object.xml";
     check s3Client->putObject(testBucketName, xmlKey, xmlContent);
     
-    // Get the object as XML using the getObjectAsXml API
-    xml response = check s3Client->getObjectAsXml(testBucketName, xmlKey);
+    // Get the object as XML using getObject with xml type inference
+    xml response = check s3Client->getObject(testBucketName, xmlKey);
     test:assertEquals(response.toString(), xmlContent.toString(), "XML content mismatch");
     
     // Cleanup
@@ -966,28 +1047,162 @@ function testGetObjectAsXml() returns error? {
 @test:Config {
     dependsOn: [testGetObjectAsXml]
 }
-function testGetObjectAsCsv() returns error? {
+function testGetObjectAsRecord() returns error? {
+    // Create a JSON object that maps to a record
+    json jsonContent = {"name": "Alice", "age": 30, "city": "NY"};
+    string jsonKey = "test-record-object.json";
+    check s3Client->putObject(testBucketName, jsonKey, jsonContent);
+
+    // Get the object as a typed record using getObject with record type inference
+    PersonRecord response = check s3Client->getObject(testBucketName, jsonKey);
+    test:assertEquals(response.name, "Alice", "Record name mismatch");
+    test:assertEquals(response.age, 30, "Record age mismatch");
+    test:assertEquals(response.city, "NY", "Record city mismatch");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, jsonKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsRecord]
+}
+function testGetObjectAsRecordFromXml() returns error? {
+    // Create an XML object
+    xml xmlContent = xml `<root><name>Bob</name><age>25</age><city>LA</city></root>`;
+    string xmlKey = "test-record-object.xml";
+    check s3Client->putObject(testBucketName, xmlKey, xmlContent);
+
+    // Get the object as a typed record using getObject - .xml extension triggers XML parsing
+    XmlPersonRecord response = check s3Client->getObject(testBucketName, xmlKey);
+    test:assertEquals(response.name, "Bob", "XML record name mismatch");
+    test:assertEquals(response.age, "25", "XML record age mismatch");
+    test:assertEquals(response.city, "LA", "XML record city mismatch");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, xmlKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsRecordFromXml]
+}
+function testGetObjectAsRecordArray() returns error? {
+    // Create CSV content (first row = headers, subsequent rows = data)
     string csvContent = "name,age,city\nAlice,30,NY\nBob,25,LA";
-    string csvKey = "test-csv-object.csv";
+    string csvKey = "test-record-array.csv";
     check s3Client->putObject(testBucketName, csvKey, csvContent);
 
-    // Get the object as CSV using the getObjectAsCsv API
-    // csv:parseBytes treats the first row as headers and returns only the data rows
-    string[][] response = check s3Client->getObjectAsCsv(testBucketName, csvKey);
-    test:assertEquals(response.length(), 2, "Expected 2 data rows");
-    test:assertEquals(response[0][0], "Alice", "CSV row1 col1 mismatch");
-    test:assertEquals(response[0][1], "30", "CSV row1 col2 mismatch");
-    test:assertEquals(response[0][2], "NY", "CSV row1 col3 mismatch");
-    test:assertEquals(response[1][0], "Bob", "CSV row2 col1 mismatch");
-    test:assertEquals(response[1][1], "25", "CSV row2 col2 mismatch");
-    test:assertEquals(response[1][2], "LA", "CSV row2 col3 mismatch");
+    // Get the object as record[] using getObject with record array type inference
+    CsvPersonRecord[] response = check s3Client->getObject(testBucketName, csvKey);
+    test:assertEquals(response.length(), 2, "Expected 2 records");
+    test:assertEquals(response[0].name, "Alice", "Record[0] name mismatch");
+    test:assertEquals(response[0].age, "30", "Record[0] age mismatch");
+    test:assertEquals(response[0].city, "NY", "Record[0] city mismatch");
+    test:assertEquals(response[1].name, "Bob", "Record[1] name mismatch");
+    test:assertEquals(response[1].age, "25", "Record[1] age mismatch");
+    test:assertEquals(response[1].city, "LA", "Record[1] city mismatch");
 
     // Cleanup
     check s3Client->deleteObject(testBucketName, csvKey);
 }
 
 @test:Config {
-    dependsOn: [testGetObjectAsCsv]
+    dependsOn: [testGetObjectAsRecordArray]
+}
+function testGetObjectAsRecordStream() returns error? {
+    // Create a JSON array object
+    json jsonArray = [
+        {"name": "Alice", "age": 30, "city": "NY"},
+        {"name": "Bob", "age": 25, "city": "LA"}
+    ];
+    string jsonKey = "test-record-stream.json";
+    check s3Client->putObject(testBucketName, jsonKey, jsonArray);
+
+    // Get the object as stream<record{}, error?> using getObject
+    stream<PersonRecord, error?> response = check s3Client->getObject(testBucketName, jsonKey);
+
+    PersonRecord[] records = [];
+    check from PersonRecord rec in response
+        do {
+            records.push(rec);
+        };
+
+    test:assertEquals(records.length(), 2, "Expected 2 records from stream");
+    test:assertEquals(records[0].name, "Alice", "Stream record[0] name mismatch");
+    test:assertEquals(records[0].age, 30, "Stream record[0] age mismatch");
+    test:assertEquals(records[1].name, "Bob", "Stream record[1] name mismatch");
+    test:assertEquals(records[1].age, 25, "Stream record[1] age mismatch");
+
+    // Cleanup
+    check s3Client->deleteObject(testBucketName, jsonKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsRecordStream]
+}
+function testPutRecordArrayGetRecordStream() returns error? {
+    json jsonArray = [
+        {"name": "Alice", "age": 30, "city": "NY"},
+        {"name": "Bob", "age": 25, "city": "LA"}
+    ];
+    string jsonKey = "test-put-arr-get-stream.json";
+    check s3Client->putObject(testBucketName, jsonKey, jsonArray);
+
+    stream<PersonRecord, error?> response = check s3Client->getObject(testBucketName, jsonKey);
+    PersonRecord[] records = [];
+    check from PersonRecord rec in response
+        do {
+            records.push(rec);
+        };
+    test:assertEquals(records.length(), 2, "Expected 2 records from stream");
+    test:assertEquals(records[0].name, "Alice", "Round-trip stream record[0] name mismatch");
+    test:assertEquals(records[1].name, "Bob", "Round-trip stream record[1] name mismatch");
+
+    check s3Client->deleteObject(testBucketName, jsonKey);
+}
+
+@test:Config {
+    dependsOn: [testPutRecordArrayGetRecordStream]
+}
+function testGetObjectAsRecordFromNonJsonExtension() returns error? {
+    json jsonContent = {"name": "Charlie", "age": 40, "city": "SF"};
+    string txtKey = "test-record-nojson-ext.txt";
+    check s3Client->putObject(testBucketName, txtKey, jsonContent);
+
+    PersonRecord response = check s3Client->getObject(testBucketName, txtKey);
+    test:assertEquals(response.name, "Charlie", "Non-json extension record name mismatch");
+    test:assertEquals(response.age, 40, "Non-json extension record age mismatch");
+
+    check s3Client->deleteObject(testBucketName, txtKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsRecordFromNonJsonExtension]
+}
+function testGetObjectAsRecordWithInvalidContent() returns error? {
+    string invalidKey = "test-invalid-record.json";
+    string invalidContent = "this is not json at all";
+    check s3Client->putObject(testBucketName, invalidKey, invalidContent);
+
+    PersonRecord|Error response = s3Client->getObject(testBucketName, invalidKey);
+    test:assertTrue(response is Error, "Expected an error for invalid record content");
+
+    check s3Client->deleteObject(testBucketName, invalidKey);
+}
+
+@test:Config {
+    dependsOn: [testGetObjectAsRecordWithInvalidContent]
+}
+function testPutAndGetEmptyRecordArray() returns error? {
+    CsvPersonRecord[] empty = [];
+    string csvKey = "test-empty-record-array.csv";
+    check s3Client->putObject(testBucketName, csvKey, empty);
+    byte[] rawContent = check s3Client->getObject(testBucketName, csvKey);
+    test:assertEquals(rawContent.length(), 0, "Empty record array should produce empty content");
+    check s3Client->deleteObject(testBucketName, csvKey);
+}
+
+@test:Config {
+    dependsOn: [testPutAndGetEmptyRecordArray]
 }
 function testGetObjectAsJsonWithInvalidContent() returns error? {
     string invalidJsonKey = "test-invalid-json.txt";
@@ -995,7 +1210,7 @@ function testGetObjectAsJsonWithInvalidContent() returns error? {
     check s3Client->putObject(testBucketName, invalidJsonKey, invalidJsonContent);
 
     // Expect a ProcessingError when parsing invalid JSON
-    json|Error response = s3Client->getObjectAsJson(testBucketName, invalidJsonKey);
+    json|Error response = s3Client->getObject(testBucketName, invalidJsonKey);
     test:assertTrue(response is Error, "Expected a parsing error for invalid JSON content");
 
     // Cleanup
@@ -1011,7 +1226,7 @@ function testGetObjectAsXmlWithInvalidContent() returns error? {
     check s3Client->putObject(testBucketName, invalidXmlKey, invalidXmlContent);
 
     // Expect a ProcessingError when parsing invalid XML
-    xml|Error response = s3Client->getObjectAsXml(testBucketName, invalidXmlKey);
+    xml|Error response = s3Client->getObject(testBucketName, invalidXmlKey);
     test:assertTrue(response is Error, "Expected a parsing error for invalid XML content");
 
     // Cleanup
@@ -1102,7 +1317,7 @@ function testUploadPartAsStream() returns error? {
     check s3Client->completeMultipartUpload(testBucketName, objectKey, streamUploadId, [1], [etag]);
     
     // Verify the uploaded object
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     record {byte[] value;}? chunk = check response.next();
 
     if chunk is record {byte[] value;} {
@@ -1174,7 +1389,7 @@ function testUploadMultiplePartsAsStream() returns error? {
     check s3Client->completeMultipartUpload(testBucketName, objectKey, multiPartUploadId, [1, 2], [etag1, etag2]);
     
     // Verify the uploaded object has the correct size (part1 + part2)
-    stream<byte[], error?> response = check s3Client->getObjectAsStream(testBucketName, objectKey);
+    stream<byte[], error?> response = check s3Client->getObject(testBucketName, objectKey);
     byte[] fullDownloadedContent = [];
     check from byte[] bytes in response
         do {
