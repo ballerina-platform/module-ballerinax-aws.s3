@@ -12,16 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
-- Migrated the underlying implementation from pure Ballerina HTTP-based approach to Java-based AWS SDK v2
-- The `ConnectionConfig` now uses the shared `auth:AuthConfig` from `ballerinax/aws.auth` and `aws:Region` from `ballerinax/aws` for authentication and region configuration, supporting multiple authentication methods (static credentials, profile-based, and default credential provider chain). Existing consumers must update their imports and client initialization:
-  - Add `import ballerinax/aws;` and `import ballerinax/aws.auth;` (if using default credentials)
-  - Replace inline `accessKeyId`/`secretAccessKey`/`region` fields with the new `auth` and `region` record fields (see the Quickstart section in the README for examples)
-- Renamed `objectName` parameter to `objectKey` across all APIs
-- Replaced `createObject()` with `putObject()`, `putObjectFromFile()`, and `putObjectAsStream()`
-- Added new retrieval methods: `getObjectAsText()`, `getObjectAsJson()`, `getObjectAsXml()`, `getObjectAsCsv()`, and `getObjectMetadata()`
-- Added `copyObject()`, `doesObjectExist()`, `getBucketLocation()`, and `close()` methods
-- Changed `listObjects()` to return `ListObjectsResponse` instead of `S3Object[]`
-- Replaced generic `error` return types with distinct `Error` type and specific error subtypes (`NoSuchKeyError`, `BucketAlreadyExistsError`, etc.)
-- Restructured configuration records (`ObjectCreationHeaders` → `PutObjectConfig`, `ObjectRetrievalHeaders` → `GetObjectConfig`, etc.)
-- Changed `completeMultipartUpload()` to accept separate `int[]` and `string[]` arrays instead of `CompletedPart[]`
-- Replaced `ObjectAction` enum with `HttpMethod` in `createPresignedUrl()`
+- Updated `ConnectionConfig` to use the shared `auth:AuthConfig` from `ballerinax/aws.auth` and `aws:Region` from `ballerinax/aws` for authentication and region configuration
+- Revised object creation and retrieval APIs with more specific method variants
+- Introduced distinct error types and restructured configuration records
