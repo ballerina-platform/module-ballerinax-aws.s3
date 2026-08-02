@@ -12,57 +12,7 @@ The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amaz
 
 ## Setup guide
 
-To use the Ballerina AWS S3 connector, you need an AWS account with necessary credentials.
-
-### Step 1: Sign in to AWS Console
-
-1. If you don't have an AWS account yet, you can create one by visiting the AWS [sign-up](https://aws.amazon.com/free/) page. Sign up is free, and you can explore many services under the Free Tier.
-
-2. If you already have an account, log into the [AWS Management Console](https://console.aws.amazon.com/console).
-
-### Step 2: Create a user
-
-1. In the AWS Management Console, search for **IAM** in the services search bar and click on it.
-
-   ![create-user-1.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-1.jpeg)
-
-2. Click **Users**.
-
-   ![create-user-2.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-2.jpeg)
-
-3. Click **Create User**.
-
-   ![create-user-3.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-user-3.jpeg)
-
-4. Provide a suitable name for the user and continue.
-
-   ![specify-user-details.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/specify-user-details.jpeg)
-
-5. Add necessary permissions by adding the user to a user group, copying permissions, or directly attaching policies. For S3, attach policies such as `AmazonS3FullAccess` (for development) or a least-privilege custom policy scoped to your buckets. Then click **Next**.
-
-   ![set-user-permissions.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/set-user-permissions.jpeg)
-
-6. Review and create the user.
-
-   ![review-create-user.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/review-create-user.jpeg)
-
-### Step 3: Get user access keys
-
-1. Click the user who was created.
-
-   ![users.jpeg](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/users.jpeg)
-
-2. Click **Create access key**.
-
-   ![create-access-key-1.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/create-access-key-1.png)
-
-3. Select your use case and click **Next**.
-
-   ![select-usecase.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/select-usecase.png)
-
-4. Copy the **Access Key ID** and **Secret Access Key**. These credentials will be used to authenticate your Ballerina application with Amazon S3.
-
-   ![retrieve-access-key.png](https://raw.githubusercontent.com/ballerina-platform/module-ballerinax-aws.s3/refs/heads/master/docs/setup/resources/retrieve-access-key.png)
+To use the Ballerina AWS S3 connector, you need an AWS account with the necessary IAM user credentials. For detailed steps on obtaining these credentials, refer to the [Obtaining IAM user credentials](https://central.ballerina.io/ballerinax/aws/latest#obtaining-iam-user-credentials) guide.
 
 ## Quickstart
 
