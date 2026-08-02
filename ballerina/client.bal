@@ -119,7 +119,11 @@ public isolated client class Client {
         } else if content is record {}[] {
             converted = convertRecordsToCsv(content);
         } else if content is record {} {
-            converted = content.toJsonString().toBytes();
+            if objectKey.toLowerAscii().endsWith(".xml") {
+                converted = convertRecordToXml(content, objectKey).toBytes();
+            } else {
+                converted = content.toJsonString().toBytes();
+            }
         } else {
             converted = toByteArray(<ContentType>content);
         }

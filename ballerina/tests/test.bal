@@ -324,6 +324,61 @@ function testPutObjectWithRecordContent() returns error? {
 @test:Config {
     dependsOn: [testCreateBucket]
 }
+function testPutObjectWithRecordContentAsXml() returns error? {
+    string objectKey = "test_record_put.xml";
+    XmlPersonRecord person = {name: "Alice", age: "30", city: "NY"};
+    check s3Client->putObject(testBucketName, objectKey, person);
+
+    // Verify by getting as XML and checking structure
+    xml response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals((response/<name>).data(), "Alice", "XML record name mismatch");
+    test:assertEquals((response/<age>).data(), "30", "XML record age mismatch");
+    test:assertEquals((response/<city>).data(), "NY", "XML record city mismatch");
+
+    // Verify round-trip: get back as record
+    XmlPersonRecord recordResponse = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(recordResponse, person, "XML record round-trip mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithRecordContentAsXmlWithNestedPath() returns error? {
+    string objectKey = "data/users/test_record.xml";
+    XmlPersonRecord person = {name: "Bob", age: "25", city: "LA"};
+    check s3Client->putObject(testBucketName, objectKey, person);
+
+    // Root element should be derived from filename ("test_record")
+    XmlPersonRecord recordResponse = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(recordResponse.name, "Bob", "Nested path XML record name mismatch");
+    test:assertEquals(recordResponse.age, "25", "Nested path XML record age mismatch");
+    test:assertEquals(recordResponse.city, "LA", "Nested path XML record city mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectWithRecordContentNonXmlExtension() returns error? {
+    // Verify that non-.xml keys still serialize as JSON
+    string objectKey = "test_record_put.txt";
+    PersonRecord person = {name: "Charlie", age: 40, city: "SF"};
+    check s3Client->putObject(testBucketName, objectKey, person);
+
+    // Should be JSON, so we can read as json
+    json response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response.name, "Charlie", "Non-XML record name mismatch");
+    test:assertEquals(response.age, 40, "Non-XML record age mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
 function testPutObjectWithRecordArrayContent() returns error? {
     string objectKey = "test_record_array_put.csv";
     CsvPersonRecord[] people = [

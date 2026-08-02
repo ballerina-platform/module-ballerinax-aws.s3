@@ -89,6 +89,28 @@ isolated function collectRecordStream(stream<record {}, error?> recordStream) re
     return records;
 }
 
+isolated function convertRecordToXml(record {} rec, string objectKey) returns string {
+    // Derive root element name from the object key filename (without extension)
+    string rootName = "root";
+    string key = objectKey;
+    int? lastSlash = key.lastIndexOf("/");
+    if lastSlash is int {
+        key = key.substring(lastSlash + 1);
+    }
+    if key.toLowerAscii().endsWith(".xml") {
+        rootName = key.substring(0, key.length() - 4);
+    }
+
+    string[] parts = [];
+    parts.push(string `<${rootName}>`);
+    foreach [string, anydata] [fieldName, value] in rec.entries() {
+        string strVal = value is () ? "" : value.toString();
+        parts.push(string `<${fieldName}>${strVal}</${fieldName}>`);
+    }
+    parts.push(string `</${rootName}>`);
+    return string:'join("", ...parts);
+}
+
 isolated function convertRecordsToCsv(record {}[] records) returns byte[] {
     if records.length() == 0 {
         return [];
