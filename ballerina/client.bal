@@ -125,127 +125,30 @@ public isolated client class Client {
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
 
-    # Downloads an S3 object as a stream.
+    # Downloads an S3 object and returns its content in the requested type.
+    # The target type is inferred from the left-hand side of the assignment.
+    # Supported target types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
+    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
+    #
+    # For `record {}`, the object key's file extension determines parsing:
+    # `.xml` files are parsed as XML, all others as JSON.
+    # For `record {}[]`, the content is parsed as CSV (first row = headers).
+    # For large objects, use `stream<byte[], error?>` to avoid loading the entire content into memory.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
+    # + targetType - The typedesc of the target type
     # + config - Optional retrieval configuration
-    # + return - A stream of byte chunks containing the object content, or an Error
-    @display {label: "Get Object As Stream"}
-    remote isolated function getObjectAsStream(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Byte Stream"} stream<byte[], error?>|Error {
-        StreamIterator streamImpl = check nativeGetObjectAsStream(self, bucketName, objectKey, config);
-        return new stream<byte[], Error?>(streamImpl);
-    }
-
-    # Downloads an S3 object and returns its content as a byte array.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `byte[]` or an Error
+    # + return - The object content in the requested type or an Error
     @display {label: "Get Object"}
     remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Content"} byte[]|Error {
-        return nativeGetObject(self, bucketName, objectKey, config);
-    }
-
-    # Downloads an S3 object and returns its content as a string.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `string` or an Error
-    @display {label: "Get Object As Text"}
-    remote isolated function getObjectAsText(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Text"} string|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        var textRes = string:fromBytes(bytes);
-        if textRes is string {
-            return textRes;
-        } else {
-            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
-        }
-    }
-
-    # Downloads an S3 object and parses it as JSON.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `json` or an Error
-    @display {label: "Get Object As JSON"}
-    remote isolated function getObjectAsJson(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
+            typedesc<RetrievableType> targetType = <>,
             *GetObjectConfig config)
-            returns @display {label: "JSON"} json|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        json|jsondata:Error result = jsondata:parseBytes(bytes);
-        if result is jsondata:Error {
-            return error Error("Failed to parse JSON: " + result.message(), result);
-        }
-        return result;
-    }
-
-    # Downloads an S3 object and parses it as XML.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `xml` or an Error
-    @display {label: "Get Object As XML"}
-    remote isolated function getObjectAsXml(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "XML"} xml|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        var textRes = string:fromBytes(bytes);
-        if textRes is string {
-            var parsed = xml:fromString(textRes);
-            if parsed is xml {
-                return parsed;
-            } else {
-                return error Error("Failed to parse XML: " + parsed.message(), parsed);
-            }
-        } else {
-            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
-        }
-    }
-
-    # Downloads an S3 object and parses it as CSV.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The CSV content as `string[][]` or an Error
-    @display {label: "Get Object As CSV"}
-    remote isolated function getObjectAsCsv(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config)
-            returns @display {label: "CSV"} string[][]|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        string[][]|csv:Error result = csv:parseBytes(bytes);
-        if result is csv:Error {
-            return error Error("Failed to parse CSV: " + result.message(), result);
-        }
-        return result;
-    }
+            returns targetType|Error = @java:Method {
+        name: "getObjectWithType",
+        'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+    } external;
 
     # Deletes an S3 object from an S3 bucket.
     #

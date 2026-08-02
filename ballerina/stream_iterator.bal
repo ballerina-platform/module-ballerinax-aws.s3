@@ -38,6 +38,32 @@ isolated class StreamIterator {
     }
 }
 
+# Iterator that yields records from an in-memory array, used for record streaming.
+isolated class RecordStreamIterator {
+
+    private final readonly & record {}[] records;
+    private int index = 0;
+
+    isolated function init(record {}[] records) {
+        self.records = records.cloneReadOnly();
+    }
+
+    public isolated function next() returns record {|record {} value;|}|Error? {
+        lock {
+            if self.index >= self.records.length() {
+                return;
+            }
+            readonly & record {} rec = self.records[self.index];
+            self.index += 1;
+            return {value: rec.clone()};
+        }
+    }
+
+    public isolated function close() returns Error? {
+        return;
+    }
+}
+
 isolated function nativeReadStreamBytes(StreamIterator streamObj) returns byte[]|Error? = @java:Method {
     name: "readStreamBytes",
     'class: "io.ballerina.lib.aws.s3.StreamIteratorUtils"
