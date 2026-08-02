@@ -13,7 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Migrated the underlying implementation from pure Ballerina HTTP-based approach to Java-based AWS SDK v2
-- Replaced `ConnectionConfig` with `auth:AuthConfig`, supporting multiple authentication methods (static credentials, profiles, default provider chain)
+- The `ConnectionConfig` now uses the shared `auth:AuthConfig` from `ballerinax/aws.auth` and `aws:Region` from `ballerinax/aws` for authentication and region configuration, supporting multiple authentication methods (static credentials, profile-based, and default credential provider chain). Existing consumers must update their imports and client initialization:
+  - Add `import ballerinax/aws;` and `import ballerinax/aws.auth;` (if using default credentials)
+  - Replace inline `accessKeyId`/`secretAccessKey`/`region` fields with the new `auth` and `region` record fields (see the Quickstart section in the README for examples)
 - Renamed `objectName` parameter to `objectKey` across all APIs
 - Replaced `createObject()` with `putObject()`, `putObjectFromFile()`, and `putObjectAsStream()`
 - Added new retrieval methods: `getObjectAsText()`, `getObjectAsJson()`, `getObjectAsXml()`, `getObjectAsCsv()`, and `getObjectMetadata()`
