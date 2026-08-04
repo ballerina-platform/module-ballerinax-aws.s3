@@ -61,6 +61,18 @@ final s3:Client s3Client = check new ({
 });
 ```
 
+> **Note:** Ensure your AWS credentials file follows the standard format.
+>
+> ```ini
+> [default]
+> aws_access_key_id = YOUR_ACCESS_KEY_ID
+> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
+>
+> [myAwsProfile]
+> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
+> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
+> ```
+
 ##### Default credential provider chain
 
 The standard default credential provider chain, trying each of the following in order and taking the first source that yields credentials:
@@ -78,18 +90,6 @@ final s3:Client s3Client = check new ({
    auth: auth:DEFAULT_CREDENTIALS
 });
 ```
-
-> **Note:** Ensure your AWS credentials file follows the standard format.
->
-> ```ini
-> [default]
-> aws_access_key_id = YOUR_ACCESS_KEY_ID
-> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
->
-> [myAwsProfile]
-> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
-> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
-> ```
 
 ### Step 3: Invoke the connector operations
 
