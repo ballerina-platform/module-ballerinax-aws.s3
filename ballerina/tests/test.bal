@@ -1526,6 +1526,161 @@ function testAbortFileUpload() returns error? {
     test:assertFalse(exists, msg = "Object should not exist after aborting multipart upload");
 }
 
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordAsJson() returns error? {
+    string objectKey = "multipart_record.json";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string etag = check s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, person);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload record part as JSON");
+
+    check s3Client->completeMultipartUpload(testBucketName, objectKey, mpUploadId, [1], [etag]);
+
+    PersonRecord response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response, person, "Multipart record JSON content mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordAsXml() returns error? {
+    string objectKey = "multipart_record.xml";
+    XmlPersonRecord person = {name: "Bob", age: "25", city: "LA"};
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string etag = check s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, person);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload record part as XML");
+
+    check s3Client->completeMultipartUpload(testBucketName, objectKey, mpUploadId, [1], [etag]);
+
+    XmlPersonRecord response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response, person, "Multipart record XML content mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordArray() returns error? {
+    string objectKey = "multipart_records.csv";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string etag = check s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, people);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload record array part as CSV");
+
+    check s3Client->completeMultipartUpload(testBucketName, objectKey, mpUploadId, [1], [etag]);
+
+    CsvPersonRecord[] response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response.length(), 2, "Expected 2 records from multipart CSV upload");
+    test:assertEquals(response[0].name, "Alice", "Multipart CSV record[0] name mismatch");
+    test:assertEquals(response[1].name, "Bob", "Multipart CSV record[1] name mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithByteStream() returns error? {
+    string objectKey = "multipart_bytestream.txt";
+    string textContent = "Hello from byte stream upload part";
+    byte[][] chunks = [textContent.toBytes()];
+    stream<byte[], error?> byteStream = chunks.toStream();
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string etag = check s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, byteStream);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload byte stream part");
+
+    check s3Client->completeMultipartUpload(testBucketName, objectKey, mpUploadId, [1], [etag]);
+
+    string response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response, textContent, "Multipart byte stream content mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordStream() returns error? {
+    string objectKey = "multipart_recordstream.csv";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+    stream<CsvPersonRecord, error?> recordStream = people.toStream();
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string etag = check s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, recordStream);
+    test:assertTrue(etag.length() > 0, msg = "Failed to upload record stream part as CSV");
+
+    check s3Client->completeMultipartUpload(testBucketName, objectKey, mpUploadId, [1], [etag]);
+
+    CsvPersonRecord[] response = check s3Client->getObject(testBucketName, objectKey);
+    test:assertEquals(response.length(), 2, "Expected 2 records from multipart record stream upload");
+    test:assertEquals(response[0].name, "Alice", "Multipart record stream[0] name mismatch");
+    test:assertEquals(response[1].name, "Bob", "Multipart record stream[1] name mismatch");
+
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordInvalidExtension() returns error? {
+    string objectKey = "multipart_record.txt";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, person);
+    test:assertTrue(result is Error, "Expected an error for record {} with .txt extension in uploadPart");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordArrayInvalidExtension() returns error? {
+    string objectKey = "multipart_records.json";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"}
+    ];
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, people);
+    test:assertTrue(result is Error, "Expected an error for record {}[] with .json extension in uploadPart");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordStreamInvalidExtension() returns error? {
+    string objectKey = "multipart_recordstream.json";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"}
+    ];
+    stream<CsvPersonRecord, error?> recordStream = people.toStream();
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, recordStream);
+    test:assertTrue(result is Error, "Expected an error for stream<record {}, error?> with .json extension in uploadPart");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
 @test:AfterSuite {}
 function testDeleteBucket() returns error? {
     // Clean up any remaining objects before deleting bucket

@@ -295,12 +295,20 @@ public isolated client class Client {
     } external;
 
     # Uploads a part in a multipart upload.
+    # Supported content types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
+    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
+    #
+    # For `record {}` content, the object key must end with `.json` or `.xml`.
+    # `.json` keys serialize the record as JSON; `.xml` keys serialize as XML.
+    # For `record {}[]` and `stream<record {}, error?>` content, the object key must end with `.csv`.
+    # The records are serialized as CSV (field names as headers).
+    # `stream<byte[], error?>` content is collected into bytes before uploading.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
     # + uploadId - The upload ID from createMultipartUpload
     # + partNumber - The part number (1-10000)
-    # + content - The part content (string | xml | json | byte[])
+    # + content - The part content
     # + config - Optional upload part configuration
     # + return - ETag of the uploaded part or an Error
     @display {label: "Upload Part"}
@@ -308,10 +316,35 @@ public isolated client class Client {
             @display {label: "Object Key"} string objectKey,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
-            @display {label: "Content"} ContentType content,
+            @display {label: "Content"} UploadContent content,
             *UploadPartConfig config)
             returns @display {label: "ETag"} string|Error {
-        byte[] converted = toByteArray(content);
+        byte[] converted;
+        string lowerKey = objectKey.toLowerAscii();
+        if content is stream<byte[], error?> {
+            converted = check collectByteStream(content);
+        } else if content is stream<record {}, error?> {
+            if !lowerKey.endsWith(CSV_EXTENSION) {
+                return error Error("stream<record {}, error?> content requires a '.csv' file extension in the object key");
+            }
+            record {}[] records = check collectRecordStream(content);
+            converted = convertRecordsToCsv(records);
+        } else if content is record {}[] {
+            if !lowerKey.endsWith(CSV_EXTENSION) {
+                return error Error("record {}[] content requires a '.csv' file extension in the object key");
+            }
+            converted = convertRecordsToCsv(content);
+        } else if content is record {} {
+            if lowerKey.endsWith(XML_EXTENSION) {
+                converted = convertRecordToXml(content, objectKey).toBytes();
+            } else if lowerKey.endsWith(JSON_EXTENSION) {
+                converted = content.toJsonString().toBytes();
+            } else {
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key");
+            }
+        } else {
+            converted = toByteArray(<ContentType>content);
+        }
         return check nativeUploadPart(self, bucketName, objectKey, uploadId, partNumber, converted, config);
     }
 
