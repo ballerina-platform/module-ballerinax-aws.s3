@@ -14,6 +14,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+const string JSON_EXTENSION = ".json";
+const string XML_EXTENSION = ".xml";
+const string CSV_EXTENSION = ".csv";
 const string CSV_SEPARATOR = ",";
 const string CSV_LINE_SEPARATOR = "\n";
 const string EMPTY_STRING = "";
@@ -97,8 +100,8 @@ isolated function convertRecordToXml(record {} rec, string objectKey) returns st
     if lastSlash is int {
         key = key.substring(lastSlash + 1);
     }
-    if key.toLowerAscii().endsWith(".xml") {
-        rootName = key.substring(0, key.length() - 4);
+    if key.toLowerAscii().endsWith(XML_EXTENSION) {
+        rootName = key.substring(0, key.length() - XML_EXTENSION.length());
     }
 
     string[] parts = [];

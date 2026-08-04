@@ -159,6 +159,9 @@ public class NativeClientAdaptor {
     public static final String GET = "GET";
     public static final String PUT = "PUT";
     private static final String RECORD_STREAM_ITERATOR = "RecordStreamIterator";
+    private static final String JSON_EXTENSION = ".json";
+    private static final String XML_EXTENSION = ".xml";
+    private static final String CSV_EXTENSION = ".csv";
 
     private static Optional<String> getStringConfig(BMap<BString, Object> config, String key) {
         if (config.containsKey(StringUtils.fromString(key))) {
@@ -1097,6 +1100,11 @@ public class NativeClientAdaptor {
             BObject iteratorObj = (BObject) result;
             return ValueCreator.createStreamValue(streamType, iteratorObj);
         }
+        if (!key.getValue().toLowerCase().endsWith(CSV_EXTENSION)) {
+            return ErrorCreator.createError(
+                    "stream<record {}, error?> target type requires a '.csv' file extension in the object key");
+        }
+
         Object bytesResult = getObject(clientObj, bucket, key, config);
         if (bytesResult instanceof BError) {
             return bytesResult;
@@ -1109,32 +1117,18 @@ public class NativeClientAdaptor {
             return ErrorCreator.createError("Failed to convert bytes to string: " + e.getMessage());
         }
 
-        Object jsonValue;
-        try {
-            jsonValue = JsonUtils.parse(content);
-        } catch (BError e) {
-            return ErrorCreator.createError("Failed to parse JSON for record stream: " + e.getMessage(), e);
-        } catch (Exception e) {
-            return ErrorCreator.createError("Failed to parse JSON for record stream: " + e.getMessage());
+        ArrayType arrayType = TypeCreator.createArrayType(constraintType);
+        Object csvResult = convertCsvToRecords(content, constraintType, arrayType);
+        if (csvResult instanceof BError) {
+            return csvResult;
         }
-
-        if (!(jsonValue instanceof BArray jsonArray)) {
-            return ErrorCreator.createError("Expected a JSON array for streaming records");
-        }
+        BArray csvArray = (BArray) csvResult;
 
         List<BMap<BString, Object>> records = new ArrayList<>();
-        for (int i = 0; i < jsonArray.size(); i++) {
-            Object element = jsonArray.get(i);
-            try {
-                Object converted = ValueUtils.convert(element, constraintType);
-                @SuppressWarnings("unchecked")
-                BMap<BString, Object> record = (BMap<BString, Object>) converted;
-                records.add(record);
-            } catch (BError e) {
-                return ErrorCreator.createError("Failed to convert JSON element to record: " + e.getMessage());
-            } catch (Exception e) {
-                return ErrorCreator.createError("Failed to convert JSON element to record: " + e.getMessage());
-            }
+        for (int i = 0; i < csvArray.size(); i++) {
+            @SuppressWarnings("unchecked")
+            BMap<BString, Object> record = (BMap<BString, Object>) csvArray.get(i);
+            records.add(record);
         }
 
         BObject iteratorObj = ValueCreator.createObjectValue(env.getCurrentModule(), RECORD_STREAM_ITERATOR,
@@ -1181,12 +1175,21 @@ public class NativeClientAdaptor {
 
             case TypeTags.RECORD_TYPE_TAG:
             case TypeTags.MAP_TAG:
+                String lowerKeyRec = objectKey.toLowerCase();
+                if (!lowerKeyRec.endsWith(JSON_EXTENSION) && !lowerKeyRec.endsWith(XML_EXTENSION)) {
+                    return ErrorCreator.createError(
+                            "record {} target type requires a '.json' or '.xml' file extension in the object key");
+                }
                 return convertToRecord(content, objectKey, targetType);
 
             case TypeTags.ARRAY_TAG:
                 ArrayType arrayType = (ArrayType) targetType;
                 Type elementType = TypeUtils.getReferredType(arrayType.getElementType());
                 if (elementType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                    if (!objectKey.toLowerCase().endsWith(CSV_EXTENSION)) {
+                        return ErrorCreator.createError(
+                                "record {}[] target type requires a '.csv' file extension in the object key");
+                    }
                     return convertCsvToRecords(content, elementType, arrayType);
                 }
                 try {
@@ -1206,7 +1209,7 @@ public class NativeClientAdaptor {
     private static Object convertToRecord(String content, String objectKey, Type targetType) {
         String lowerKey = objectKey.toLowerCase();
         try {
-            if (lowerKey.endsWith(".xml")) {
+            if (lowerKey.endsWith(XML_EXTENSION)) {
                 // Parse XML using Java DOM and build a flat map from the root element's children
                 javax.xml.parsers.DocumentBuilder builder =
                         javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();

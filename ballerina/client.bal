@@ -95,8 +95,10 @@ public isolated client class Client {
     # Supported content types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
     # `stream<byte[], error?>`, and `stream<record {}, error?>`.
     #
-    # `record {}` content is serialized as JSON. `record {}[]` and `stream<record {}, error?>`
-    # content is serialized as CSV (field names as headers).
+    # For `record {}` content, the object key must end with `.json` or `.xml`.
+    # `.json` keys serialize the record as JSON; `.xml` keys serialize as XML.
+    # For `record {}[]` and `stream<record {}, error?>` content, the object key must end with `.csv`.
+    # The records are serialized as CSV (field names as headers).
     # `stream<byte[], error?>` content is collected into bytes before uploading.
     #
     # + bucketName - The name of the bucket
@@ -111,18 +113,27 @@ public isolated client class Client {
             *PutObjectConfig config) returns Error? {
 
         byte[] converted;
+        string lowerKey = objectKey.toLowerAscii();
         if content is stream<byte[], error?> {
             converted = check collectByteStream(content);
         } else if content is stream<record {}, error?> {
+            if !lowerKey.endsWith(CSV_EXTENSION) {
+                return error Error("stream<record {}, error?> content requires a '.csv' file extension in the object key");
+            }
             record {}[] records = check collectRecordStream(content);
             converted = convertRecordsToCsv(records);
         } else if content is record {}[] {
+            if !lowerKey.endsWith(CSV_EXTENSION) {
+                return error Error("record {}[] content requires a '.csv' file extension in the object key");
+            }
             converted = convertRecordsToCsv(content);
         } else if content is record {} {
-            if objectKey.toLowerAscii().endsWith(".xml") {
+            if lowerKey.endsWith(XML_EXTENSION) {
                 converted = convertRecordToXml(content, objectKey).toBytes();
-            } else {
+            } else if lowerKey.endsWith(JSON_EXTENSION) {
                 converted = content.toJsonString().toBytes();
+            } else {
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key");
             }
         } else {
             converted = toByteArray(<ContentType>content);
@@ -151,9 +162,10 @@ public isolated client class Client {
     # Supported target types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
     # `stream<byte[], error?>`, and `stream<record {}, error?>`.
     #
-    # For `record {}`, the object key's file extension determines parsing:
-    # `.xml` files are parsed as XML, all others as JSON.
-    # For `record {}[]`, the content is parsed as CSV (first row = headers).
+    # For `record {}`, the object key must end with `.json` or `.xml`.
+    # `.json` keys parse the content as JSON; `.xml` keys parse as XML.
+    # For `record {}[]` and `stream<record {}, error?>`, the object key must end with `.csv`.
+    # The content is parsed as CSV (first row = headers).
     # For large objects, use `stream<byte[], error?>` to avoid loading the entire content into memory.
     #
     # + bucketName - The name of the bucket

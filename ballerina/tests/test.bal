@@ -363,17 +363,11 @@ function testPutObjectWithRecordContentAsXmlWithNestedPath() returns error? {
     dependsOn: [testCreateBucket]
 }
 function testPutObjectWithRecordContentNonXmlExtension() returns error? {
-    // Verify that non-.xml keys still serialize as JSON
+    // Verify that non-.json/.xml keys return an error for record {} content
     string objectKey = "test_record_put.txt";
     PersonRecord person = {name: "Charlie", age: 40, city: "SF"};
-    check s3Client->putObject(testBucketName, objectKey, person);
-
-    // Should be JSON, so we can read as json
-    json response = check s3Client->getObject(testBucketName, objectKey);
-    test:assertEquals(response.name, "Charlie", "Non-XML record name mismatch");
-    test:assertEquals(response.age, 40, "Non-XML record age mismatch");
-
-    check s3Client->deleteObject(testBucketName, objectKey);
+    Error? result = s3Client->putObject(testBucketName, objectKey, person);
+    test:assertTrue(result is Error, "Expected an error for unsupported file extension with record {} content");
 }
 
 @test:Config {
@@ -1164,47 +1158,44 @@ function testGetObjectAsRecordArray() returns error? {
     dependsOn: [testGetObjectAsRecordArray]
 }
 function testGetObjectAsRecordStream() returns error? {
-    // Create a JSON array object
-    json jsonArray = [
-        {"name": "Alice", "age": 30, "city": "NY"},
-        {"name": "Bob", "age": 25, "city": "LA"}
-    ];
-    string jsonKey = "test-record-stream.json";
-    check s3Client->putObject(testBucketName, jsonKey, jsonArray);
+    // Create CSV content (first row = headers, subsequent rows = data)
+    string csvContent = "name,age,city\nAlice,30,NY\nBob,25,LA";
+    string csvKey = "test-record-stream.csv";
+    check s3Client->putObject(testBucketName, csvKey, csvContent);
 
     // Get the object as stream<record{}, error?> using getObject
-    stream<PersonRecord, error?> response = check s3Client->getObject(testBucketName, jsonKey);
+    stream<CsvPersonRecord, error?> response = check s3Client->getObject(testBucketName, csvKey);
 
-    PersonRecord[] records = [];
-    check from PersonRecord rec in response
+    CsvPersonRecord[] records = [];
+    check from CsvPersonRecord rec in response
         do {
             records.push(rec);
         };
 
     test:assertEquals(records.length(), 2, "Expected 2 records from stream");
     test:assertEquals(records[0].name, "Alice", "Stream record[0] name mismatch");
-    test:assertEquals(records[0].age, 30, "Stream record[0] age mismatch");
+    test:assertEquals(records[0].age, "30", "Stream record[0] age mismatch");
     test:assertEquals(records[1].name, "Bob", "Stream record[1] name mismatch");
-    test:assertEquals(records[1].age, 25, "Stream record[1] age mismatch");
+    test:assertEquals(records[1].age, "25", "Stream record[1] age mismatch");
 
     // Cleanup
-    check s3Client->deleteObject(testBucketName, jsonKey);
+    check s3Client->deleteObject(testBucketName, csvKey);
 }
 
 @test:Config {
     dependsOn: [testGetObjectAsRecordStream]
 }
 function testPutRecordArrayGetRecordStream() returns error? {
-    json jsonArray = [
-        {"name": "Alice", "age": 30, "city": "NY"},
-        {"name": "Bob", "age": 25, "city": "LA"}
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
     ];
-    string jsonKey = "test-put-arr-get-stream.json";
-    check s3Client->putObject(testBucketName, jsonKey, jsonArray);
+    string csvKey = "test-put-arr-get-stream.csv";
+    check s3Client->putObject(testBucketName, csvKey, people);
 
-    stream<PersonRecord, error?> response = check s3Client->getObject(testBucketName, jsonKey);
-    PersonRecord[] records = [];
-    check from PersonRecord rec in response
+    stream<CsvPersonRecord, error?> response = check s3Client->getObject(testBucketName, csvKey);
+    CsvPersonRecord[] records = [];
+    check from CsvPersonRecord rec in response
         do {
             records.push(rec);
         };
@@ -1212,20 +1203,21 @@ function testPutRecordArrayGetRecordStream() returns error? {
     test:assertEquals(records[0].name, "Alice", "Round-trip stream record[0] name mismatch");
     test:assertEquals(records[1].name, "Bob", "Round-trip stream record[1] name mismatch");
 
-    check s3Client->deleteObject(testBucketName, jsonKey);
+    check s3Client->deleteObject(testBucketName, csvKey);
 }
 
 @test:Config {
     dependsOn: [testPutRecordArrayGetRecordStream]
 }
 function testGetObjectAsRecordFromNonJsonExtension() returns error? {
-    json jsonContent = {"name": "Charlie", "age": 40, "city": "SF"};
+    // Upload JSON content as a string with a .txt extension
+    string jsonContent = "{\"name\": \"Charlie\", \"age\": 40, \"city\": \"SF\"}";
     string txtKey = "test-record-nojson-ext.txt";
     check s3Client->putObject(testBucketName, txtKey, jsonContent);
 
-    PersonRecord response = check s3Client->getObject(testBucketName, txtKey);
-    test:assertEquals(response.name, "Charlie", "Non-json extension record name mismatch");
-    test:assertEquals(response.age, 40, "Non-json extension record age mismatch");
+    // Expecting an error since record {} target requires .json or .xml extension
+    PersonRecord|Error response = s3Client->getObject(testBucketName, txtKey);
+    test:assertTrue(response is Error, "Expected an error for unsupported file extension with record {} target type");
 
     check s3Client->deleteObject(testBucketName, txtKey);
 }
