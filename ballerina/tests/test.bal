@@ -392,6 +392,107 @@ function testPutObjectWithRecordArrayContent() returns error? {
 @test:Config {
     dependsOn: [testCreateBucket]
 }
+function testPutObjectRecordAsJsonWithFileFormatOverride() returns error? {
+    // Use a non-.json key but override with fileFormat = JSON
+    string objectKey = "test_record_format_override.dat";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+    check s3Client->putObject(testBucketName, objectKey, person, fileFormat = JSON);
+    byte[] response = check s3Client->getObject(testBucketName, objectKey);
+    json parsed = check (check string:fromBytes(response)).fromJsonString();
+    test:assertEquals(check parsed.name, "Alice", "JSON fileFormat override name mismatch");
+    test:assertEquals(check parsed.age, 30, "JSON fileFormat override age mismatch");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordAsXmlWithFileFormatOverride() returns error? {
+    // Use a non-.xml key but override with fileFormat = XML
+    string objectKey = "test_record_format_override_xml.dat";
+    XmlPersonRecord person = {name: "Bob", age: "25", city: "LA"};
+    check s3Client->putObject(testBucketName, objectKey, person, fileFormat = XML);
+    byte[] response = check s3Client->getObject(testBucketName, objectKey);
+    string responseStr = check string:fromBytes(response);
+    test:assertTrue(responseStr.includes("Bob"), "XML fileFormat override should contain name");
+    test:assertTrue(responseStr.includes("25"), "XML fileFormat override should contain age");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordArrayAsCsvWithFileFormatOverride() returns error? {
+    // Use a non-.csv key but override with fileFormat = CSV
+    string objectKey = "test_records_format_override.dat";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+    check s3Client->putObject(testBucketName, objectKey, people, fileFormat = CSV);
+    byte[] response = check s3Client->getObject(testBucketName, objectKey);
+    string responseStr = check string:fromBytes(response);
+    test:assertTrue(responseStr.includes("Alice"), "CSV fileFormat override should contain Alice");
+    test:assertTrue(responseStr.includes("Bob"), "CSV fileFormat override should contain Bob");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordStreamAsCsvWithFileFormatOverride() returns error? {
+    // Use a non-.csv key but override with fileFormat = CSV
+    string objectKey = "test_record_stream_format_override.dat";
+    CsvPersonRecord[] people = [
+        {name: "Alice", age: "30", city: "NY"},
+        {name: "Bob", age: "25", city: "LA"}
+    ];
+    stream<CsvPersonRecord, error?> recordStream = people.toStream();
+    check s3Client->putObject(testBucketName, objectKey, recordStream, fileFormat = CSV);
+    byte[] response = check s3Client->getObject(testBucketName, objectKey);
+    string responseStr = check string:fromBytes(response);
+    test:assertTrue(responseStr.includes("Alice"), "CSV stream fileFormat override should contain Alice");
+    test:assertTrue(responseStr.includes("Bob"), "CSV stream fileFormat override should contain Bob");
+    check s3Client->deleteObject(testBucketName, objectKey);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordWithCsvFileFormatError() returns error? {
+    // record {} cannot be serialized as CSV
+    string objectKey = "test_record_csv_error.csv";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+    Error? result = s3Client->putObject(testBucketName, objectKey, person, fileFormat = CSV);
+    test:assertTrue(result is Error, "Expected an error for record {} with fileFormat = CSV");
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordArrayWithJsonFileFormatError() returns error? {
+    // record {}[] requires CSV format, not JSON
+    string objectKey = "test_records_json_error.csv";
+    CsvPersonRecord[] people = [{name: "Alice", age: "30", city: "NY"}];
+    Error? result = s3Client->putObject(testBucketName, objectKey, people, fileFormat = JSON);
+    test:assertTrue(result is Error, "Expected an error for record {}[] with fileFormat = JSON");
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testPutObjectRecordStreamWithXmlFileFormatError() returns error? {
+    // stream<record {}, error?> requires CSV format, not XML
+    string objectKey = "test_record_stream_xml_error.csv";
+    CsvPersonRecord[] people = [{name: "Alice", age: "30", city: "NY"}];
+    stream<CsvPersonRecord, error?> recordStream = people.toStream();
+    Error? result = s3Client->putObject(testBucketName, objectKey, recordStream, fileFormat = XML);
+    test:assertTrue(result is Error, "Expected an error for stream<record {}, error?> with fileFormat = XML");
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
 function testPutObjectWithByteStream() returns error? {
     string objectKey = "test_byte_stream_put.txt";
     string textContent = "Hello from byte stream upload";
@@ -1677,6 +1778,53 @@ function testUploadPartWithRecordStreamInvalidExtension() returns error? {
     string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
     string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, recordStream);
     test:assertTrue(result is Error, "Expected an error for stream<record {}, error?> with .json extension in uploadPart");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
+// ---- fileFormat override tests for uploadPart ----
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordJsonFileFormatOverride() returns error? {
+    // Use a non-.json key but override with fileFormat = JSON
+    string objectKey = "multipart_record_format.dat";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, person, fileFormat = JSON);
+    test:assertTrue(result is string, "uploadPart with fileFormat = JSON should succeed");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordArrayCsvFileFormatOverride() returns error? {
+    // Use a non-.csv key but override with fileFormat = CSV
+    string objectKey = "multipart_records_format.dat";
+    CsvPersonRecord[] people = [{name: "Alice", age: "30", city: "NY"}];
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, people, fileFormat = CSV);
+    test:assertTrue(result is string, "uploadPart with fileFormat = CSV for record []should succeed");
+
+    check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
+}
+
+@test:Config {
+    dependsOn: [testCreateBucket]
+}
+function testUploadPartWithRecordCsvFileFormatError() returns error? {
+    // record {} cannot be serialized as CSV
+    string objectKey = "multipart_record_csv_err.csv";
+    PersonRecord person = {name: "Alice", age: 30, city: "NY"};
+
+    string mpUploadId = check s3Client->createMultipartUpload(testBucketName, objectKey);
+    string|Error result = s3Client->uploadPart(testBucketName, objectKey, mpUploadId, 1, person, fileFormat = CSV);
+    test:assertTrue(result is Error, "Expected an error for record {} with fileFormat = CSV in uploadPart");
 
     check s3Client->abortMultipartUpload(testBucketName, objectKey, mpUploadId);
 }

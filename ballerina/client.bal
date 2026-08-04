@@ -112,28 +112,31 @@ public isolated client class Client {
             @display {label: "Content"} UploadContent content,
             *PutObjectConfig config) returns Error? {
 
-        byte[] converted;
+        byte[] converted = [];
         string lowerKey = objectKey.toLowerAscii();
+        FileFormat? format = config.fileFormat;
         if content is stream<byte[], error?> {
             converted = check collectByteStream(content);
         } else if content is stream<record {}, error?> {
-            if !lowerKey.endsWith(CSV_EXTENSION) {
-                return error Error("stream<record {}, error?> content requires a '.csv' file extension in the object key");
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("stream<record {}, error?> content requires CSV format");
             }
             record {}[] records = check collectRecordStream(content);
             converted = convertRecordsToCsv(records);
         } else if content is record {}[] {
-            if !lowerKey.endsWith(CSV_EXTENSION) {
-                return error Error("record {}[] content requires a '.csv' file extension in the object key");
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("record {}[] content requires CSV format");
             }
             converted = convertRecordsToCsv(content);
         } else if content is record {} {
-            if lowerKey.endsWith(XML_EXTENSION) {
+            if format == XML || (format is () && lowerKey.endsWith(XML_EXTENSION)) {
                 converted = convertRecordToXml(content, objectKey).toBytes();
-            } else if lowerKey.endsWith(JSON_EXTENSION) {
+            } else if format == JSON || (format is () && lowerKey.endsWith(JSON_EXTENSION)) {
                 converted = content.toJsonString().toBytes();
+            } else if format == CSV {
+                return error Error("record {} content cannot be serialized as CSV");
             } else {
-                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key");
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key, or an explicit fileFormat");
             }
         } else {
             converted = toByteArray(<ContentType>content);
@@ -319,28 +322,31 @@ public isolated client class Client {
             @display {label: "Content"} UploadContent content,
             *UploadPartConfig config)
             returns @display {label: "ETag"} string|Error {
-        byte[] converted;
+        byte[] converted = [];
         string lowerKey = objectKey.toLowerAscii();
+        FileFormat? format = config.fileFormat;
         if content is stream<byte[], error?> {
             converted = check collectByteStream(content);
         } else if content is stream<record {}, error?> {
-            if !lowerKey.endsWith(CSV_EXTENSION) {
-                return error Error("stream<record {}, error?> content requires a '.csv' file extension in the object key");
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("stream<record {}, error?> content requires CSV format");
             }
             record {}[] records = check collectRecordStream(content);
             converted = convertRecordsToCsv(records);
         } else if content is record {}[] {
-            if !lowerKey.endsWith(CSV_EXTENSION) {
-                return error Error("record {}[] content requires a '.csv' file extension in the object key");
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("record {}[] content requires CSV format");
             }
             converted = convertRecordsToCsv(content);
         } else if content is record {} {
-            if lowerKey.endsWith(XML_EXTENSION) {
+            if format == XML || (format is () && lowerKey.endsWith(XML_EXTENSION)) {
                 converted = convertRecordToXml(content, objectKey).toBytes();
-            } else if lowerKey.endsWith(JSON_EXTENSION) {
+            } else if format == JSON || (format is () && lowerKey.endsWith(JSON_EXTENSION)) {
                 converted = content.toJsonString().toBytes();
+            } else if format == CSV {
+                return error Error("record {} content cannot be serialized as CSV");
             } else {
-                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key");
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key, or an explicit fileFormat");
             }
         } else {
             converted = toByteArray(<ContentType>content);
