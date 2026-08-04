@@ -18,13 +18,13 @@ import ballerina/file;
 import ballerina/ftp;
 import ballerina/io;
 import ballerina/log;
-import ballerina/lang.'string as strings;
+import ballerinax/aws;
 import ballerinax/aws.s3;
 
 configurable string s3AccessKeyId = ?;
 configurable string s3SecretAccessKey = ?;
 configurable string s3BucketName = ?;
-configurable s3:Region s3Region = ?;
+configurable aws:Region s3Region = ?;
 configurable string s3Prefix = ?;
 
 configurable string ftpHost = ?;
@@ -95,9 +95,9 @@ function uploadToS3(s3:Client s3Client, string localFilePath, string filename) r
 }
 
 function validateFilename(string filename) returns error? {
-    if strings:indexOf(filename, "/") >= 0 ||
-        strings:indexOf(filename, "\\") >= 0 ||
-        strings:indexOf(filename, "..") >= 0 {
+    if string:indexOf(filename, "/") >= 0 ||
+        string:indexOf(filename, "\\") >= 0 ||
+        string:indexOf(filename, "..") >= 0 {
         return error("Invalid FTP filename");
     }
 }

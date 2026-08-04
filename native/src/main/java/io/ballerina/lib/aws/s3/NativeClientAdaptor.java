@@ -16,6 +16,8 @@
 
 package io.ballerina.lib.aws.s3;
 
+import io.ballerina.lib.aws.EndpointConfigUtils;
+import io.ballerina.lib.aws.auth.ProviderFactory;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
@@ -29,20 +31,14 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.utils.StringUtils;
 
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
-import software.amazon.awssdk.profiles.ProfileFile;
 
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
@@ -89,13 +85,10 @@ public class NativeClientAdaptor {
 
     private static final String NATIVE_CLIENT = "NATIVE_S3_CLIENT";
     private static final String NATIVE_CONFIG = "NATIVE_CONNECTION_CONFIG";
+    private static final String NATIVE_CREDENTIALS_PROVIDER = "NATIVE_CREDENTIALS_PROVIDER";
     public static final BString AUTH = StringUtils.fromString("auth");
     public static final BString REGION = StringUtils.fromString("region");
-    public static final BString ACCESS_KEY_ID = StringUtils.fromString("accessKeyId");
-    public static final BString PROFILE_NAME = StringUtils.fromString("profileName");
-    public static final BString SECRET_ACCESS_KEY = StringUtils.fromString("secretAccessKey");
-    public static final BString SESSION_TOKEN = StringUtils.fromString("sessionToken");
-    public static final BString CREDENTIALS_FILE_PATH = StringUtils.fromString("credentialsFilePath");
+    public static final BString ENDPOINT = StringUtils.fromString("endpoint");
     public static final String ACL = "acl";
     public static final String OBJECT_OWNERSHIP_KEY = "objectOwnership";
     public static final String OBJECT_LOCK_ENABLED_KEY = "objectLockEnabled";
@@ -240,23 +233,36 @@ public class NativeClientAdaptor {
         try {
             String region = config.getStringValue(REGION).getValue();
             Object authObj = config.get(AUTH);
+            Region awsRegion = Region.of(region);
 
-            if (!(authObj instanceof BMap) && !(authObj instanceof BString)) {
-                return ErrorCreator.createError("Invalid auth configuration provided");
+            AwsCredentialsProvider credentialsProvider = ProviderFactory.buildProvider(authObj);
+            try {
+                S3ClientBuilder builder = S3Client.builder()
+                        .region(awsRegion)
+                        .credentialsProvider(credentialsProvider)
+                        .crossRegionAccessEnabled(true);
+
+                BMap<BString, Object> endpointConfig = null;
+                Object endpointObj = config.get(ENDPOINT);
+                if (endpointObj instanceof BMap) {
+                    @SuppressWarnings("unchecked")
+                    BMap<BString, Object> typedEndpointConfig = (BMap<BString, Object>) endpointObj;
+                    endpointConfig = typedEndpointConfig;
+                    EndpointConfigUtils.applyEndpointConfig(builder, endpointConfig);
+                }
+
+                S3Client s3Client = builder.build();
+
+                clientObj.addNativeData(NATIVE_CLIENT, s3Client);
+                clientObj.addNativeData(NATIVE_CREDENTIALS_PROVIDER, credentialsProvider);
+                ConnectionConfig connConfig = new ConnectionConfig(awsRegion, credentialsProvider,
+                        endpointConfig);
+                clientObj.addNativeData(NATIVE_CONFIG, connConfig);
+                return null;
+            } catch (Exception e) {
+                ProviderFactory.closeProvider(credentialsProvider);
+                throw e;
             }
-
-            AwsCredentialsProvider credentialsProvider = createCredentialsProvider(authObj);
-
-            S3Client s3Client = S3Client.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(credentialsProvider)
-                    .crossRegionAccessEnabled(true)
-                    .build();
-
-            clientObj.addNativeData(NATIVE_CLIENT, s3Client);
-            ConnectionConfig connConfig = new ConnectionConfig(Region.of(region), credentialsProvider);
-            clientObj.addNativeData(NATIVE_CONFIG, connConfig);
-            return null;
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }
@@ -265,79 +271,32 @@ public class NativeClientAdaptor {
     // Close client and release resources
     public static Object closeClient(BObject clientObj) {
         Object nativeClient = clientObj.getNativeData(NATIVE_CLIENT);
-        if (nativeClient instanceof S3Client) {
+        Exception closeException = null;
+        if (nativeClient instanceof S3Client s3Client) {
             try {
-                ((S3Client) nativeClient).close();
-                return null;
+                s3Client.close();
             } catch (Exception e) {
-                return ErrorCreator.createError(e);
+                closeException = e;
             } finally {
                 clientObj.addNativeData(NATIVE_CLIENT, null);
             }
         }
-        return null;
-    }
-
-    // Method for credentials provider based on auth config
-    @SuppressWarnings("unchecked")
-    private static AwsCredentialsProvider createCredentialsProvider(Object auth) {
-        if (auth instanceof BString) {
-            return DefaultCredentialsProvider.create();
-        } else if (auth instanceof BMap) {
-            BMap<BString, Object> authMap = (BMap<BString, Object>) auth;
-            if (authMap.containsKey(ACCESS_KEY_ID)) {
-                return createStaticCredentialsProvider(authMap);
-            } else if (authMap.containsKey(PROFILE_NAME)) {
-                return createProfileCredentialsProvider(authMap);
+        // Always release the credentials provider's resources (e.g. STS/SSO background refresh threads),
+        // even if closing the S3 client itself failed.
+        try {
+            Object provider = clientObj.getNativeData(NATIVE_CREDENTIALS_PROVIDER);
+            if (provider instanceof AwsCredentialsProvider credentialsProvider) {
+                ProviderFactory.closeProvider(credentialsProvider);
             }
-        }
-        throw new IllegalArgumentException("Unsupported auth configuration");
-    }
-
-    // Handle static credentials with optional session token
-    private static AwsCredentialsProvider createStaticCredentialsProvider(BMap<BString, Object> auth) {
-        String accessKeyId = auth.getStringValue(ACCESS_KEY_ID).getValue();
-        String secretAccessKey = auth.getStringValue(SECRET_ACCESS_KEY).getValue();
-
-        AwsCredentials credentials;
-        if (auth.containsKey(SESSION_TOKEN)) {
-            Object sessionTokenObj = auth.get(SESSION_TOKEN);
-            if (sessionTokenObj instanceof BString) {
-                String sessionToken = ((BString) sessionTokenObj).getValue();
-                credentials = (!sessionToken.isEmpty())
-                        ? AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken)
-                        : AwsBasicCredentials.create(accessKeyId, secretAccessKey);
+            clientObj.addNativeData(NATIVE_CREDENTIALS_PROVIDER, null);
+        } catch (Exception e) {
+            if (closeException == null) {
+                closeException = e;
             } else {
-                credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
-            }
-        } else {
-            credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
-        }
-        return StaticCredentialsProvider.create(credentials);
-    }
-
-    // Handle profile-based credentials with optional custom file path
-    private static AwsCredentialsProvider createProfileCredentialsProvider(BMap<BString, Object> auth) {
-        String profileName = auth.getStringValue(PROFILE_NAME).getValue();
-
-        if (auth.containsKey(CREDENTIALS_FILE_PATH)) {
-            Object credentialsFilePathObj = auth.get(CREDENTIALS_FILE_PATH);
-            if (credentialsFilePathObj instanceof BString) {
-                String credentialsFilePath = ((BString) credentialsFilePathObj).getValue();
-                if (!credentialsFilePath.isEmpty()) {
-                    ProfileFile profileFile = ProfileFile.builder()
-                            .content(java.nio.file.Paths.get(credentialsFilePath))
-                            .type(ProfileFile.Type.CREDENTIALS)
-                            .build();
-                    return ProfileCredentialsProvider.builder()
-                            .profileFile(profileFile)
-                            .profileName(profileName)
-                            .build();
-                }
+                closeException.addSuppressed(e);
             }
         }
-
-        return ProfileCredentialsProvider.create(profileName);
+        return closeException == null ? null : ErrorCreator.createError(closeException);
     }
 
     private static Object getClient(BObject clientObj) {
@@ -672,7 +631,7 @@ public class NativeClientAdaptor {
                 BMap<BString, Object> objMap = ValueCreator.createMapValue(mapType);
 
                 objMap.put(KEY, StringUtils.fromString(obj.key()));
-                objMap.put(SIZE, obj.size());
+                objMap.put(SIZE, obj.size() != null ? obj.size() : 0L);
                 String lastModified = obj.lastModified() != null ? obj.lastModified().toString() : EMPTY_STRING;
                 objMap.put(LAST_MODIFIED, StringUtils.fromString(lastModified));
                 String eTag = obj.eTag() != null ? obj.eTag() : EMPTY_STRING;
@@ -689,7 +648,7 @@ public class NativeClientAdaptor {
 
             result.put(OBJECTS, objectsArray);
             result.put(COUNT, (long) size);
-            result.put(IS_TRUNCATED, response.isTruncated());
+            result.put(IS_TRUNCATED, Boolean.TRUE.equals(response.isTruncated()));
 
             if (response.nextContinuationToken() != null) {
                 result.put(NEXT_CONTINUATION_TOKEN, StringUtils.fromString(response.nextContinuationToken()));
@@ -1009,10 +968,11 @@ public class NativeClientAdaptor {
             }
             ConnectionConfig connConfig = (ConnectionConfig) connOrError;
 
-            presigner = S3Presigner.builder()
+            S3Presigner.Builder presignerBuilder = S3Presigner.builder()
                     .region(connConfig.region)
-                    .credentialsProvider(connConfig.credentialsProvider)
-                    .build();
+                    .credentialsProvider(connConfig.credentialsProvider);
+            applyEndpointConfigToPresigner(presignerBuilder, connConfig.endpointConfig);
+            presigner = presignerBuilder.build();
 
             String preSignedUrl = GET.equals(httpMethod)
                     ? generateGetPresignedUrl(presigner, bucket.getValue(), key.getValue(), expirationMinutes, config)
@@ -1031,6 +991,27 @@ public class NativeClientAdaptor {
             if (presigner != null) {
                 presigner.close();
             }
+        }
+    }
+
+    private static void applyEndpointConfigToPresigner(S3Presigner.Builder builder,
+            BMap<BString, Object> endpointConfig) {
+        if (endpointConfig == null) {
+            return;
+        }
+        BString customEndpoint = StringUtils.fromString("customEndpoint");
+        BString fips = StringUtils.fromString("fips");
+        BString dualstack = StringUtils.fromString("dualstack");
+        if (endpointConfig.containsKey(customEndpoint)) {
+            builder.endpointOverride(java.net.URI.create(
+                    endpointConfig.getStringValue(customEndpoint).getValue()));
+            return;
+        }
+        if (endpointConfig.getBooleanValue(fips)) {
+            builder.fipsEnabled(true);
+        }
+        if (endpointConfig.getBooleanValue(dualstack)) {
+            builder.dualstackEnabled(true);
         }
     }
 

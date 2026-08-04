@@ -5,7 +5,7 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.12.2"
+distribution-version = "2201.12.0"
 
 [[package]]
 org = "ballerina"
@@ -90,7 +90,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "http"
-version = "2.14.11"
+version = "2.14.13"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "auth"},
@@ -301,6 +301,9 @@ dependencies = [
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"}
 ]
+modules = [
+	{org = "ballerina", packageName = "os", moduleName = "os"}
+]
 
 [[package]]
 org = "ballerina"
@@ -343,7 +346,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "time"
-version = "2.8.0"
+version = "2.8.1"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
@@ -352,7 +355,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "url"
-version = "2.6.1"
+version = "2.6.2"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
@@ -372,6 +375,18 @@ dependencies = [
 
 [[package]]
 org = "ballerinax"
+name = "aws"
+version = "1.0.0"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+modules = [
+	{org = "ballerinax", packageName = "aws", moduleName = "aws"},
+	{org = "ballerinax", packageName = "aws", moduleName = "aws.auth"}
+]
+
+[[package]]
+org = "ballerinax"
 name = "aws.s3"
 version = "5.0.0"
 dependencies = [
@@ -380,8 +395,10 @@ dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "os"},
 	{org = "ballerina", name = "random"},
-	{org = "ballerina", name = "test"}
+	{org = "ballerina", name = "test"},
+	{org = "ballerinax", name = "aws"}
 ]
 modules = [
 	{org = "ballerinax", packageName = "aws.s3", moduleName = "aws.s3"}

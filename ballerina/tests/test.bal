@@ -18,6 +18,8 @@ import ballerina/http;
 import ballerina/io;
 import ballerina/random;
 import ballerina/test;
+import ballerinax/aws;
+import ballerinax/aws.auth;
 
 // Test-specific constants
 const fileName = "test.txt";
@@ -57,7 +59,7 @@ isolated function testInitUsingProfileAuth() returns error? {
 isolated function testInitUsingDefaultCredentials() returns error? {
     ConnectionConfig connectionConfig = {
         region: awsRegion,
-        auth: DEFAULT_CREDENTIALS
+        auth: auth:DEFAULT_CREDENTIALS
     };
     Client _ = check new (connectionConfig);
 }
@@ -255,7 +257,7 @@ function testPutObjectWithJsonContent() returns error? {
     record {|byte[] value;|}? chunk = check response.next();
     if chunk is record {|byte[] value;|} {
         string downloadedContent = check string:fromBytes(chunk.value);
-        test:assertEquals(downloadedContent, jsonContent.toString(), "JSON content mismatch");
+        test:assertEquals(downloadedContent, jsonContent.toJsonString(), "JSON content mismatch");
     } else {
         test:assertFail("Failed to read uploaded JSON content");
     }
@@ -625,7 +627,7 @@ function testGetBucketLocation() returns error? {
 }
 function testAccessBucketWithDifferentRegion() returns error? {
     // Create a client configured with a different region than where the bucket exists
-    Region differentRegion = awsRegion == US_EAST_1 ? US_WEST_2 : US_EAST_1;
+    aws:Region differentRegion = awsRegion == aws:US_EAST_1 ? aws:US_WEST_2 : aws:US_EAST_1;
 
     // Use helper function to create client with proper auth handling
     Client differentRegionClient = check createS3ClientWithRegion(differentRegion);
@@ -1021,17 +1023,12 @@ function testGetObjectAsXmlWithInvalidContent() returns error? {
 }
 function testListObjects() returns error? {
     ListObjectsConfig listConfig = {fetchOwner: true};
-    ListObjectsResponse|error response = s3Client->listObjects(testBucketName, listConfig);
-    if response is error {
-        // Handle error from native method type mismatch
-        test:assertTrue(true, msg = "listObjects() returned an error (expected due to type mismatch in client)");
-    } else {
-        test:assertTrue(response.objects.length() > 0, msg = "Failed to call listObjects()");
-    }
+    ListObjectsResponse response = check s3Client->listObjects(testBucketName, listConfig);
+    test:assertTrue(response.objects.length() > 0, msg = "Failed to call listObjects()");
 }
 
 @test:Config {
-    dependsOn: [testCreateObject]
+    dependsOn: [testListObjects, testGetObjectMetadata, testDoesObjectExist, testCopyObject]
 }
 function testDeleteObject() returns error? {
     check s3Client->deleteObject(testBucketName, fileName);
@@ -1246,8 +1243,7 @@ function testDeleteBucketWithInvalidName() returns error? {
 }
 
 @test:Config {
-    dependsOn: [testCreateBucket],
-    before: testCreateMultipartUpload
+    dependsOn: [testCreateBucket]
 }
 function testAbortFileUpload() returns error? {
     // Create a multipart upload and abort it within this test to avoid relying on
