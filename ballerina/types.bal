@@ -49,6 +49,22 @@ public type Bucket record {
 # Represents byte[], string, json and xml
 public type ContentType byte[]|string|json|xml;
 
+# Represents the content types supported for uploading an S3 object.
+public type UploadContent byte[]|string|json|xml|record {}|record {}[]|stream<byte[], error?>|stream<record {}, error?>;
+
+# Represents the types that can be returned when retrieving an S3 object.
+public type RetrievableType byte[]|string|json|xml|record {}|record {}[]|stream<byte[], error?>|stream<record {}, error?>;
+
+# Represents the file format for serializing record content.
+public enum FileFormat {
+    # JSON format
+    JSON,
+    # XML format
+    XML,
+    # CSV format
+    CSV
+}
+
 # Configuration for uploading an object.
 public type PutObjectConfig record {|
     # The MIME type of the content
@@ -73,6 +89,8 @@ public type PutObjectConfig record {|
     string tagging?;
     # Encryption type ("AES256" or "aws:kms")
     string serverSideEncryption?;
+    # The file format to use for serializing record content. Overrides the format inferred from the object key extension
+    FileFormat fileFormat?;
 |};
 
 # Configuration for uploading an object as a stream.
@@ -222,6 +240,8 @@ public type UploadPartConfig record {|
     int contentLength?;
     # MD5 hash of the part content (for data integrity check)
     string contentMD5?;
+    # The file format to use for serializing record content. Overrides the format inferred from the object key extension
+    FileFormat fileFormat?;
 |};
 
 # Configuration for uploading a part as a stream in a multipart upload.

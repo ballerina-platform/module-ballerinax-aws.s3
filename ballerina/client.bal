@@ -14,8 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/data.csv;
-import ballerina/data.jsondata;
 import ballerina/jballerina.java;
 
 # The AWS S3 Client Connector.
@@ -97,15 +95,55 @@ public isolated client class Client {
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + content - The object content (string | xml | json | byte[])
+    # + content - The object content (to be used for automatic data binding).
+    #             Supported types:
+    #             - Built-in subtypes of `anydata` (`byte[]`, `string`, `json`, `xml`)
+    #             - Custom types (e.g., `User`, `Student`, etc.), written as JSON for a `.json` object key
+    #             and as XML for a `.xml` object key
+    #             - Arrays of custom types (e.g., `User[]`, `Student[]`, etc.), written as CSV with the field
+    #             names as headers, needs a `.csv` object key
+    #             - Stream of custom types (e.g., `stream<User, error?>`), written as CSV, needs a `.csv`
+    #             object key
+    #             - Stream of byte arrays (`stream<byte[], error?>`), collected into bytes before uploading
+    #             The `PutObjectConfig.fileFormat` configuration overrides the format inferred from the
+    #             object key
     # + config - Optional upload configuration
     # + return - An Error if the upload fails
     @display {label: "Put Object"}
     remote isolated function putObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            @display {label: "Content"} ContentType content,
+            @display {label: "Content"} UploadContent content,
             *PutObjectConfig config) returns Error? {
-        byte[] converted = toByteArray(content);
+
+        byte[] converted = [];
+        string lowerKey = objectKey.toLowerAscii();
+        FileFormat? format = config.fileFormat;
+        if content is stream<byte[], error?> {
+            converted = check collectByteStream(content);
+        } else if content is stream<record {}, error?> {
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("stream<record {}, error?> content requires CSV format");
+            }
+            record {}[] records = check collectRecordStream(content);
+            converted = convertRecordsToCsv(records);
+        } else if content is record {}[] {
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("record {}[] content requires CSV format");
+            }
+            converted = convertRecordsToCsv(content);
+        } else if content is record {} {
+            if format == XML || (format is () && lowerKey.endsWith(XML_EXTENSION)) {
+                converted = convertRecordToXml(content, objectKey).toBytes();
+            } else if format == JSON || (format is () && lowerKey.endsWith(JSON_EXTENSION)) {
+                converted = content.toJsonString().toBytes();
+            } else if format == CSV {
+                return error Error("record {} content cannot be serialized as CSV");
+            } else {
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key, or an explicit fileFormat");
+            }
+        } else {
+            converted = toByteArray(<ContentType>content);
+        }
         check nativePutObjectWithContent(self, bucketName, objectKey, converted, config);
     }
 
@@ -125,127 +163,32 @@ public isolated client class Client {
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
 
-    # Downloads an S3 object as a stream.
+    # Downloads an S3 object from an S3 bucket.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
+    # + targetType - Expected return type (to be used for automatic data binding).
+    #                Supported types:
+    #                - Built-in subtypes of `anydata` (`byte[]`, `string`, `json`, `xml`)
+    #                - Custom types (e.g., `User`, `Student`, etc.), read as JSON for a `.json` object key
+    #                and as XML for a `.xml` object key
+    #                - Arrays of custom types (e.g., `User[]`, `Student[]`, etc.), read as CSV with the first
+    #                row as headers, needs a `.csv` object key
+    #                - Stream of custom types (e.g., `stream<User, error?>`), read as CSV, needs a `.csv`
+    #                object key
+    #                - Stream of byte arrays (`stream<byte[], error?>`), to retrieve large objects without
+    #                loading the entire content into memory
     # + config - Optional retrieval configuration
-    # + return - A stream of byte chunks containing the object content, or an Error
-    @display {label: "Get Object As Stream"}
-    remote isolated function getObjectAsStream(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Byte Stream"} stream<byte[], error?>|Error {
-        StreamIterator streamImpl = check nativeGetObjectAsStream(self, bucketName, objectKey, config);
-        return new stream<byte[], Error?>(streamImpl);
-    }
-
-    # Downloads an S3 object and returns its content as a byte array.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `byte[]` or an Error
+    # + return - The object content in the requested type or an Error
     @display {label: "Get Object"}
     remote isolated function getObject(@display {label: "Bucket Name"} string bucketName,
             @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Content"} byte[]|Error {
-        return nativeGetObject(self, bucketName, objectKey, config);
-    }
-
-    # Downloads an S3 object and returns its content as a string.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `string` or an Error
-    @display {label: "Get Object As Text"}
-    remote isolated function getObjectAsText(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "Text"} string|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        var textRes = string:fromBytes(bytes);
-        if textRes is string {
-            return textRes;
-        } else {
-            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
-        }
-    }
-
-    # Downloads an S3 object and parses it as JSON.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `json` or an Error
-    @display {label: "Get Object As JSON"}
-    remote isolated function getObjectAsJson(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
+            typedesc<RetrievableType> targetType = <>,
             *GetObjectConfig config)
-            returns @display {label: "JSON"} json|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        json|jsondata:Error result = jsondata:parseBytes(bytes);
-        if result is jsondata:Error {
-            return error Error("Failed to parse JSON: " + result.message(), result);
-        }
-        return result;
-    }
-
-    # Downloads an S3 object and parses it as XML.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The object content as `xml` or an Error
-    @display {label: "Get Object As XML"}
-    remote isolated function getObjectAsXml(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config) 
-            returns @display {label: "XML"} xml|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        var textRes = string:fromBytes(bytes);
-        if textRes is string {
-            var parsed = xml:fromString(textRes);
-            if parsed is xml {
-                return parsed;
-            } else {
-                return error Error("Failed to parse XML: " + parsed.message(), parsed);
-            }
-        } else {
-            return error Error("Failed to convert bytes to string: " + textRes.message(), textRes);
-        }
-    }
-
-    # Downloads an S3 object and parses it as CSV.
-    # This method loads the entire object into memory and is suitable for smaller objects.
-    # For large objects, consider using `getObjectAsStream` instead.
-    #
-    # + bucketName - The name of the bucket
-    # + objectKey - The path of the object
-    # + config - Optional retrieval configuration
-    # + return - The CSV content as `string[][]` or an Error
-    @display {label: "Get Object As CSV"}
-    remote isolated function getObjectAsCsv(@display {label: "Bucket Name"} string bucketName,
-            @display {label: "Object Key"} string objectKey,
-            *GetObjectConfig config)
-            returns @display {label: "CSV"} string[][]|Error {
-        byte[] bytes = check nativeGetObject(self, bucketName, objectKey, config);
-        string[][]|csv:Error result = csv:parseBytes(bytes);
-        if result is csv:Error {
-            return error Error("Failed to parse CSV: " + result.message(), result);
-        }
-        return result;
-    }
+            returns targetType|Error = @java:Method {
+        name: "getObjectWithType",
+        'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+    } external;
 
     # Deletes an S3 object from an S3 bucket.
     #
@@ -359,12 +302,20 @@ public isolated client class Client {
     } external;
 
     # Uploads a part in a multipart upload.
+    # Supported content types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
+    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
+    #
+    # For `record {}` content, the object key must end with `.json` or `.xml`.
+    # `.json` keys serialize the record as JSON; `.xml` keys serialize as XML.
+    # For `record {}[]` and `stream<record {}, error?>` content, the object key must end with `.csv`.
+    # The records are serialized as CSV (field names as headers).
+    # `stream<byte[], error?>` content is collected into bytes before uploading.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
     # + uploadId - The upload ID from createMultipartUpload
     # + partNumber - The part number (1-10000)
-    # + content - The part content (string | xml | json | byte[])
+    # + content - The part content
     # + config - Optional upload part configuration
     # + return - ETag of the uploaded part or an Error
     @display {label: "Upload Part"}
@@ -372,10 +323,38 @@ public isolated client class Client {
             @display {label: "Object Key"} string objectKey,
             @display {label: "Upload ID"} string uploadId,
             @display {label: "Part Number"} int partNumber,
-            @display {label: "Content"} ContentType content,
+            @display {label: "Content"} UploadContent content,
             *UploadPartConfig config)
             returns @display {label: "ETag"} string|Error {
-        byte[] converted = toByteArray(content);
+        byte[] converted = [];
+        string lowerKey = objectKey.toLowerAscii();
+        FileFormat? format = config.fileFormat;
+        if content is stream<byte[], error?> {
+            converted = check collectByteStream(content);
+        } else if content is stream<record {}, error?> {
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("stream<record {}, error?> content requires CSV format");
+            }
+            record {}[] records = check collectRecordStream(content);
+            converted = convertRecordsToCsv(records);
+        } else if content is record {}[] {
+            if format != CSV && (format is FileFormat || !lowerKey.endsWith(CSV_EXTENSION)) {
+                return error Error("record {}[] content requires CSV format");
+            }
+            converted = convertRecordsToCsv(content);
+        } else if content is record {} {
+            if format == XML || (format is () && lowerKey.endsWith(XML_EXTENSION)) {
+                converted = convertRecordToXml(content, objectKey).toBytes();
+            } else if format == JSON || (format is () && lowerKey.endsWith(JSON_EXTENSION)) {
+                converted = content.toJsonString().toBytes();
+            } else if format == CSV {
+                return error Error("record {} content cannot be serialized as CSV");
+            } else {
+                return error Error("record {} content requires a '.json' or '.xml' file extension in the object key, or an explicit fileFormat");
+            }
+        } else {
+            converted = toByteArray(<ContentType>content);
+        }
         return check nativeUploadPart(self, bucketName, objectKey, uploadId, partNumber, converted, config);
     }
 
@@ -506,16 +485,6 @@ isolated function nativeListBuckets(Client clientObj) returns json|Error = @java
 
 isolated function nativePutObjectWithContent(Client clientObj, string bucket, string key, byte[] content, PutObjectConfig config) returns Error? = @java:Method {
     name: "putObjectWithContent",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
-} external;
-
-isolated function nativeGetObject(Client clientObj, string bucket, string key, GetObjectConfig config) returns byte[]|Error = @java:Method {
-    name: "getObject",
-    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
-} external;
-
-isolated function nativeGetObjectAsStream(Client clientObj, string bucket, string key, GetObjectConfig config) returns StreamIterator|Error = @java:Method {
-    name: "getObjectAsStream",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
 

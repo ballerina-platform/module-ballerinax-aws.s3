@@ -13,5 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Updated `ConnectionConfig` to use the shared `auth:AuthConfig` from `ballerinax/aws.auth` and `aws:Region` from `ballerinax/aws` for authentication and region configuration
-- Revised object creation and retrieval APIs with more specific method variants
+- Replaced `getObject`, `getObjectAsStream`, `getObjectAsText`, `getObjectAsJson`, `getObjectAsXml`, and `getObjectAsCsv` with a single `getObject` method that supports compile-time type inference via `typedesc`
+- The unified `getObject` method supports `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`, `stream<byte[], error?>`, and `stream<record {}, error?>` as target types
+- For `record {}`, the object key must end with `.json` or `.xml` (`.json` for JSON parsing, `.xml` for XML parsing)
+- For `record {}[]`, the content is parsed as CSV with the first row treated as headers
+- Expanded `putObject` to accept `record {}`, `record {}[]`, `stream<byte[], error?>`, and `stream<record {}, error?>` in addition to the existing `byte[]`, `string`, `json`, and `xml` types
+- `record {}` content is serialized as JSON; `record {}[]` and `stream<record {}, error?>` content is serialized as CSV
 - Introduced distinct error types and restructured configuration records
