@@ -332,3 +332,53 @@ public enum HttpMethod {
     # HTTP PUT method
     PUT = "PUT"
 }
+
+# Configuration for creating a directory bucket (S3 Express One Zone).
+public type CreateDirectoryBucketConfig record {|
+    # The availability zone ID for the bucket (e.g., "use1-az4", "usw2-az1")
+    string availabilityZoneId;
+    # The data redundancy for the bucket
+    DataRedundancy dataRedundancy = SINGLE_AVAILABILITY_ZONE;
+|};
+
+# Configuration for listing directory buckets.
+public type ListDirectoryBucketsConfig record {|
+    # Maximum number of directory buckets to return
+    int maxDirectoryBuckets?;
+    # Token to get the next page of results
+    string continuationToken?;
+|};
+
+# Response from listing directory buckets.
+public type ListDirectoryBucketsResponse record {|
+    # List of directory buckets found
+    DirectoryBucket[] buckets;
+    # Token to get the next page of results
+    string nextContinuationToken?;
+|};
+
+# Represents an S3 directory bucket (S3 Express One Zone).
+public type DirectoryBucket record {|
+    # The name of the directory bucket
+    string name;
+    # The creation date of the bucket
+    string creationDate;
+|};
+
+# Configuration for creating a session on a directory bucket.
+public type CreateSessionConfig record {|
+    # The session mode (ReadOnly or ReadWrite)
+    SessionMode sessionMode = READ_WRITE;
+|};
+
+# Represents credentials returned from a directory bucket session.
+public type SessionCredentials record {|
+    # The access key ID
+    string accessKeyId;
+    # The secret access key
+    string secretAccessKey;
+    # The session token
+    string sessionToken;
+    # The expiration time of the session
+    string expiration;
+|};
