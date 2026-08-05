@@ -21,15 +21,24 @@ import io.ballerina.lib.aws.auth.ProviderFactory;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.PredefinedTypes;
+import io.ballerina.runtime.api.types.StreamType;
+import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.values.BStream;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BTypedesc;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.utils.ValueUtils;
+import io.ballerina.runtime.api.utils.XmlUtils;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
@@ -72,6 +81,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -148,6 +158,16 @@ public class NativeClientAdaptor {
     public static final BString HTTP_METHOD = StringUtils.fromString("httpMethod");
     public static final String GET = "GET";
     public static final String PUT = "PUT";
+    private static final String RECORD_STREAM_ITERATOR = "RecordStreamIterator";
+    private static final String JSON_EXTENSION = ".json";
+    private static final String XML_EXTENSION = ".xml";
+    private static final String CSV_EXTENSION = ".csv";
+    private static final String DISALLOW_DOCTYPE_DECL =
+            "http://apache.org/xml/features/disallow-doctype-decl";
+    private static final String EXTERNAL_GENERAL_ENTITIES =
+            "http://xml.org/sax/features/external-general-entities";
+    private static final String EXTERNAL_PARAMETER_ENTITIES =
+            "http://xml.org/sax/features/external-parameter-entities";
 
     private static Optional<String> getStringConfig(BMap<BString, Object> config, String key) {
         if (config.containsKey(StringUtils.fromString(key))) {
@@ -1052,5 +1072,263 @@ public class NativeClientAdaptor {
 
         PresignedPutObjectRequest presignedRequest = presigner.presignPutObject(presignRequest);
         return presignedRequest.url().toString();
+    }
+
+    public static Object getObjectWithType(Environment env, BObject clientObj, BString bucket, BString key,
+            BTypedesc targetType, BMap<BString, Object> config) {
+
+        Type type = TypeUtils.getReferredType(targetType.getDescribingType());
+        int tag = type.getTag();
+
+        if (tag == TypeTags.STREAM_TAG) {
+            return handleStreamType(env, clientObj, bucket, key, config, (StreamType) type);
+        }
+
+        Object bytesResult = getObject(clientObj, bucket, key, config);
+        if (bytesResult instanceof BError) {
+            return bytesResult;
+        }
+        BArray bytesArray = (BArray) bytesResult;
+
+        return convertBytes(env, bytesArray, key.getValue(), type);
+    }
+
+    private static Object handleStreamType(Environment env, BObject clientObj, BString bucket, BString key,
+            BMap<BString, Object> config, StreamType streamType) {
+
+        Type constraintType = TypeUtils.getReferredType(streamType.getConstrainedType());
+        if (constraintType.getTag() == TypeTags.ARRAY_TAG
+                && isArrayOfBytes((ArrayType) constraintType)) {
+            Object result = getObjectAsStream(env, clientObj, bucket, key, config);
+            if (result instanceof BError) {
+                return result;
+            }
+            BObject iteratorObj = (BObject) result;
+            return ValueCreator.createStreamValue(streamType, iteratorObj);
+        }
+        if (!key.getValue().toLowerCase().endsWith(CSV_EXTENSION)) {
+            return ErrorCreator.createError(
+                    "stream<record {}, error?> target type requires a '.csv' file extension in the object key");
+        }
+
+        Object bytesResult = getObject(clientObj, bucket, key, config);
+        if (bytesResult instanceof BError) {
+            return bytesResult;
+        }
+        BArray bytesArray = (BArray) bytesResult;
+        String content;
+        try {
+            content = new String(bytesArray.getBytes(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return ErrorCreator.createError("Failed to convert bytes to string: " + e.getMessage());
+        }
+
+        ArrayType arrayType = TypeCreator.createArrayType(constraintType);
+        Object csvResult = convertCsvToRecords(content, constraintType, arrayType);
+        if (csvResult instanceof BError) {
+            return csvResult;
+        }
+        BArray csvArray = (BArray) csvResult;
+
+        List<BMap<BString, Object>> records = new ArrayList<>();
+        for (int i = 0; i < csvArray.size(); i++) {
+            @SuppressWarnings("unchecked")
+            BMap<BString, Object> record = (BMap<BString, Object>) csvArray.get(i);
+            records.add(record);
+        }
+
+        BObject iteratorObj = ValueCreator.createObjectValue(env.getCurrentModule(), RECORD_STREAM_ITERATOR,
+                toRecordArray(records, constraintType));
+        return ValueCreator.createStreamValue(streamType, iteratorObj);
+    }
+
+    private static Object convertBytes(Environment env, BArray bytes, String objectKey, Type targetType) {
+        int tag = targetType.getTag();
+        if (tag == TypeTags.ARRAY_TAG && isArrayOfBytes((ArrayType) targetType)) {
+            return bytes;
+        }
+
+        String content;
+        try {
+            content = new String(bytes.getBytes(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return ErrorCreator.createError("Failed to convert bytes to string: " + e.getMessage());
+        }
+
+        switch (tag) {
+            case TypeTags.STRING_TAG:
+                return StringUtils.fromString(content);
+
+            case TypeTags.XML_TAG:
+            case TypeTags.XML_ELEMENT_TAG:
+                try {
+                    return XmlUtils.parse(content);
+                } catch (BError e) {
+                    return ErrorCreator.createError("Failed to parse XML: " + e.getMessage(), e);
+                } catch (Exception e) {
+                    return ErrorCreator.createError("Failed to parse XML: " + e.getMessage());
+                }
+
+            case TypeTags.JSON_TAG:
+            case TypeTags.UNION_TAG:
+                try {
+                    return JsonUtils.parse(content);
+                } catch (BError e) {
+                    return ErrorCreator.createError("Failed to parse JSON: " + e.getMessage(), e);
+                } catch (Exception e) {
+                    return ErrorCreator.createError("Failed to parse JSON: " + e.getMessage());
+                }
+
+            case TypeTags.RECORD_TYPE_TAG:
+            case TypeTags.MAP_TAG:
+                String lowerKeyRec = objectKey.toLowerCase();
+                if (!lowerKeyRec.endsWith(JSON_EXTENSION) && !lowerKeyRec.endsWith(XML_EXTENSION)) {
+                    return ErrorCreator.createError(
+                            "record {} target type requires a '.json' or '.xml' file extension in the object key");
+                }
+                return convertToRecord(content, objectKey, targetType);
+
+            case TypeTags.ARRAY_TAG:
+                ArrayType arrayType = (ArrayType) targetType;
+                Type elementType = TypeUtils.getReferredType(arrayType.getElementType());
+                if (elementType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                    if (!objectKey.toLowerCase().endsWith(CSV_EXTENSION)) {
+                        return ErrorCreator.createError(
+                                "record {}[] target type requires a '.csv' file extension in the object key");
+                    }
+                    return convertCsvToRecords(content, elementType, arrayType);
+                }
+                try {
+                    Object jsonValue = JsonUtils.parse(content);
+                    return ValueUtils.convert(jsonValue, targetType);
+                } catch (BError e) {
+                    return ErrorCreator.createError("Failed to parse array: " + e.getMessage(), e);
+                } catch (Exception e) {
+                    return ErrorCreator.createError("Failed to parse array: " + e.getMessage());
+                }
+
+            default:
+                return ErrorCreator.createError("Unsupported target type: " + targetType);
+        }
+    }
+
+    private static Object convertToRecord(String content, String objectKey, Type targetType) {
+        String lowerKey = objectKey.toLowerCase();
+        try {
+            if (lowerKey.endsWith(XML_EXTENSION)) {
+                // Parse XML using Java DOM and build a flat map from the root element's children
+                javax.xml.parsers.DocumentBuilderFactory dbf =
+                        javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
+                dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+                dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+                dbf.setXIncludeAware(false);
+                dbf.setExpandEntityReferences(false);
+                javax.xml.parsers.DocumentBuilder builder = dbf.newDocumentBuilder();
+                org.w3c.dom.Document doc = builder.parse(
+                        new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+                org.w3c.dom.Element root = doc.getDocumentElement();
+                org.w3c.dom.NodeList children = root.getChildNodes();
+
+                BMap<BString, Object> map = ValueCreator.createMapValue();
+                for (int i = 0; i < children.getLength(); i++) {
+                    org.w3c.dom.Node child = children.item(i);
+                    if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                        map.put(StringUtils.fromString(child.getNodeName()),
+                                StringUtils.fromString(child.getTextContent()));
+                    }
+                }
+                return ValueUtils.convert(map, targetType);
+            } else {
+                Object jsonValue = JsonUtils.parse(content);
+                return ValueUtils.convert(jsonValue, targetType);
+            }
+        } catch (BError e) {
+            return ErrorCreator.createError("Failed to convert to record: " + e.getMessage(), e);
+        } catch (Exception e) {
+            return ErrorCreator.createError("Failed to convert to record: " + e.getMessage());
+        }
+    }
+
+    private static Object convertCsvToRecords(String content, Type elementType, ArrayType arrayType) {
+        try {
+            String[] lines = content.split("\r?\n");
+            if (lines.length < 1) {
+                return ErrorCreator.createError("CSV content is empty");
+            }
+
+            String[] headers = parseCsvLine(lines[0]);
+            for (int i = 0; i < headers.length; i++) {
+                headers[i] = headers[i].trim();
+            }
+
+            List<BMap<BString, Object>> records = new ArrayList<>();
+            for (int i = 1; i < lines.length; i++) {
+                String line = lines[i].trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                String[] values = parseCsvLine(line);
+
+                BMap<BString, Object> jsonMap = ValueCreator.createMapValue();
+                for (int j = 0; j < headers.length; j++) {
+                    String value = j < values.length ? values[j].trim() : "";
+                    jsonMap.put(StringUtils.fromString(headers[j]), StringUtils.fromString(value));
+                }
+
+                Object converted = ValueUtils.convert(jsonMap, elementType);
+                @SuppressWarnings("unchecked")
+                BMap<BString, Object> record = (BMap<BString, Object>) converted;
+                records.add(record);
+            }
+            return toRecordArray(records, elementType);
+        } catch (BError e) {
+            return ErrorCreator.createError("Failed to parse CSV: " + e.getMessage(), e);
+        } catch (Exception e) {
+            return ErrorCreator.createError("Failed to parse CSV: " + e.getMessage());
+        }
+    }
+
+    private static String[] parseCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        current.append('"');
+                        i++;
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    current.append(c);
+                }
+            } else {
+                if (c == '"') {
+                    inQuotes = true;
+                } else if (c == ',') {
+                    fields.add(current.toString());
+                    current = new StringBuilder();
+                } else {
+                    current.append(c);
+                }
+            }
+        }
+        fields.add(current.toString());
+        return fields.toArray(new String[0]);
+    }
+
+    private static boolean isArrayOfBytes(ArrayType arrayType) {
+        Type elementType = TypeUtils.getReferredType(arrayType.getElementType());
+        return elementType.getTag() == TypeTags.BYTE_TAG;
+    }
+
+    private static BArray toRecordArray(List<BMap<BString, Object>> records, Type elementType) {
+        BMap<BString, Object>[] arr = records.toArray(new BMap[0]);
+        return ValueCreator.createArrayValue(arr, TypeCreator.createArrayType(elementType));
     }
 }

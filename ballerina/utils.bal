@@ -14,6 +14,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
+const string JSON_EXTENSION = ".json";
+const string XML_EXTENSION = ".xml";
+const string CSV_EXTENSION = ".csv";
+const string CSV_SEPARATOR = ",";
+const string CSV_LINE_SEPARATOR = "\n";
+const string EMPTY_STRING = "";
+
 # Validates if a bucket name follows AWS naming conventions.
 #
 # + bucketName - The name of the bucket
@@ -51,4 +58,86 @@ isolated function toByteArray(anydata content) returns byte[] {
         return content.toJsonString().toBytes();
     }
     return content.toString().toBytes();
+}
+
+# Collects all chunks from a byte stream into a single byte array.
+#
+# + byteStream - The byte stream to collect
+# + return - The collected bytes or an Error
+isolated function collectByteStream(stream<byte[], error?> byteStream) returns byte[]|Error {
+    byte[] collected = [];
+    error? e = from byte[] chunk in byteStream
+        do {
+            collected.push(...chunk);
+        };
+    if e is error {
+        return error Error("Failed to read byte stream: " + e.message(), e);
+    }
+    return collected;
+}
+
+# Collects all records from a record stream into an array.
+#
+# + recordStream - The record stream to collect
+# + return - The collected records or an Error
+isolated function collectRecordStream(stream<record {}, error?> recordStream) returns record {}[]|Error {
+    record {}[] records = [];
+    error? e = from record {} rec in recordStream
+        do {
+            records.push(rec);
+        };
+    if e is error {
+        return error Error("Failed to read record stream: " + e.message(), e);
+    }
+    return records;
+}
+
+isolated function convertRecordToXml(record {} rec, string objectKey) returns string {
+    // Derive root element name from the object key filename (without extension)
+    string rootName = "root";
+    string key = objectKey;
+    int? lastSlash = key.lastIndexOf("/");
+    if lastSlash is int {
+        key = key.substring(lastSlash + 1);
+    }
+    if key.toLowerAscii().endsWith(XML_EXTENSION) {
+        rootName = key.substring(0, key.length() - XML_EXTENSION.length());
+    }
+
+    string[] parts = [];
+    parts.push(string `<${rootName}>`);
+    foreach [string, anydata] [fieldName, value] in rec.entries() {
+        string strVal = value is () ? "" : value.toString();
+        strVal = re `&`.replaceAll(strVal, "&amp;");
+        strVal = re `<`.replaceAll(strVal, "&lt;");
+        strVal = re `>`.replaceAll(strVal, "&gt;");
+        strVal = re `"`.replaceAll(strVal, "&quot;");
+        strVal = re `'`.replaceAll(strVal, "&apos;");
+        parts.push(string `<${fieldName}>${strVal}</${fieldName}>`);
+    }
+    parts.push(string `</${rootName}>`);
+    return string:'join("", ...parts);
+}
+
+isolated function convertRecordsToCsv(record {}[] records) returns byte[] {
+    if records.length() == 0 {
+        return [];
+    }
+    string[] headers = records[0].keys();
+    string[] lines = [];
+    lines.push(string:'join(CSV_SEPARATOR, ...headers));
+    foreach record {} rec in records {
+        string[] values = [];
+        foreach string header in headers {
+            anydata val = rec[header];
+            string strVal = val is () ? EMPTY_STRING : val.toString();
+            if strVal.includes(CSV_SEPARATOR) || strVal.includes("\"") ||
+                    strVal.includes("\n") || strVal.includes("\r") {
+                strVal = "\"" + re `"`.replaceAll(strVal, "\"\"") + "\"";
+            }
+            values.push(strVal);
+        }
+        lines.push(string:'join(CSV_SEPARATOR, ...values));
+    }
+    return string:'join(CSV_LINE_SEPARATOR, ...lines).toBytes();
 }
