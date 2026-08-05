@@ -108,6 +108,11 @@ isolated function convertRecordToXml(record {} rec, string objectKey) returns st
     parts.push(string `<${rootName}>`);
     foreach [string, anydata] [fieldName, value] in rec.entries() {
         string strVal = value is () ? "" : value.toString();
+        strVal = re `&`.replaceAll(strVal, "&amp;");
+        strVal = re `<`.replaceAll(strVal, "&lt;");
+        strVal = re `>`.replaceAll(strVal, "&gt;");
+        strVal = re `"`.replaceAll(strVal, "&quot;");
+        strVal = re `'`.replaceAll(strVal, "&apos;");
         parts.push(string `<${fieldName}>${strVal}</${fieldName}>`);
     }
     parts.push(string `</${rootName}>`);
@@ -125,7 +130,12 @@ isolated function convertRecordsToCsv(record {}[] records) returns byte[] {
         string[] values = [];
         foreach string header in headers {
             anydata val = rec[header];
-            values.push(val is () ? EMPTY_STRING : val.toString());
+            string strVal = val is () ? EMPTY_STRING : val.toString();
+            if strVal.includes(CSV_SEPARATOR) || strVal.includes("\"") ||
+                    strVal.includes("\n") || strVal.includes("\r") {
+                strVal = "\"" + re `"`.replaceAll(strVal, "\"\"") + "\"";
+            }
+            values.push(strVal);
         }
         lines.push(string:'join(CSV_SEPARATOR, ...values));
     }
