@@ -162,6 +162,12 @@ public class NativeClientAdaptor {
     private static final String JSON_EXTENSION = ".json";
     private static final String XML_EXTENSION = ".xml";
     private static final String CSV_EXTENSION = ".csv";
+    private static final String DISALLOW_DOCTYPE_DECL =
+            "http://apache.org/xml/features/disallow-doctype-decl";
+    private static final String EXTERNAL_GENERAL_ENTITIES =
+            "http://xml.org/sax/features/external-general-entities";
+    private static final String EXTERNAL_PARAMETER_ENTITIES =
+            "http://xml.org/sax/features/external-parameter-entities";
 
     private static Optional<String> getStringConfig(BMap<BString, Object> config, String key) {
         if (config.containsKey(StringUtils.fromString(key))) {
@@ -1211,8 +1217,14 @@ public class NativeClientAdaptor {
         try {
             if (lowerKey.endsWith(XML_EXTENSION)) {
                 // Parse XML using Java DOM and build a flat map from the root element's children
-                javax.xml.parsers.DocumentBuilder builder =
-                        javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                javax.xml.parsers.DocumentBuilderFactory dbf =
+                        javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
+                dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+                dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+                dbf.setXIncludeAware(false);
+                dbf.setExpandEntityReferences(false);
+                javax.xml.parsers.DocumentBuilder builder = dbf.newDocumentBuilder();
                 org.w3c.dom.Document doc = builder.parse(
                         new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
                 org.w3c.dom.Element root = doc.getDocumentElement();
