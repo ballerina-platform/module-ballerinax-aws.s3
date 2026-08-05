@@ -251,4 +251,5 @@ build.dependsOn ":aws.s3-native:build"
 test.dependsOn ":aws.s3-native:build"
 
 build.dependsOn copyToLib
+build.dependsOn "generatePomFileForMavenPublication"
 test.dependsOn copyToLib
