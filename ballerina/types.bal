@@ -324,7 +324,13 @@ public enum StorageClass {
     # Archive with instant retrieval (min 90 days)
     GLACIER_IR = "GLACIER_IR",
     # Lowest cost archive, retrieval takes hours (min 180 days)
-    DEEP_ARCHIVE = "DEEP_ARCHIVE"
+    DEEP_ARCHIVE = "DEEP_ARCHIVE",
+    # Single-AZ high-performance storage for directory buckets (S3 Express One Zone)
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE",
+    # Storage class for data stored on AWS Snowball devices
+    SNOW = "SNOW",
+    # Storage class for data stored on AWS Outposts
+    OUTPOSTS = "OUTPOSTS"
 }
 
 # HTTP methods for presigned URLs.
@@ -333,6 +339,20 @@ public enum HttpMethod {
     GET = "GET",
     # HTTP PUT method
     PUT = "PUT"
+}
+
+# Data redundancy options for directory buckets.
+public enum DataRedundancy {
+    # Single availability zone redundancy
+    SINGLE_AVAILABILITY_ZONE = "SingleAvailabilityZone"
+}
+
+# Session mode options for directory bucket sessions.
+public enum SessionMode {
+    # Read-only access
+    READ_ONLY = "ReadOnly",
+    # Read-write access
+    READ_WRITE = "ReadWrite"
 }
 
 # Configuration for creating a directory bucket (S3 Express One Zone).
