@@ -249,6 +249,8 @@ public type S3Object record {|
 public type ListObjectsResponse record {|
     # List of objects found
     S3Object[] objects;
+    # Common prefixes when a delimiter is used (e.g., sub-folder paths)
+    string[] commonPrefixes?;
     # Number of objects returned
     int count;
     # True if there are more results (use nextContinuationToken to get them)
