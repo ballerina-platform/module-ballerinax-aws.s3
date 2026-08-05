@@ -92,18 +92,21 @@ public isolated client class Client {
     } external;
 
     # Uploads an S3 object from content.
-    # Supported content types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
-    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
-    #
-    # For `record {}` content, the object key must end with `.json` or `.xml`.
-    # `.json` keys serialize the record as JSON; `.xml` keys serialize as XML.
-    # For `record {}[]` and `stream<record {}, error?>` content, the object key must end with `.csv`.
-    # The records are serialized as CSV (field names as headers).
-    # `stream<byte[], error?>` content is collected into bytes before uploading.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + content - The object content
+    # + content - The object content (to be used for automatic data binding).
+    #             Supported types:
+    #             - Built-in subtypes of `anydata` (`byte[]`, `string`, `json`, `xml`)
+    #             - Custom types (e.g., `User`, `Student`, etc.), written as JSON for a `.json` object key
+    #             and as XML for a `.xml` object key
+    #             - Arrays of custom types (e.g., `User[]`, `Student[]`, etc.), written as CSV with the field
+    #             names as headers, needs a `.csv` object key
+    #             - Stream of custom types (e.g., `stream<User, error?>`), written as CSV, needs a `.csv`
+    #             object key
+    #             - Stream of byte arrays (`stream<byte[], error?>`), collected into bytes before uploading
+    #             The `PutObjectConfig.fileFormat` configuration overrides the format inferred from the
+    #             object key
     # + config - Optional upload configuration
     # + return - An Error if the upload fails
     @display {label: "Put Object"}
@@ -160,20 +163,21 @@ public isolated client class Client {
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
 
-    # Downloads an S3 object and returns its content in the requested type.
-    # The target type is inferred from the left-hand side of the assignment.
-    # Supported target types: `byte[]`, `string`, `json`, `xml`, `record {}`, `record {}[]`,
-    # `stream<byte[], error?>`, and `stream<record {}, error?>`.
-    #
-    # For `record {}`, the object key must end with `.json` or `.xml`.
-    # `.json` keys parse the content as JSON; `.xml` keys parse as XML.
-    # For `record {}[]` and `stream<record {}, error?>`, the object key must end with `.csv`.
-    # The content is parsed as CSV (first row = headers).
-    # For large objects, use `stream<byte[], error?>` to avoid loading the entire content into memory.
+    # Downloads an S3 object from an S3 bucket.
     #
     # + bucketName - The name of the bucket
     # + objectKey - The path of the object
-    # + targetType - The typedesc of the target type
+    # + targetType - Expected return type (to be used for automatic data binding).
+    #                Supported types:
+    #                - Built-in subtypes of `anydata` (`byte[]`, `string`, `json`, `xml`)
+    #                - Custom types (e.g., `User`, `Student`, etc.), read as JSON for a `.json` object key
+    #                and as XML for a `.xml` object key
+    #                - Arrays of custom types (e.g., `User[]`, `Student[]`, etc.), read as CSV with the first
+    #                row as headers, needs a `.csv` object key
+    #                - Stream of custom types (e.g., `stream<User, error?>`), read as CSV, needs a `.csv`
+    #                object key
+    #                - Stream of byte arrays (`stream<byte[], error?>`), to retrieve large objects without
+    #                loading the entire content into memory
     # + config - Optional retrieval configuration
     # + return - The object content in the requested type or an Error
     @display {label: "Get Object"}
