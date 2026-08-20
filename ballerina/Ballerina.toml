@@ -2,7 +2,7 @@
 distribution = "2201.12.0"
 org = "ballerinax"
 name = "aws.s3"
-version = "4.0.0"
+version = "4.0.1"
 license = ["Apache-2.0"]
 authors = ["Ballerina"]
 keywords = ["Cloud/Object Storage", "Cost/Paid", "Vendor/Amazon", "Area/Storage & File Management", "Type/Connector"]
@@ -15,8 +15,8 @@ graalvmCompatible = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib.aws.s3"
 artifactId = "aws.s3-native"
-version = "4.0.0"
-path = "../native/build/libs/aws.s3-native-4.0.0.jar"
+version = "4.0.1"
+path = "../native/build/libs/aws.s3-native-4.0.1-SNAPSHOT.jar"
 
 [[platform.java21.dependency]]
 groupId = "software.amazon.awssdk"
@@ -27,26 +27,26 @@ path = "./lib/s3-2.42.0.jar"
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-transport-native-unix-common"
-version = "4.1.136.Final"
-path = "./lib/netty-transport-native-unix-common-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-transport-native-unix-common-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-transport-classes-epoll"
-version = "4.1.136.Final"
-path = "./lib/netty-transport-classes-epoll-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-transport-classes-epoll-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-transport"
-version = "4.1.136.Final"
-path = "./lib/netty-transport-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-transport-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-resolver"
-version = "4.1.136.Final"
-path = "./lib/netty-resolver-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-resolver-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "software.amazon.awssdk"
@@ -57,38 +57,38 @@ path = "./lib/netty-nio-client-2.42.0.jar"
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-handler"
-version = "4.1.136.Final"
-path = "./lib/netty-handler-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-handler-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-common"
-version = "4.1.136.Final"
-path = "./lib/netty-common-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-common-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-codec-http2"
-version = "4.1.136.Final"
-path = "./lib/netty-codec-http2-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-codec-http2-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-codec-http"
-version = "4.1.136.Final"
-path = "./lib/netty-codec-http-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-codec-http-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-codec"
-version = "4.1.136.Final"
-path = "./lib/netty-codec-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-codec-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-buffer"
-version = "4.1.136.Final"
-path = "./lib/netty-buffer-4.1.136.Final.jar"
+version = "4.1.137.Final"
+path = "./lib/netty-buffer-4.1.137.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "software.amazon.awssdk"
