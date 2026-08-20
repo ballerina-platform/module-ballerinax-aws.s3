@@ -16,7 +16,7 @@ graalvmCompatible = true
 groupId = "io.ballerina.lib.aws.s3"
 artifactId = "aws.s3-native"
 version = "4.0.1"
-path = "../native/build/libs/aws.s3-native-4.0.1-SNAPSHOT.jar"
+path = "../native/build/libs/aws.s3-native-4.0.1.jar"
 
 [[platform.java21.dependency]]
 groupId = "software.amazon.awssdk"
