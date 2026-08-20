@@ -13,4 +13,3 @@ jobs:
     secrets: inherit
     with:
       additional-build-flags: "-x :aws.s3-examples:build"
-      additional-test-flags: "-x :aws.s3-examples:test"
