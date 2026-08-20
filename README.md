@@ -29,14 +29,7 @@ import ballerinax/aws.s3;
 
 ### Step 2: Instantiate a new connector
 
-1. Create a `Config.toml` file and configure the credentials obtained above:
-
-```toml
-accessKeyId = "<ACCESS_KEY_ID>"
-secretAccessKey = "<SECRET_ACCESS_KEY>"
-```
-
-2. Instantiate an `s3:Client` with the obtained credentials and initialize the connector with it.
+Instantiate an `s3:Client` with the obtained credentials.
 
 ```ballerina
 configurable string accessKeyId = ?;

@@ -4,6 +4,16 @@
 
 The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html), specifically based on the `2006-03-01` version of the Amazon S3 REST API. It supports creating, listing, and deleting buckets, uploading, retrieving, and deleting objects, managing object metadata and tagging, multipart uploads, and bucket and object access control lists (ACLs).
 
+### Key Features
+
+- Bucket management (create, list, delete)
+- Object upload, retrieval, and deletion
+- Object metadata and tagging support
+- Multipart upload for large objects
+- Bucket and object access control lists (ACLs)
+- Secure communication with AWS IAM authentication
+- GraalVM compatible for native image builds
+
 ## Setup guide
 
 To use the Ballerina AWS S3 connector, you need an AWS account with the necessary IAM user credentials. For detailed steps on obtaining these credentials, refer to the [Obtaining IAM user credentials](https://central.ballerina.io/ballerinax/aws/latest#obtaining-iam-user-credentials) guide.
@@ -23,14 +33,7 @@ import ballerinax/aws.s3;
 
 ### Step 2: Instantiate a new connector
 
-1. Create a `Config.toml` file and configure the credentials obtained above:
-
-```toml
-accessKeyId = "<ACCESS_KEY_ID>"
-secretAccessKey = "<SECRET_ACCESS_KEY>"
-```
-
-2. Instantiate an `s3:Client` with the obtained credentials and initialize the connector with it.
+Instantiate an `s3:Client` with the obtained credentials.
 
 ```ballerina
 configurable string accessKeyId = ?;
