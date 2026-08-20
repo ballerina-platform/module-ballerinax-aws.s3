@@ -15,7 +15,6 @@
 // under the License.
 
 import ballerina/ftp;
-import ballerina/io;
 import ballerina/log;
 import ballerinax/aws;
 import ballerinax/aws.s3;
@@ -57,20 +56,15 @@ public function main() returns error? {
 
     foreach ftp:FileInfo fileInfo in fileList {
         string remotePath = ftpRemoteDir + "/" + fileInfo.name;
-        if check ftpClient->isDirectory(remotePath) {
+        boolean isDirectory = check ftpClient->isDirectory(remotePath);
+        if isDirectory {
             continue;
         }
 
-        // Download file content from FTP
-        stream<byte[] & readonly, io:Error?> fileStream = check ftpClient->get(remotePath);
-        byte[] content = [];
-        check fileStream.forEach(function(byte[] & readonly chunk) {
-            content.push(...chunk);
-        });
-        check fileStream.close();
-
-        // Upload to S3
-        check s3Client->putObject(s3BucketName, fileInfo.name, content);
+        // Download file content from FTP and upload to S3
+        stream<byte[], error?> fileStream = check ftpClient->getBytesAsStream(remotePath);
+        check s3Client->putObjectAsStream(s3BucketName, fileInfo.name, fileStream,
+                contentLength = fileInfo.size);
         log:printInfo(string `Uploaded: ${fileInfo.name}`);
     }
 
