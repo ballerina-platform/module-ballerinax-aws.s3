@@ -8,7 +8,7 @@ The `ballerinax/aws.s3` connector provides practical examples illustrating usage
 
 2. [FTP to S3 Sync](https://github.com/ballerina-platform/module-ballerinax-aws.s3/tree/master/examples/ftp-to-s3-sync)
 
-   This example shows how to sync files from an FTP server to an AWS S3 bucket. It lists files on the FTP server, skips files already present in S3, downloads new files, uploads them under a configured S3 prefix, and produces a sync summary report.
+   This example shows how to upload files from an FTP server to an AWS S3 bucket. It lists all files in a given FTP directory and uploads each one to S3.
 
 ## Prerequisites
 
