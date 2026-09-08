@@ -18,6 +18,8 @@ package io.ballerina.lib.aws.s3;
 
 import io.ballerina.lib.aws.EndpointConfigUtils;
 import io.ballerina.lib.aws.auth.ProviderFactory;
+import io.ballerina.lib.aws.s3.observability.S3MetricsUtil;
+import io.ballerina.lib.aws.s3.observability.S3TracingUtil;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
@@ -96,6 +98,8 @@ public class NativeClientAdaptor {
     private static final String NATIVE_CLIENT = "NATIVE_S3_CLIENT";
     private static final String NATIVE_CONFIG = "NATIVE_CONNECTION_CONFIG";
     private static final String NATIVE_CREDENTIALS_PROVIDER = "NATIVE_CREDENTIALS_PROVIDER";
+    private static final String NATIVE_REMOTE_URL = "NATIVE_REMOTE_URL";
+    private static final String NATIVE_PROTOCOL = "NATIVE_PROTOCOL";
     public static final BString AUTH = StringUtils.fromString("auth");
     public static final BString REGION = StringUtils.fromString("region");
     public static final BString ENDPOINT = StringUtils.fromString("endpoint");
@@ -248,6 +252,26 @@ public class NativeClientAdaptor {
         getStringConfig(config, key).ifPresent(val -> setter.accept(Instant.parse(val)));
     }
 
+    private static String getRemoteUrl(BObject clientObj) {
+        Object url = clientObj.getNativeData(NATIVE_REMOTE_URL);
+        return url instanceof String ? (String) url : S3MetricsUtil.UNKNOWN;
+    }
+
+    private static String getProtocol(BObject clientObj) {
+        Object protocol = clientObj.getNativeData(NATIVE_PROTOCOL);
+        return protocol instanceof String ? (String) protocol : S3MetricsUtil.PROTOCOL_HTTPS;
+    }
+
+    private static Object traceOutcome(Object result, Environment env) {
+        if (result instanceof BError bError) {
+            String errorType = bError.getType() != null ? bError.getType().getName() : S3MetricsUtil.UNKNOWN;
+            S3TracingUtil.sendErrorMetricsOnCurrentFrame(env, errorType);
+        } else {
+            S3TracingUtil.reportSuccess(env);
+        }
+        return result;
+    }
+
     // Client Initialization Method
     public static Object initClient(Environment env, BObject clientObj, BMap<BString, Object> config) {
         try {
@@ -278,6 +302,23 @@ public class NativeClientAdaptor {
                 ConnectionConfig connConfig = new ConnectionConfig(awsRegion, credentialsProvider,
                         endpointConfig);
                 clientObj.addNativeData(NATIVE_CONFIG, connConfig);
+
+                String remoteUrl;
+                String protocol;
+                if (endpointConfig != null
+                        && endpointConfig.containsKey(StringUtils.fromString("customEndpoint"))) {
+                    String customEndpoint = endpointConfig.getStringValue(
+                            StringUtils.fromString("customEndpoint")).getValue();
+                    remoteUrl = customEndpoint;
+                    protocol = customEndpoint.startsWith("http://") ? "http" : "https";
+                } else {
+                    remoteUrl = "s3." + region + ".amazonaws.com";
+                    protocol = "https";
+                }
+                clientObj.addNativeData(NATIVE_REMOTE_URL, remoteUrl);
+                clientObj.addNativeData(NATIVE_PROTOCOL, protocol);
+                S3MetricsUtil.reportNewConnection(remoteUrl, protocol);
+
                 return null;
             } catch (Exception e) {
                 ProviderFactory.closeProvider(credentialsProvider);
@@ -290,6 +331,8 @@ public class NativeClientAdaptor {
 
     // Close client and release resources
     public static Object closeClient(BObject clientObj) {
+        String remoteUrl = getRemoteUrl(clientObj);
+        String protocol = getProtocol(clientObj);
         Object nativeClient = clientObj.getNativeData(NATIVE_CLIENT);
         Exception closeException = null;
         if (nativeClient instanceof S3Client s3Client) {
@@ -316,6 +359,7 @@ public class NativeClientAdaptor {
                 closeException.addSuppressed(e);
             }
         }
+        S3MetricsUtil.reportConnectionClose(remoteUrl, protocol);
         return closeException == null ? null : ErrorCreator.createError(closeException);
     }
 
@@ -337,10 +381,13 @@ public class NativeClientAdaptor {
 
     // Bucket Operations
 
-    public static Object createBucket(BObject clientObj, BString bucketName, BMap<BString, Object> config) {
+    public static Object createBucket(Environment env, BObject clientObj, BString bucketName,
+            BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, null);
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -363,32 +410,36 @@ public class NativeClientAdaptor {
 
             s3.createBucket(builder.build());
 
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object deleteBucket(BObject clientObj, BString bucket) {
+    public static Object deleteBucket(Environment env, BObject clientObj, BString bucket) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, null);
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
             s3.deleteBucket(DeleteBucketRequest.builder().bucket(bucket.getValue()).build());
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     @SuppressWarnings("unchecked")
-    public static Object listBuckets(BObject clientObj) {
+    public static Object listBuckets(Environment env, BObject clientObj) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, null);
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -409,17 +460,19 @@ public class NativeClientAdaptor {
 
                 bBuckets[i] = bucketRecord;
             }
-            return ValueCreator.createArrayValue(bBuckets,
-                    TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON));
+            return traceOutcome(ValueCreator.createArrayValue(bBuckets,
+                    TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON)), env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object getBucketLocation(BObject clientObj, BString bucket) {
+    public static Object getBucketLocation(Environment env, BObject clientObj, BString bucket) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, null);
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -429,19 +482,21 @@ public class NativeClientAdaptor {
                     .build();
             GetBucketLocationResponse response = s3.getBucketLocation(request);
             String location = response.locationConstraintAsString();
-            return StringUtils.fromString(location != null ? location : US_EAST_1);
+            return traceOutcome(StringUtils.fromString(location != null ? location : US_EAST_1), env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     // Object Operations
 
-    public static Object putObjectFromFile(BObject clientObj, BString bucket, BString key, BString filePath,
-            BMap<BString, Object> config) {
+    public static Object putObjectFromFile(Environment env, BObject clientObj, BString bucket, BString key,
+            BString filePath, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -452,18 +507,23 @@ public class NativeClientAdaptor {
 
             applyPutObjectConfig(builder, config);
 
-            s3.putObject(builder.build(), RequestBody.fromFile(java.nio.file.Paths.get(filePath.getValue())));
-            return null;
+            java.nio.file.Path path = java.nio.file.Paths.get(filePath.getValue());
+            s3.putObject(builder.build(), RequestBody.fromFile(path));
+            S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                    S3MetricsUtil.OPERATION_TYPE_PUT, java.nio.file.Files.size(path));
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object putObjectWithContent(BObject clientObj, BString bucket, BString key, BArray content,
-            BMap<BString, Object> config) {
+    public static Object putObjectWithContent(Environment env, BObject clientObj, BString bucket, BString key,
+            BArray content, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -474,18 +534,23 @@ public class NativeClientAdaptor {
 
             applyPutObjectConfig(builder, config);
 
-            s3.putObject(builder.build(), RequestBody.fromBytes(content.getBytes()));
-            return null;
+            byte[] contentBytes = content.getBytes();
+            s3.putObject(builder.build(), RequestBody.fromBytes(contentBytes));
+            S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                    S3MetricsUtil.OPERATION_TYPE_PUT, contentBytes.length);
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     public static Object putObjectWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BStream contentStream, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -494,8 +559,8 @@ public class NativeClientAdaptor {
 
             // Validate contentLength is positive
             if (contentLength <= 0) {
-                return ErrorCreator.createError(
-                        "contentLength must be a positive value, got: " + contentLength);
+                return traceOutcome(ErrorCreator.createError(
+                        "contentLength must be a positive value, got: " + contentLength), env);
             }
 
             PutObjectRequest.Builder builder = PutObjectRequest.builder()
@@ -508,10 +573,12 @@ public class NativeClientAdaptor {
                 s3.putObject(builder.build(), RequestBody.fromInputStream(inputStream, contentLength));
             }
 
-            return null;
+            S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                    S3MetricsUtil.OPERATION_TYPE_PUT, contentLength);
+            return traceOutcome(null, env);
 
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
@@ -593,10 +660,13 @@ public class NativeClientAdaptor {
         }
     }
 
-    public static Object deleteObject(BObject clientObj, BString bucket, BString key, BMap<BString, Object> config) {
+    public static Object deleteObject(Environment env, BObject clientObj, BString bucket, BString key,
+            BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -610,19 +680,22 @@ public class NativeClientAdaptor {
             applyBooleanConfig(config, BYPASS_GOVERNANCE_RETENTION, builder::bypassGovernanceRetention);
 
             s3.deleteObject(builder.build());
-            return null;
+            return traceOutcome(null, env);
         } catch (NoSuchKeyException e) {
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     @SuppressWarnings("unchecked")
-    public static Object listObjectsV2(BObject clientObj, BString bucket, BMap<BString, Object> config) {
+    public static Object listObjectsV2(Environment env, BObject clientObj, BString bucket,
+            BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, null);
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -674,16 +747,19 @@ public class NativeClientAdaptor {
                 result.put(NEXT_CONTINUATION_TOKEN, StringUtils.fromString(response.nextContinuationToken()));
             }
 
-            return result;
+            return traceOutcome(result, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object headObject(BObject clientObj, BString bucket, BString key, BMap<BString, Object> config) {
+    public static Object headObject(Environment env, BObject clientObj, BString bucket, BString key,
+            BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -729,17 +805,19 @@ public class NativeClientAdaptor {
                 metadata.put(USER_METADATA, userMeta);
             }
 
-            return metadata;
+            return traceOutcome(metadata, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object copyObject(BObject clientObj, BString sourceBucket, BString sourceKey, BString destBucket,
-            BString destKey, BMap<BString, Object> config) {
+    public static Object copyObject(Environment env, BObject clientObj, BString sourceBucket, BString sourceKey,
+            BString destBucket, BString destKey, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, sourceKey.getValue(), destKey.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -765,16 +843,18 @@ public class NativeClientAdaptor {
             applyInstantConfig(config, COPY_SOURCE_IF_UNMODIFIED_SINCE, builder::copySourceIfUnmodifiedSince);
 
             s3.copyObject(builder.build());
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object doesObjectExist(BObject clientObj, BString bucket, BString key) {
+    public static Object doesObjectExist(Environment env, BObject clientObj, BString bucket, BString key) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -784,21 +864,23 @@ public class NativeClientAdaptor {
                     .key(key.getValue())
                     .build();
             s3.headObject(request);
-            return true;
+            return traceOutcome(true, env);
         } catch (NoSuchKeyException e) {
-            return false;
+            return traceOutcome(false, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     // Multipart Upload Operations
 
-    public static Object createMultipartUpload(BObject clientObj, BString bucket, BString key,
+    public static Object createMultipartUpload(Environment env, BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -810,9 +892,9 @@ public class NativeClientAdaptor {
             applyMultipartConfig(builder, config);
 
             CreateMultipartUploadResponse response = s3.createMultipartUpload(builder.build());
-            return StringUtils.fromString(response.uploadId());
+            return traceOutcome(StringUtils.fromString(response.uploadId()), env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
@@ -829,17 +911,20 @@ public class NativeClientAdaptor {
         applyStringConfig(config, CONTENT_ENCODING, builder::contentEncoding);
     }
 
-    public static Object uploadPart(BObject clientObj, BString bucket, BString key, BString uploadId,
+    public static Object uploadPart(Environment env, BObject clientObj, BString bucket, BString key, BString uploadId,
             long partNumber, BArray content, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
             if (partNumber < 1 || partNumber > 10000) {
-                return ErrorCreator.createError("Part number must be between 1 and 10000, got: " + partNumber);
+                return traceOutcome(ErrorCreator.createError(
+                        "Part number must be between 1 and 10000, got: " + partNumber), env);
             }
             byte[] contentBytes = content.getBytes();
 
@@ -855,28 +940,34 @@ public class NativeClientAdaptor {
             UploadPartRequest request = builder.build();
             UploadPartResponse response = s3.uploadPart(request, RequestBody.fromBytes(contentBytes));
 
-            return StringUtils.fromString(response.eTag());
+            S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                    S3MetricsUtil.OPERATION_TYPE_PUT, contentBytes.length);
+            return traceOutcome(StringUtils.fromString(response.eTag()), env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     public static Object uploadPartWithStream(Environment env, BObject clientObj, BString bucket, BString key,
             BString uploadId, long partNumber, BStream contentStream, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
         try {
             if (partNumber < 1 || partNumber > 10000) {
-                return ErrorCreator.createError("Part number must be between 1 and 10000, got: " + partNumber);
+                return traceOutcome(ErrorCreator.createError(
+                        "Part number must be between 1 and 10000, got: " + partNumber), env);
             }
             long contentLength = config.getIntValue(CONTENT_LENGTH);
 
             if (contentLength <= 0) {
-                return ErrorCreator.createError("contentLength must be a positive value, got: " + contentLength);
+                return traceOutcome(ErrorCreator.createError(
+                        "contentLength must be a positive value, got: " + contentLength), env);
             }
 
             UploadPartRequest.Builder builder = UploadPartRequest.builder()
@@ -891,18 +982,22 @@ public class NativeClientAdaptor {
             try (InputStream inputStream = new BallerinaStreamInputStream(env, contentStream)) {
                 UploadPartResponse response = s3.uploadPart(builder.build(),
                         RequestBody.fromInputStream(inputStream, contentLength));
-                return StringUtils.fromString(response.eTag());
+                S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                        S3MetricsUtil.OPERATION_TYPE_PUT, contentLength);
+                return traceOutcome(StringUtils.fromString(response.eTag()), env);
             }
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object completeMultipartUpload(BObject clientObj, BString bucket, BString key, BString uploadId,
-            BArray partNumbers, BArray etags) {
+    public static Object completeMultipartUpload(Environment env, BObject clientObj, BString bucket, BString key,
+            BString uploadId, BArray partNumbers, BArray etags) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_PUT, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -911,17 +1006,17 @@ public class NativeClientAdaptor {
             String[] eTagsStr = etags.getStringArray();
 
             if (pNums.length != eTagsStr.length) {
-                return ErrorCreator.createError(
+                return traceOutcome(ErrorCreator.createError(
                         "partNumbers and etags arrays must have the same length. Got: " +
-                        pNums.length + " vs " + eTagsStr.length);
+                        pNums.length + " vs " + eTagsStr.length), env);
             }
 
             List<CompletedPart> parts = new ArrayList<>();
 
             for (int i = 0; i < pNums.length; i++) {
                 if (pNums[i] < 1 || pNums[i] > 10000) {
-                    return ErrorCreator.createError(
-                            "Part number must be between 1 and 10000, got: " + pNums[i]);
+                    return traceOutcome(ErrorCreator.createError(
+                            "Part number must be between 1 and 10000, got: " + pNums[i]), env);
                 }
                 parts.add(CompletedPart.builder()
                         .partNumber((int) pNums[i])
@@ -941,16 +1036,19 @@ public class NativeClientAdaptor {
                     .build();
 
             s3.completeMultipartUpload(request);
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
-    public static Object abortMultipartUpload(BObject clientObj, BString bucket, BString key, BString uploadId) {
+    public static Object abortMultipartUpload(Environment env, BObject clientObj, BString bucket, BString key,
+            BString uploadId) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, key.getValue());
         Object clientOrError = getClient(clientObj);
         if (clientOrError instanceof BError) {
-            return clientOrError;
+            return traceOutcome(clientOrError, env);
         }
         @SuppressWarnings("resource")
         S3Client s3 = (S3Client) clientOrError;
@@ -962,16 +1060,18 @@ public class NativeClientAdaptor {
                     .build();
 
             s3.abortMultipartUpload(request);
-            return null;
+            return traceOutcome(null, env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         }
     }
 
     // Presigned URL Operations
 
-    public static Object createPresignedUrl(BObject clientObj, BString bucket, BString key,
+    public static Object createPresignedUrl(Environment env, BObject clientObj, BString bucket, BString key,
             BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_MANAGE, key.getValue());
         S3Presigner presigner = null;
 
         try {
@@ -984,7 +1084,7 @@ public class NativeClientAdaptor {
 
             Object connOrError = getConnectionConfig(clientObj);
             if (connOrError instanceof BError) {
-                return connOrError;
+                return traceOutcome(connOrError, env);
             }
             ConnectionConfig connConfig = (ConnectionConfig) connOrError;
 
@@ -1001,12 +1101,12 @@ public class NativeClientAdaptor {
                                     config)
                             : null;
             if (preSignedUrl == null) {
-                return ErrorCreator.createError(
-                        "Unsupported HTTP method: " + httpMethod + ". Supported methods: GET, PUT");
+                return traceOutcome(ErrorCreator.createError(
+                        "Unsupported HTTP method: " + httpMethod + ". Supported methods: GET, PUT"), env);
             }
-            return StringUtils.fromString(preSignedUrl);
+            return traceOutcome(StringUtils.fromString(preSignedUrl), env);
         } catch (Exception e) {
-            return ErrorCreator.createError(e);
+            return traceOutcome(ErrorCreator.createError(e), env);
         } finally {
             if (presigner != null) {
                 presigner.close();
@@ -1076,21 +1176,25 @@ public class NativeClientAdaptor {
 
     public static Object getObjectWithType(Environment env, BObject clientObj, BString bucket, BString key,
             BTypedesc targetType, BMap<BString, Object> config) {
+        S3TracingUtil.sendMetricsData(env, getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_GET, key.getValue());
 
         Type type = TypeUtils.getReferredType(targetType.getDescribingType());
         int tag = type.getTag();
 
         if (tag == TypeTags.STREAM_TAG) {
-            return handleStreamType(env, clientObj, bucket, key, config, (StreamType) type);
+            return traceOutcome(handleStreamType(env, clientObj, bucket, key, config, (StreamType) type), env);
         }
 
         Object bytesResult = getObject(clientObj, bucket, key, config);
         if (bytesResult instanceof BError) {
-            return bytesResult;
+            return traceOutcome(bytesResult, env);
         }
         BArray bytesArray = (BArray) bytesResult;
+        S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
+                S3MetricsUtil.OPERATION_TYPE_GET, bytesArray.size());
 
-        return convertBytes(env, bytesArray, key.getValue(), type);
+        return traceOutcome(convertBytes(env, bytesArray, key.getValue(), type), env);
     }
 
     private static Object handleStreamType(Environment env, BObject clientObj, BString bucket, BString key,
