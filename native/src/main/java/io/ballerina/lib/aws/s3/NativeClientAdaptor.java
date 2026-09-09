@@ -68,12 +68,23 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.BucketInfo;
+import software.amazon.awssdk.services.s3.model.BucketType;
+import software.amazon.awssdk.services.s3.model.DataRedundancy;
+import software.amazon.awssdk.services.s3.model.LocationInfo;
+import software.amazon.awssdk.services.s3.model.LocationType;
+import software.amazon.awssdk.services.s3.model.ListDirectoryBucketsRequest;
+import software.amazon.awssdk.services.s3.model.ListDirectoryBucketsResponse;
+import software.amazon.awssdk.services.s3.model.CreateSessionRequest;
+import software.amazon.awssdk.services.s3.model.CreateSessionResponse;
+import software.amazon.awssdk.services.s3.model.SessionCredentials;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -144,6 +155,7 @@ public class NativeClientAdaptor {
     public static final String EMPTY_STRING = "";
     public static final String STANDARD = "STANDARD";
     public static final BString OBJECTS = StringUtils.fromString("objects");
+    public static final BString COMMON_PREFIXES = StringUtils.fromString("commonPrefixes");
     public static final BString COUNT = StringUtils.fromString("count");
     public static final BString IS_TRUNCATED = StringUtils.fromString("isTruncated");
     public static final BString NEXT_CONTINUATION_TOKEN = StringUtils.fromString("nextContinuationToken");
@@ -158,6 +170,15 @@ public class NativeClientAdaptor {
     public static final BString HTTP_METHOD = StringUtils.fromString("httpMethod");
     public static final String GET = "GET";
     public static final String PUT = "PUT";
+    public static final String AVAILABILITY_ZONE_ID = "availabilityZoneId";
+    public static final String DATA_REDUNDANCY = "dataRedundancy";
+    public static final String MAX_DIRECTORY_BUCKETS = "maxDirectoryBuckets";
+    public static final String SESSION_MODE = "sessionMode";
+    public static final BString BUCKETS = StringUtils.fromString("buckets");
+    public static final BString ACCESS_KEY_ID_RESPONSE = StringUtils.fromString("accessKeyId");
+    public static final BString SECRET_ACCESS_KEY_RESPONSE = StringUtils.fromString("secretAccessKey");
+    public static final BString SESSION_TOKEN_RESPONSE = StringUtils.fromString("sessionToken");
+    public static final BString EXPIRATION = StringUtils.fromString("expiration");
     private static final String RECORD_STREAM_ITERATOR = "RecordStreamIterator";
     private static final String JSON_EXTENSION = ".json";
     private static final String XML_EXTENSION = ".xml";
@@ -667,6 +688,17 @@ public class NativeClientAdaptor {
                     TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON));
 
             result.put(OBJECTS, objectsArray);
+
+            List<CommonPrefix> commonPrefixes = response.commonPrefixes();
+            if (commonPrefixes != null && !commonPrefixes.isEmpty()) {
+                BArray prefixArray = ValueCreator.createArrayValue(
+                        TypeCreator.createArrayType(PredefinedTypes.TYPE_STRING));
+                for (int i = 0; i < commonPrefixes.size(); i++) {
+                    prefixArray.append(StringUtils.fromString(commonPrefixes.get(i).prefix()));
+                }
+                result.put(COMMON_PREFIXES, prefixArray);
+            }
+
             result.put(COUNT, (long) size);
             result.put(IS_TRUNCATED, Boolean.TRUE.equals(response.isTruncated()));
 
@@ -963,6 +995,118 @@ public class NativeClientAdaptor {
 
             s3.abortMultipartUpload(request);
             return null;
+        } catch (Exception e) {
+            return ErrorCreator.createError(e);
+        }
+    }
+
+    public static Object createDirectoryBucket(BObject clientObj, BString bucketName, BMap<BString, Object> config) {
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
+        String bucket = bucketName.getValue();
+        try {
+            Optional<String> azId = getStringConfig(config, AVAILABILITY_ZONE_ID);
+            if (azId.isEmpty()) {
+                return ErrorCreator.createError("availabilityZoneId is required for creating a directory bucket");
+            }
+
+            String dataRedundancy = getStringConfig(config, DATA_REDUNDANCY).orElse("SingleAvailabilityZone");
+
+            CreateBucketConfiguration bucketConfig = CreateBucketConfiguration.builder()
+                    .bucket(BucketInfo.builder()
+                            .dataRedundancy(DataRedundancy.fromValue(dataRedundancy))
+                            .type(BucketType.DIRECTORY)
+                            .build())
+                    .location(LocationInfo.builder()
+                            .name(azId.get())
+                            .type(LocationType.AVAILABILITY_ZONE)
+                            .build())
+                    .build();
+
+            CreateBucketRequest request = CreateBucketRequest.builder()
+                    .bucket(bucket)
+                    .createBucketConfiguration(bucketConfig)
+                    .build();
+
+            s3.createBucket(request);
+            return null;
+        } catch (Exception e) {
+            return ErrorCreator.createError(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object listDirectoryBuckets(BObject clientObj, BMap<BString, Object> config) {
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
+        try {
+            ListDirectoryBucketsRequest.Builder builder = ListDirectoryBucketsRequest.builder();
+            applyIntConfig(config, MAX_DIRECTORY_BUCKETS, builder::maxDirectoryBuckets);
+            applyStringConfig(config, CONTINUATION_TOKEN, builder::continuationToken);
+
+            ListDirectoryBucketsResponse response = s3.listDirectoryBuckets(builder.build());
+            MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
+            BMap<BString, Object> result = ValueCreator.createMapValue(mapType);
+
+            List<Bucket> buckets = response.buckets();
+            BMap<BString, Object>[] bBuckets = new BMap[buckets.size()];
+
+            for (int i = 0; i < buckets.size(); i++) {
+                Bucket b = buckets.get(i);
+                BMap<BString, Object> bucketRecord = ValueCreator.createMapValue(mapType);
+                bucketRecord.put(NAME, StringUtils.fromString(b.name()));
+                Instant creationDate = b.creationDate();
+                String creationDateStr = creationDate != null ? creationDate.toString() : EMPTY_STRING;
+                bucketRecord.put(CREATION_DATE, StringUtils.fromString(creationDateStr));
+                bBuckets[i] = bucketRecord;
+            }
+
+            result.put(BUCKETS, ValueCreator.createArrayValue(bBuckets,
+                    TypeCreator.createArrayType(PredefinedTypes.TYPE_JSON)));
+
+            if (response.continuationToken() != null) {
+                result.put(NEXT_CONTINUATION_TOKEN, StringUtils.fromString(response.continuationToken()));
+            }
+
+            return result;
+        } catch (Exception e) {
+            return ErrorCreator.createError(e);
+        }
+    }
+
+    public static Object createSession(BObject clientObj, BString bucket, BMap<BString, Object> config) {
+        Object clientOrError = getClient(clientObj);
+        if (clientOrError instanceof BError) {
+            return clientOrError;
+        }
+        @SuppressWarnings("resource")
+        S3Client s3 = (S3Client) clientOrError;
+        try {
+            CreateSessionRequest.Builder builder = CreateSessionRequest.builder()
+                    .bucket(bucket.getValue());
+
+            applyStringConfig(config, SESSION_MODE, builder::sessionMode);
+
+            CreateSessionResponse response = s3.createSession(builder.build());
+            SessionCredentials creds = response.credentials();
+
+            MapType mapType = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
+            BMap<BString, Object> result = ValueCreator.createMapValue(mapType);
+
+            result.put(ACCESS_KEY_ID_RESPONSE, StringUtils.fromString(creds.accessKeyId()));
+            result.put(SECRET_ACCESS_KEY_RESPONSE, StringUtils.fromString(creds.secretAccessKey()));
+            result.put(SESSION_TOKEN_RESPONSE, StringUtils.fromString(creds.sessionToken()));
+            result.put(EXPIRATION, StringUtils.fromString(creds.expiration().toString()));
+
+            return result;
         } catch (Exception e) {
             return ErrorCreator.createError(e);
         }

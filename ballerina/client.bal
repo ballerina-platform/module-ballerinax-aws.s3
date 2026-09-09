@@ -411,6 +411,54 @@ public isolated client class Client {
         'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
     } external;
 
+    # Creates an S3 directory bucket (S3 Express One Zone).
+    # Directory bucket names must follow the format: `bucket-base-name--azid--x-s3`
+    # (e.g., `my-bucket--usw2-az1--x-s3`).
+    #
+    # + bucketName - The name of the directory bucket
+    # + config - Directory bucket configuration including availability zone
+    # + return - An Error if bucket creation fails
+    @display {label: "Create Directory Bucket"}
+    remote isolated function createDirectoryBucket(@display {label: "Bucket Name"} string bucketName,
+            *CreateDirectoryBucketConfig config) returns Error? = @java:Method {
+        name: "createDirectoryBucket",
+        'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+    } external;
+
+    # Lists all S3 directory buckets (S3 Express One Zone) in the AWS account.
+    #
+    # + config - Optional listing configuration
+    # + return - List of directory buckets or an Error
+    @display {label: "List Directory Buckets"}
+    remote isolated function listDirectoryBuckets(*ListDirectoryBucketsConfig config)
+            returns @display {label: "Directory Buckets"} ListDirectoryBucketsResponse|Error {
+        json result = check nativeListDirectoryBuckets(self, config);
+        ListDirectoryBucketsResponse|error response = result.fromJsonWithType();
+        if response is error {
+            return error Error(response.message(), response);
+        }
+        return response;
+    }
+
+    # Creates a session for a directory bucket (S3 Express One Zone).
+    # The returned session credentials can be used for data plane operations
+    # on the directory bucket.
+    #
+    # + bucketName - The name of the directory bucket
+    # + config - Optional session configuration
+    # + return - Session credentials or an Error
+    @display {label: "Create Session"}
+    remote isolated function createSession(@display {label: "Bucket Name"} string bucketName,
+            *CreateSessionConfig config)
+            returns @display {label: "Session Credentials"} SessionCredentials|Error {
+        json result = check nativeCreateSession(self, bucketName, config);
+        SessionCredentials|error credentials = result.fromJsonWithType();
+        if credentials is error {
+            return error Error(credentials.message(), credentials);
+        }
+        return credentials;
+    }
+
     # Closes the underlying S3 client and releases resources.
     #
     # + return - An Error if closing fails
@@ -452,5 +500,15 @@ isolated function nativeHeadObject(Client self, string bucket, string key, HeadO
 
 isolated function nativeUploadPart(Client self, string bucket, string key, string uploadId, int partNumber, byte[] content, UploadPartConfig config) returns string|Error = @java:Method {
     name: "uploadPart",
+    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+} external;
+
+isolated function nativeListDirectoryBuckets(Client self, ListDirectoryBucketsConfig config) returns json|Error = @java:Method {
+    name: "listDirectoryBuckets",
+    'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
+} external;
+
+isolated function nativeCreateSession(Client self, string bucket, CreateSessionConfig config) returns json|Error = @java:Method {
+    name: "createSession",
     'class: "io.ballerina.lib.aws.s3.NativeClientAdaptor"
 } external;
