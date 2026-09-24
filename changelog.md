@@ -20,3 +20,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Expanded `putObject` to accept `record {}`, `record {}[]`, `stream<byte[], error?>`, and `stream<record {}, error?>` in addition to the existing `byte[]`, `string`, `json`, and `xml` types
 - `record {}` content is serialized as JSON; `record {}[]` and `stream<record {}, error?>` content is serialized as CSV
 - Introduced distinct error types and restructured configuration records
+- Updated Netty to 4.2.18.Final, replacing the `netty-codec` artifact with `netty-codec-base` ([#9152](https://github.com/ballerina-platform/ballerina-library/issues/9152))

@@ -52,7 +52,11 @@ ballerina {
 }
 
 configurations {
-    externalJars
+    externalJars {
+        // Netty 4.2 split netty-codec into netty-codec-base; the AWS SDK still requests
+        // the 4.1 aggregator transitively, which would collide with the 4.2 classes.
+        exclude group: 'io.netty', module: 'netty-codec'
+    }
 }
 
 dependencies {
@@ -84,7 +88,7 @@ dependencies {
     externalJars(group: 'io.netty', name:'netty-codec-http', version:"${nettyVersion}") {
         
     }
-    externalJars(group: 'io.netty', name:'netty-codec', version:"${nettyVersion}") {
+    externalJars(group: 'io.netty', name:'netty-codec-base', version:"${nettyVersion}") {
         
     }
     externalJars(group: 'io.netty', name:'netty-buffer', version:"${nettyVersion}") {
