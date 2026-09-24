@@ -18,7 +18,7 @@
 
 plugins {
     id "com.github.spotbugs"
-    id "com.github.johnrengelman.shadow"
+    id "com.gradleup.shadow"
     id "de.undercouch.download"
     id "net.researchgate.release"
 }
@@ -58,7 +58,7 @@ allprojects {
 
 }
 
-task build {
+tasks.named('build') {
     dependsOn(":aws.s3-native:build")
     dependsOn(":aws.s3-ballerina:build")
 }
