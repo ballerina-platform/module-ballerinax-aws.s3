@@ -243,7 +243,7 @@ Client operation counts are derived from the Ballerina framework's built-in `req
 
 ### 4.2 Tags
 
-All metrics and trace spans carry tags that identify the connection, operation, and outcome.
+Trace spans carry all of the tags listed below. The explicit metrics carry a subset: `s3_active_connections` carries only [Identity Tags](#421-identity-tags), while `file_bytes_transferred_total` carries Identity Tags plus `operation.type` from [Action Tags](#422-action-tags). [Outcome Tags](#423-outcome-tags) and `action.type` appear only on trace spans (and therefore on the derived `requests_total_value` counters).
 
 > **Note:** Prometheus normalizes `.` to `_` in label names (e.g. `action.type` -> `action_type`, `operation.type` -> `operation_type`). Jaeger and other trace backends preserve the original dotted names. The PromQL examples in this section use the Prometheus-normalized form.
 
@@ -261,15 +261,15 @@ All metrics and trace spans carry tags that identify the connection, operation, 
 
 | Tag | Values | Metrics | Traces | Notes |
 |---|---|---|---|---|
-| `action.type` | `client_operation` | Yes | Yes | Always `client_operation` for S3 client operations. |
-| `operation.type` | `get`, `put`, `manage` | Yes | Yes | Categorizes the operation. See [Section 4.2.5](#425-client-operation-tag-mapping) for the full mapping. |
+| `action.type` | `client_operation` | No | Yes | Always `client_operation` for S3 client operations. Present on spans and derived counters only. |
+| `operation.type` | `get`, `put`, `manage` | `file_bytes_transferred_total` only | Yes | Categorizes the operation. See [Section 4.2.5](#425-client-operation-tag-mapping) for the full mapping. |
 
 #### 4.2.3 Outcome Tags
 
 | Tag | Values | Metrics | Traces | Notes |
 |---|---|---|---|---|
-| `outcome` | `success`, `failure` | Yes | Yes | Binary result of the operation. |
-| `error.type` | `Error`, `NoSuchKeyError`, `NoSuchBucketError`, `BucketAlreadyExistsError`, `BucketAlreadyOwnedByYouError`, `BucketNotEmptyError`, ... | Yes | Yes | Present when `outcome=failure`. Set to the Ballerina error type name. |
+| `outcome` | `success`, `failure` | No | Yes | Binary result of the operation. Present on spans and derived counters only. |
+| `error.type` | `Error`, `NoSuchKeyError`, `NoSuchBucketError`, `BucketAlreadyExistsError`, `BucketAlreadyOwnedByYouError`, `BucketNotEmptyError`, ... | No | Yes | Present when `outcome=failure`. Set to the Ballerina error type name. Present on spans and derived counters only. |
 
 #### 4.2.4 File-Scoped Tags (Trace-Only)
 

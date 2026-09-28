@@ -334,8 +334,10 @@ public class NativeClientAdaptor {
         String remoteUrl = getRemoteUrl(clientObj);
         String protocol = getProtocol(clientObj);
         Object nativeClient = clientObj.getNativeData(NATIVE_CLIENT);
+        boolean hadClient = false;
         Exception closeException = null;
         if (nativeClient instanceof S3Client s3Client) {
+            hadClient = true;
             try {
                 s3Client.close();
             } catch (Exception e) {
@@ -359,7 +361,9 @@ public class NativeClientAdaptor {
                 closeException.addSuppressed(e);
             }
         }
-        S3MetricsUtil.reportConnectionClose(remoteUrl, protocol);
+        if (hadClient) {
+            S3MetricsUtil.reportConnectionClose(remoteUrl, protocol);
+        }
         return closeException == null ? null : ErrorCreator.createError(closeException);
     }
 
@@ -508,9 +512,10 @@ public class NativeClientAdaptor {
             applyPutObjectConfig(builder, config);
 
             java.nio.file.Path path = java.nio.file.Paths.get(filePath.getValue());
+            long fileSize = java.nio.file.Files.size(path);
             s3.putObject(builder.build(), RequestBody.fromFile(path));
             S3MetricsUtil.reportBytesTransferred(getRemoteUrl(clientObj), getProtocol(clientObj),
-                    S3MetricsUtil.OPERATION_TYPE_PUT, java.nio.file.Files.size(path));
+                    S3MetricsUtil.OPERATION_TYPE_PUT, fileSize);
             return traceOutcome(null, env);
         } catch (Exception e) {
             return traceOutcome(ErrorCreator.createError(e), env);
