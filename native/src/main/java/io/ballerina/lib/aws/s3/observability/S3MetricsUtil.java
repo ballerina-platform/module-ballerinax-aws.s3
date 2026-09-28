@@ -23,6 +23,9 @@ import io.ballerina.runtime.observability.metrics.DefaultMetricRegistry;
 import io.ballerina.runtime.observability.metrics.MetricId;
 import io.ballerina.runtime.observability.metrics.MetricRegistry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 
 /**
@@ -38,6 +41,8 @@ import java.net.InetAddress;
  * </ul>
  */
 public class S3MetricsUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(S3MetricsUtil.class);
 
     private static final String CONNECTOR_NAME = "s3";
     private static final String FILE_CONNECTOR_NAME = "file";
@@ -115,7 +120,7 @@ public class S3MetricsUtil {
             metricRegistry.gauge(new MetricId(CONNECTOR_NAME + "_" + METRIC_ACTIVE_CONNECTIONS[0],
                     METRIC_ACTIVE_CONNECTIONS[1], observerContext.getAllTags())).increment();
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to report new connection metric", t);
         }
     }
 
@@ -134,7 +139,7 @@ public class S3MetricsUtil {
             metricRegistry.gauge(new MetricId(CONNECTOR_NAME + "_" + METRIC_ACTIVE_CONNECTIONS[0],
                     METRIC_ACTIVE_CONNECTIONS[1], observerContext.getAllTags())).decrement();
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to report connection close metric", t);
         }
     }
 
@@ -156,7 +161,7 @@ public class S3MetricsUtil {
             metricRegistry.counter(new MetricId(FILE_CONNECTOR_NAME + "_" + METRIC_BYTES_TRANSFERRED[0],
                     METRIC_BYTES_TRANSFERRED[1], observerContext.getAllTags())).increment(bytes);
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to report bytes transferred metric", t);
         }
     }
 }

@@ -23,6 +23,8 @@ import io.ballerina.runtime.observability.ObservabilityConstants;
 import io.ballerina.runtime.observability.ObserveUtils;
 import io.ballerina.runtime.observability.ObserverContext;
 import io.ballerina.runtime.observability.tracer.BSpan;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for injecting S3 observability context into Ballerina strands and spans.
@@ -34,6 +36,8 @@ import io.ballerina.runtime.observability.tracer.BSpan;
  * {@code requests_total_value} metric is correctly labelled.
  */
 public class S3TracingUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(S3TracingUtil.class);
 
     private S3TracingUtil() {
     }
@@ -94,7 +98,7 @@ public class S3TracingUtil {
                 }
             }
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to send metrics data to span", t);
         }
     }
 
@@ -110,7 +114,7 @@ public class S3TracingUtil {
                 ctx.addTag(S3ObserverContext.TAG_OUTCOME, S3MetricsUtil.OUTCOME_SUCCESS);
             }
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to report success outcome to span", t);
         }
     }
 
@@ -132,7 +136,7 @@ public class S3TracingUtil {
             ctx.addTag(S3ObserverContext.TAG_ERROR_TYPE, errorType);
             ctx.addTag(S3ObserverContext.TAG_OUTCOME, S3MetricsUtil.OUTCOME_FAILURE);
         } catch (Throwable t) {
-            // Observability failures must not break S3 operations
+            log.debug("Failed to report error metrics to span", t);
         }
     }
 }
