@@ -54,9 +54,6 @@ public class S3MetricsUtil {
     /** Sentinel used when a URL or protocol value is unavailable. */
     public static final String UNKNOWN = "unknown";
 
-    /** Sentinel used when a tag is not applicable, ensuring consistent label sets. */
-    public static final String NONE = "none";
-
     /** Module tag value identifying the S3 module. */
     public static final String MODULE_S3 = "s3";
 
