@@ -233,17 +233,17 @@ The `file_` prefix is shared across all file integration modules, enabling cross
 
 #### 4.1.3 Derived Counters
 
-Client operation counts are derived from the Ballerina framework's built-in `requests_total_value` metric by filtering on the tags published on each span. No explicit counter needs to be published; the connector only ensures the correct tags are present on each span.
+Client operation counts are derived from the Ballerina framework's built-in `requests_total` metric by filtering on the tags published on each span. No explicit counter needs to be published; the connector only ensures the correct tags are present on each span.
 
 | Logical metric | Description | PromQL derivation |
 |---|---|---|
-| Client get operations | Object download operations | `requests_total_value{action_type="client_operation", module="s3", operation_type="get"}` |
-| Client put operations | Object upload operations | `requests_total_value{action_type="client_operation", module="s3", operation_type="put"}` |
-| Client manage operations | Bucket/object management operations | `requests_total_value{action_type="client_operation", module="s3", operation_type="manage"}` |
+| Client get operations | Object download operations | `requests_total{action_type="client_operation", module="s3", operation_type="get"}` |
+| Client put operations | Object upload operations | `requests_total{action_type="client_operation", module="s3", operation_type="put"}` |
+| Client manage operations | Bucket/object management operations | `requests_total{action_type="client_operation", module="s3", operation_type="manage"}` |
 
 ### 4.2 Tags
 
-Trace spans carry all of the tags listed below. The explicit metrics carry a subset: `s3_active_connections` carries only [Identity Tags](#421-identity-tags), while `file_bytes_transferred_total` carries Identity Tags plus `operation.type` from [Action Tags](#422-action-tags). [Outcome Tags](#423-outcome-tags) and `action.type` appear only on trace spans (and therefore on the derived `requests_total_value` counters).
+Trace spans carry all of the tags listed below. The explicit metrics carry a subset: `s3_active_connections` carries only [Identity Tags](#421-identity-tags), while `file_bytes_transferred_total` carries Identity Tags plus `operation.type` from [Action Tags](#422-action-tags). [Outcome Tags](#423-outcome-tags) and `action.type` appear only on trace spans (and therefore on the derived `requests_total` counters).
 
 > **Note:** Prometheus normalizes `.` to `_` in label names (e.g. `action.type` -> `action_type`, `operation.type` -> `operation_type`). Jaeger and other trace backends preserve the original dotted names. The PromQL examples in this section use the Prometheus-normalized form.
 
@@ -312,17 +312,17 @@ For operations that transfer data, the `file_bytes_transferred_total` counter is
 
 ```promql
 # ---- Client operations by type ----
-rate(requests_total_value{action_type="client_operation", module="s3", operation_type="get"}[5m])
-rate(requests_total_value{action_type="client_operation", module="s3", operation_type="put"}[5m])
-rate(requests_total_value{action_type="client_operation", module="s3", operation_type="manage"}[5m])
+rate(requests_total{action_type="client_operation", module="s3", operation_type="get"}[5m])
+rate(requests_total{action_type="client_operation", module="s3", operation_type="put"}[5m])
+rate(requests_total{action_type="client_operation", module="s3", operation_type="manage"}[5m])
 
 # ---- Error rate by error type ----
 sum by (error_type) (
-  rate(requests_total_value{action_type="client_operation", module="s3", outcome="failure"}[5m])
+  rate(requests_total{action_type="client_operation", module="s3", outcome="failure"}[5m])
 )
 
 # ---- Success rate ----
-rate(requests_total_value{action_type="client_operation", module="s3", outcome="success"}[5m])
+rate(requests_total{action_type="client_operation", module="s3", outcome="success"}[5m])
 
 # ---- Bytes transferred ----
 rate(file_bytes_transferred_total{module="s3", operation_type="get"}[5m])    # bytes downloaded
@@ -335,7 +335,7 @@ s3_active_connections
 rate(file_bytes_transferred_total[5m])
 
 # ---- Cross-module: all client operations across all file modules ----
-rate(requests_total_value{action_type="client_operation"}[5m])
+rate(requests_total{action_type="client_operation"}[5m])
 ```
 
 ### 4.5 Enabling Observability

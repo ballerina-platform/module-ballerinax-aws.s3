@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * method. Ballerina has already created an auto-instrumented span for the remote-method call;
  * this helper enriches that span with the S3-specific tags ({@code action.type},
  * {@code type}, {@code remote.url}, etc.) so that the resulting
- * {@code requests_total_value} metric is correctly labelled.
+ * {@code requests_total} metric is correctly labelled.
  */
 public class S3TracingUtil {
 
