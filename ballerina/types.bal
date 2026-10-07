@@ -269,6 +269,8 @@ public type S3Object record {|
 public type ListObjectsResponse record {|
     # List of objects found
     S3Object[] objects;
+    # Common prefixes when a delimiter is used (e.g., sub-folder paths)
+    string[] commonPrefixes?;
     # Number of objects returned
     int count;
     # True if there are more results (use nextContinuationToken to get them)
@@ -342,7 +344,13 @@ public enum StorageClass {
     # Archive with instant retrieval (min 90 days)
     GLACIER_IR = "GLACIER_IR",
     # Lowest cost archive, retrieval takes hours (min 180 days)
-    DEEP_ARCHIVE = "DEEP_ARCHIVE"
+    DEEP_ARCHIVE = "DEEP_ARCHIVE",
+    # Single-AZ high-performance storage for directory buckets (S3 Express One Zone)
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE",
+    # Storage class for data stored on AWS Snowball devices
+    SNOW = "SNOW",
+    # Storage class for data stored on AWS Outposts
+    OUTPOSTS = "OUTPOSTS"
 }
 
 # HTTP methods for presigned URLs.
@@ -352,3 +360,67 @@ public enum HttpMethod {
     # HTTP PUT method
     PUT = "PUT"
 }
+
+# Data redundancy options for directory buckets.
+public enum DataRedundancy {
+    # Single availability zone redundancy
+    SINGLE_AVAILABILITY_ZONE = "SingleAvailabilityZone"
+}
+
+# Session mode options for directory bucket sessions.
+public enum SessionMode {
+    # Read-only access
+    READ_ONLY = "ReadOnly",
+    # Read-write access
+    READ_WRITE = "ReadWrite"
+}
+
+# Configuration for creating a directory bucket (S3 Express One Zone).
+public type CreateDirectoryBucketConfig record {|
+    # The availability zone ID for the bucket (e.g., "use1-az4", "usw2-az1")
+    string availabilityZoneId;
+    # The data redundancy for the bucket
+    DataRedundancy dataRedundancy = SINGLE_AVAILABILITY_ZONE;
+|};
+
+# Configuration for listing directory buckets.
+public type ListDirectoryBucketsConfig record {|
+    # Maximum number of directory buckets to return
+    int maxDirectoryBuckets?;
+    # Token to get the next page of results
+    string continuationToken?;
+|};
+
+# Response from listing directory buckets.
+public type ListDirectoryBucketsResponse record {|
+    # List of directory buckets found
+    DirectoryBucket[] buckets;
+    # Token to get the next page of results
+    string nextContinuationToken?;
+|};
+
+# Represents an S3 directory bucket (S3 Express One Zone).
+public type DirectoryBucket record {|
+    # The name of the directory bucket
+    string name;
+    # The creation date of the bucket
+    string creationDate;
+|};
+
+# Configuration for creating a session on a directory bucket.
+public type CreateSessionConfig record {|
+    # The session mode (ReadOnly or ReadWrite)
+    SessionMode sessionMode = READ_WRITE;
+|};
+
+# Represents credentials returned from a directory bucket session.
+public type SessionCredentials record {|
+    # The access key ID
+    string accessKeyId;
+    # The secret access key
+    string secretAccessKey;
+    # The session token
+    string sessionToken;
+    # The expiration time of the session
+    string expiration;
+|};
