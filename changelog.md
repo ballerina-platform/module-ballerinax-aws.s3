@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+## [4.1.1] - 2026-10-18
+
 ### Changed
 
 - [[#2804] Shorten the module summary so it is not truncated in the WSO2 Integrator connector view](https://github.com/wso2/product-integrator/issues/2804)
