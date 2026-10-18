@@ -6,9 +6,23 @@
 [![GraalVM Check](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-aws.s3/actions/workflows/build-with-bal-test-native.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+## Overview
+
+Store, retrieve, and manage objects and buckets in Amazon S3 (Simple Storage Service), the scalable cloud object storage service from AWS.
+
 [Amazon S3](https://aws.amazon.com/s3/) (Simple Storage Service) is a highly scalable, durable, and secure object storage service provided by Amazon Web Services (AWS). It is designed to store and retrieve any amount of data from anywhere on the web, making it ideal for a wide range of use cases, including data backup, archiving, content distribution, and big data analytics.
 
 The `ballerinax/aws.s3` connector offers APIs to connect and interact with [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Type_API_Reference.html), built on the AWS SDK v2. It supports creating, listing, and deleting buckets, uploading, retrieving, and deleting objects, managing object metadata and tagging, multipart uploads, and bucket and object access control lists (ACLs).
+
+### Key Features
+
+- Bucket management (create, list, delete)
+- Object upload, retrieval, and deletion
+- Object metadata and tagging support
+- Multipart upload for large objects
+- Bucket and object access control lists (ACLs)
+- Secure communication with AWS IAM authentication
+- GraalVM compatible for native image builds
 
 ## Setup guide
 
@@ -60,6 +74,18 @@ final s3:Client s3Client = check new ({
 });
 ```
 
+> **Note:** Ensure your AWS credentials file follows the standard format.
+>
+> ```ini
+> [default]
+> aws_access_key_id = YOUR_ACCESS_KEY_ID
+> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
+>
+> [myAwsProfile]
+> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
+> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
+> ```
+
 ##### Default credential provider chain
 
 The standard default credential provider chain, trying each of the following in order and taking the first source that yields credentials:
@@ -77,18 +103,6 @@ final s3:Client s3Client = check new ({
    auth: auth:DEFAULT_CREDENTIALS
 });
 ```
-
-> **Note:** Ensure your AWS credentials file follows the standard format.
->
-> ```ini
-> [default]
-> aws_access_key_id = YOUR_ACCESS_KEY_ID
-> aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
->
-> [myAwsProfile]
-> aws_access_key_id = ANOTHER_ACCESS_KEY_ID
-> aws_secret_access_key = ANOTHER_SECRET_ACCESS_KEY
-> ```
 
 ### Step 3: Invoke the connector operations
 

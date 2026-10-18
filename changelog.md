@@ -7,8 +7,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- [[#2804] Shorten the module summary so it is not truncated in the WSO2 Integrator connector view](https://github.com/wso2/product-integrator/issues/2804)
+
+## [4.1.0] - 2026-10-12
+
+### Added
+
+- [Add observability support with metrics and tracing for the S3 client](https://github.com/ballerina-platform/module-ballerinax-aws.s3/pull/165)
+
+### Changed
+
 - Updated Netty to 4.2.18.Final, replacing the `netty-codec` artifact with `netty-codec-base` ([#9152](https://github.com/ballerina-platform/ballerina-library/issues/9152))
 - Updated the minimum required Ballerina distribution to 2201.14.0 (Swan Lake Update 14). Netty 4.1 and 4.2 cannot co-exist on a class path, and the `ballerina/http` bundled in earlier distributions ships Netty 4.1
+
+## [4.0.1] - 2026-08-20
+
+### Changed
+
+- [Updated Netty to 4.1.137.Final](https://github.com/ballerina-platform/module-ballerinax-aws.s3/pull/163)
 
 ## [4.0.0] - 2026-08-05
 
